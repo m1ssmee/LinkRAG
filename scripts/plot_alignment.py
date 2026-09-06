@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from linkrag.link.align import align_monotonic, align_naive
+from linkrag.link.align import align_naive
 
 
 def main(argv: list[str] | None = None) -> int:

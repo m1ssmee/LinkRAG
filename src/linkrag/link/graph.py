@@ -16,7 +16,7 @@ from typing import Iterable, Sequence
 
 import networkx as nx
 
-from linkrag.core import EvidenceUnit, Link, stage_timer
+from linkrag.core import EvidenceUnit, Link
 
 PREVIEW_CHARS = 160
 

@@ -52,18 +52,3 @@ def retrieve_scored(
     return [(index.units[position], score) for position, score in fused]
 
 
-def retrieve(
-    query: str,
-    index: Index,
-    *,
-    encoder: Encoder,
-    top_k: int = 8,
-    candidates: int = 50,
-    rrf_k: int = RRF_K,
-) -> list[EvidenceUnit]:
-    return [
-        unit
-        for unit, _score in retrieve_scored(
-            query, index, encoder=encoder, top_k=top_k, candidates=candidates, rrf_k=rrf_k
-        )
-    ]

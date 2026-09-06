@@ -8,18 +8,3 @@ linkrag:  link-following expansion from the top-k seeds (`linkrag.py`), then
           `iterative.py` holds the P1/MI-RAG approximation used as a third,
           fairer baseline than plain top-k.
 """
-
-from __future__ import annotations
-
-from linkrag.retrieve.baseline import retrieve, retrieve_scored, rrf_fuse
-from linkrag.retrieve.iterative import IterativeResult, retrieve_iterative
-from linkrag.retrieve.linkrag import (
-    RetrievedUnit,
-    expansion_report,
-    retrieve_linkrag,
-    units_of,
-)
-
-__all__ = ["IterativeResult", "RetrievedUnit", "retrieve", "retrieve_iterative",
-           "retrieve_linkrag", "retrieve_scored",
-           "rrf_fuse", "units_of"]

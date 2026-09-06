@@ -69,7 +69,7 @@ def test_neighbors_follows_both_directions_by_default(graph) -> None:
 def test_neighbors_filters_by_type_and_score(graph) -> None:
     assert [n for n, _t, _s in neighbors(graph, "a1", link_types=["deictic"])] == ["f5"]
     assert [n for n, _t, _s in neighbors(graph, "a1", min_score=0.8)] == ["s5"]
-    assert neighbors(graph, "a1", link_types=["same_topic"]) == []
+    assert neighbors(graph, "a1", link_types=["no_such_type"]) == []
 
 
 def test_neighbors_sorted_by_score_descending(graph) -> None:

@@ -9,7 +9,7 @@ from linkrag.index import build_index
 from linkrag.link.graph import build_graph
 from linkrag.retrieve.baseline import retrieve_scored
 from linkrag.retrieve.iterative import _clean_query, retrieve_iterative
-from linkrag.retrieve.linkrag import retrieve_linkrag, units_of
+from linkrag.retrieve.linkrag import retrieve_linkrag
 
 # The gold unit shares no vocabulary with the question: similarity cannot reach it,
 # only the audio_slide link can. This is the whole claim of link-following.
@@ -153,7 +153,6 @@ def test_results_are_sorted_and_deduped(corpus, graph) -> None:
     scores = [r.score for r in results]
     assert scores == sorted(scores, reverse=True)
     assert len({r.id for r in results}) == len(results)
-    assert len(units_of(results)) == len(results)
 
 
 def test_unknown_mode_raises(corpus, graph) -> None:

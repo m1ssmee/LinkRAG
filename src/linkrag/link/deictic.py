@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Sequence
 
@@ -116,6 +117,15 @@ def tier_of(phrase: str, sentence: str, visual_terms: Sequence[str]) -> int:
     return 2 if words & {t.lower() for t in visual_terms} else 3
 
 
+@lru_cache(maxsize=8)
+def _cue_pattern(cues: tuple[str, ...]) -> re.Pattern[str]:
+    """One alternation, longest phrase first, so `re` picks the longest match at
+    each position and `finditer` handles non-overlap. Replaces a phrases x tokens
+    sliding window with a manual `claimed` span list."""
+    ordered = sorted({c.lower() for c in cues}, key=lambda c: (-len(c.split()), c))
+    return re.compile(r"(?<!\S)(?:" + "|".join(re.escape(c) for c in ordered) + r")(?!\S)")
+
+
 def find_cues(
     unit: EvidenceUnit,
     cues: Sequence[str] = DEFAULT_CUES,
@@ -130,40 +140,39 @@ def find_cues(
     if not words:
         return []
     tokens = [re.sub(r"[^a-z0-9']", "", str(w[2]).lower()) for w in words]
+
+    # char offset -> token index, so a regex match maps back onto word timestamps
+    starts, offset = [], 0
+    for tok in tokens:
+        starts.append(offset)
+        offset += len(tok) + 1
     joined = " ".join(tokens)
+    index_of = {c: i for i, c in enumerate(starts)}
 
     found: list[Cue] = []
-    claimed: list[tuple[int, int]] = []
-    for cue in sorted(cues, key=lambda c: -len(c.split())):
-        parts = cue.lower().split()
-        n = len(parts)
-        for i in range(len(tokens) - n + 1):
-            if tokens[i:i + n] != parts:
-                continue
-            if any(s <= i < e or s < i + n <= e for s, e in claimed):
-                continue  # already inside a longer cue
-            claimed.append((i, i + n))
-            lo, hi = max(0, i - CONTEXT_WORDS), min(len(tokens), i + n + CONTEXT_WORDS)
+    for match in _cue_pattern(tuple(cues)).finditer(joined):
+        i = index_of.get(match.start())
+        if i is None:
+            continue
+        n = len(match.group(0).split())
+        lo, hi = max(0, i - CONTEXT_WORDS), min(len(tokens), i + n + CONTEXT_WORDS)
 
-            # Sentence bounds: walk out to terminal punctuation on the raw words.
-            s_lo = i
-            while s_lo > 0 and not TERMINAL_PUNCT.search(str(words[s_lo - 1][2])):
-                s_lo -= 1
-            s_hi = i + n - 1
-            while s_hi < len(words) - 1 and not TERMINAL_PUNCT.search(str(words[s_hi][2])):
-                s_hi += 1
-            sentence = " ".join(str(w[2]) for w in words[s_lo:s_hi + 1])
+        s_lo = i
+        while s_lo > 0 and not TERMINAL_PUNCT.search(str(words[s_lo - 1][2])):
+            s_lo -= 1
+        s_hi = i + n - 1
+        while s_hi < len(words) - 1 and not TERMINAL_PUNCT.search(str(words[s_hi][2])):
+            s_hi += 1
+        sentence = " ".join(str(w[2]) for w in words[s_lo:s_hi + 1])
 
-            found.append(Cue(
-                text=cue,
-                start_s=float(words[i][0]),
-                end_s=float(words[i + n - 1][1]),
-                context=" ".join(str(w[2]) for w in words[lo:hi]),
-                sentence=sentence,
-                tier=tier_of(cue, sentence, visual_terms),
-            ))
-    if not joined:
-        return []
+        found.append(Cue(
+            text=match.group(0),
+            start_s=float(words[i][0]),
+            end_s=float(words[i + n - 1][1]),
+            context=" ".join(str(w[2]) for w in words[lo:hi]),
+            sentence=sentence,
+            tier=tier_of(match.group(0), sentence, visual_terms),
+        ))
     return sorted(found, key=lambda c: c.start_s)
 
 

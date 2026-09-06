@@ -29,7 +29,6 @@ LinkType = Literal[
     "figure_text",   # figure/table <-> the prose that explains it
     "deictic",       # "this arrow here" <-> the visual element referred to
     "same_slide",    # figure <-> the text of the deck page it sits on
-    "same_topic",    # weak semantic neighbour, used as fallback
 ]
 
 

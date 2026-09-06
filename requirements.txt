@@ -28,8 +28,7 @@ requests==2.34.2
 # visualisation
 matplotlib==3.11.1             # alignment heatmap + link-graph renders
 
-# ui
-streamlit==1.63.0
+# ui: src/linkrag/ui/ is a Phase 9 target; no dependency pinned until it exists
 
 # dev
 pytest==9.1.1

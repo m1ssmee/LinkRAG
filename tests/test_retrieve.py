@@ -4,7 +4,7 @@ import pytest
 
 from linkrag.core import EvidenceUnit, Location
 from linkrag.index import build_index
-from linkrag.retrieve.baseline import retrieve, retrieve_scored, rrf_fuse
+from linkrag.retrieve.baseline import retrieve_scored, rrf_fuse
 
 CORPUS = [
     ("u0", "text", "self attention assigns each token a weight over every other token"),
@@ -58,21 +58,21 @@ def test_rrf_on_empty_rankings() -> None:
 # ----------------------------------------------------------------- retrieval
 
 def test_retrieve_returns_top_k_units(index, encode) -> None:
-    units = retrieve("attention heatmap layer six", index, encoder=encode, top_k=3)
+    units = [u for u, _ in retrieve_scored("attention heatmap layer six", index, encoder=encode, top_k=3)]
     assert len(units) == 3
     assert all(isinstance(u, EvidenceUnit) for u in units)
     assert len(set(u.id for u in units)) == 3, "no duplicates across the two rankers"
 
 
 def test_retrieve_ranks_the_relevant_unit_first(index, encode) -> None:
-    units = retrieve("attention heatmap for layer six head three", index, encoder=encode, top_k=2)
+    units = [u for u, _ in retrieve_scored("attention heatmap for layer six head three", index, encoder=encode, top_k=2)]
     assert units[0].id == "u3"
 
 
 def test_retrieve_is_modality_blind(index, encode) -> None:
     """The baseline has one shared store; an audio unit can outrank a text one.
     This is the property the linkrag mode must beat, not a bug."""
-    units = retrieve("as you can see here the weights concentrate", index, encoder=encode, top_k=1)
+    units = [u for u, _ in retrieve_scored("as you can see here the weights concentrate", index, encoder=encode, top_k=1)]
     assert units[0].modality == "audio"
 
 
@@ -83,10 +83,10 @@ def test_retrieve_scored_is_descending(index, encode) -> None:
 
 
 def test_retrieve_k_larger_than_corpus(index, encode) -> None:
-    assert len(retrieve("attention", index, encoder=encode, top_k=99)) == len(index)
+    assert len([u for u, _ in retrieve_scored("attention", index, encoder=encode, top_k=99)]) == len(index)
 
 
 def test_retrieve_makes_no_links(index, encode) -> None:
     """Guard the baseline's defining property: it never expands beyond top-k."""
-    units = retrieve("attention", index, encoder=encode, top_k=2)
+    units = [u for u, _ in retrieve_scored("attention", index, encoder=encode, top_k=2)]
     assert len(units) == 2

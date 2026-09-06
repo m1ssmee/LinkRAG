@@ -142,9 +142,6 @@ def retrieve_linkrag(
     return ranked
 
 
-def units_of(results: Sequence[RetrievedUnit]) -> list[EvidenceUnit]:
-    return [r.unit for r in results]
-
 
 def expansion_report(results: Sequence[RetrievedUnit], graph: nx.MultiDiGraph) -> tuple[int, int]:
     """(expanded units, seeds that had at least one graph edge).

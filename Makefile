@@ -1,4 +1,4 @@
-.PHONY: setup test demo clean
+.PHONY: setup test clean
 PY := .venv/bin/python
 
 # uv is the fast path (and can fetch CPython 3.11 itself); plain venv is the fallback.
@@ -11,8 +11,6 @@ setup:
 test:
 	$(PY) -m pytest -q
 
-demo:
-	$(PY) scripts/demo.py
 
 clean:
 	rm -rf .pytest_cache src/*.egg-info

@@ -186,22 +186,6 @@ def transcribe_segments(
     ]
 
 
-def transcribe(
-    path: str | Path,
-    *,
-    model_size: str = "small",
-    device: str = "cpu",
-    compute_type: str = "int8",
-    initial_prompt: str | None = None,
-) -> list[Word]:
-    return [
-        w
-        for segment in transcribe_segments(
-            path, model_size=model_size, device=device, compute_type=compute_type,
-            initial_prompt=initial_prompt,
-        )
-        for w in segment.words
-    ]
 
 
 def load_frozen_transcript(path: str | Path) -> list[Word]:

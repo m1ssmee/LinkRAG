@@ -11,7 +11,6 @@ links for anyone who wants to explore interactively in Gephi.
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 from linkrag.core import load_config, setup_logging
@@ -24,7 +23,6 @@ EDGE_STYLE = {
     "audio_slide": ("#00E676", "-"),
     "figure_text": ("#FFD54F", "-"),
     "deictic": ("#4FC3F7", "--"),
-    "same_topic": ("#BDBDBD", ":"),
 }
 NODE_COLOUR = {"audio": "#1565C0", "text": "#2E7D32", "figure": "#EF6C00", "table": "#6A1B9A"}
 
