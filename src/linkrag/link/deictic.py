@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Sequence
 
 import numpy as np
@@ -69,6 +70,21 @@ def expand_cues(
 
 CONTEXT_WORDS = 12  # words either side of the cue that form its context window
 
+# Words that mean the speaker is talking about something on screen. Used only to
+# separate tier 2 from tier 3: a bare "this" next to "you can see on the graph" is
+# far better evidence of visual deixis than a bare "this" in open prose.
+DEFAULT_VISUAL_TERMS = [
+    "see", "seen", "show", "shows", "showing", "shown", "look", "looking", "plot",
+    "plotted", "screen", "slide", "figure", "graph", "diagram", "arrow", "chart",
+    "picture", "image", "axis", "curve", "table", "box", "column", "row", "highlight",
+    "highlighted", "display", "displayed", "draw", "drawn", "point", "pointing",
+]
+
+# Tier 1 explicit object deixis, tier 2 pronoun + visual context, tier 3 bare pronoun.
+DEFAULT_TIER_WEIGHTS = {1: 1.0, 2: 0.6, 3: 0.3}
+
+TERMINAL_PUNCT = re.compile(r"[.!?][\"')\]]?$")
+
 
 @dataclass(frozen=True)
 class Cue:
@@ -76,16 +92,35 @@ class Cue:
     start_s: float
     end_s: float
     context: str
+    sentence: str = ""
+    tier: int = 3
 
     @property
     def strength(self) -> float:
-        """Note: multi-word cues are more reliably deictic than bare "this",
-        so strength is word count capped at 1.0. A learned weight would be better
-        and needs labelled referents we do not have yet."""
+        """Word-count heuristic, kept for reporting. Ranking uses `tier` instead --
+        see `tier_of`, which is the evidence-based replacement."""
         return min(1.0, len(self.text.split()) / 3.0)
 
 
-def find_cues(unit: EvidenceUnit, cues: Sequence[str] = DEFAULT_CUES) -> list[Cue]:
+def tier_of(phrase: str, sentence: str, visual_terms: Sequence[str]) -> int:
+    """1 = explicit object deixis, 2 = bare pronoun with visual context, 3 = bare pronoun.
+
+    On pilot01 every emitted deictic link came from a bare "this"/"that", so an
+    undifferentiated cue set says almost nothing about whether the speaker was
+    actually pointing at anything. The tier is what makes that visible in the output
+    instead of hiding it in an average.
+    """
+    if len(phrase.split()) > 1:
+        return 1
+    words = {re.sub(r"[^a-z0-9']", "", w.lower()) for w in sentence.split()}
+    return 2 if words & {t.lower() for t in visual_terms} else 3
+
+
+def find_cues(
+    unit: EvidenceUnit,
+    cues: Sequence[str] = DEFAULT_CUES,
+    visual_terms: Sequence[str] = DEFAULT_VISUAL_TERMS,
+) -> list[Cue]:
     """Locate deictic cues and their surrounding words, using word timestamps.
 
     Longer cues win over the shorter ones they contain, so "as you can see" is not
@@ -109,11 +144,23 @@ def find_cues(unit: EvidenceUnit, cues: Sequence[str] = DEFAULT_CUES) -> list[Cu
                 continue  # already inside a longer cue
             claimed.append((i, i + n))
             lo, hi = max(0, i - CONTEXT_WORDS), min(len(tokens), i + n + CONTEXT_WORDS)
+
+            # Sentence bounds: walk out to terminal punctuation on the raw words.
+            s_lo = i
+            while s_lo > 0 and not TERMINAL_PUNCT.search(str(words[s_lo - 1][2])):
+                s_lo -= 1
+            s_hi = i + n - 1
+            while s_hi < len(words) - 1 and not TERMINAL_PUNCT.search(str(words[s_hi][2])):
+                s_hi += 1
+            sentence = " ".join(str(w[2]) for w in words[s_lo:s_hi + 1])
+
             found.append(Cue(
                 text=cue,
                 start_s=float(words[i][0]),
                 end_s=float(words[i + n - 1][1]),
                 context=" ".join(str(w[2]) for w in words[lo:hi]),
+                sentence=sentence,
+                tier=tier_of(cue, sentence, visual_terms),
             ))
     if not joined:
         return []
@@ -131,6 +178,8 @@ def resolve_deictic(
     threshold: float = 0.45,
     max_links_per_unit: int = 8,
     weights: dict[str, float] | None = None,
+    tier_weights: dict[int, float] | None = None,
+    visual_terms: Sequence[str] = DEFAULT_VISUAL_TERMS,
 ) -> list[Link]:
     """deictic Links from audio segments to the figures they point at.
 
@@ -144,6 +193,8 @@ def resolve_deictic(
         )
     weights = weights or {}
     cues = list(cues) if cues else expand_cues()
+    # int keys, tolerating YAML that hands them back as strings
+    tier_weights = {int(k): float(v) for k, v in (tier_weights or DEFAULT_TIER_WEIGHTS).items()}
     w_slide = weights.get("slide", 0.45)
     w_cue = weights.get("cue", 0.15)
     w_dense = weights.get("dense", 0.20)
@@ -167,7 +218,7 @@ def resolve_deictic(
 
         contexts: list[tuple[int, Cue]] = []
         for i, unit in enumerate(audio_units):
-            for cue in find_cues(unit, cues):
+            for cue in find_cues(unit, cues, visual_terms):
                 contexts.append((i, cue))
         if not contexts:
             t["cues"] = 0
@@ -200,7 +251,10 @@ def resolve_deictic(
                     continue  # the alignment says this figure was not on screen
                 shared = set(tokenize(cue.context)) & fig_tokens[j]
                 overlap = min(sum(idf.get(t, 0.0) for t in shared) / fig_mass[j], 1.0) if shared else 0.0
-                score = (w_slide * on_slide + w_cue * cue.strength
+                # Tier, not word count: an explicit "this arrow here" outranks a
+                # bare "this" even when the visual evidence is identical.
+                cue_weight = tier_weights.get(cue.tier, 0.0)
+                score = (w_slide * on_slide + w_cue * cue_weight
                          + w_dense * float(dense[row, j])
                          + w_overlap * overlap) / mass
                 scored.append((score, j, overlap))
@@ -214,6 +268,8 @@ def resolve_deictic(
                     unit.id, figures[j].id, "deictic", score,
                     metadata={
                         "phrase": cue.text,
+                        "tier": cue.tier,
+                        "sentence": cue.sentence,
                         "phrase_start_s": round(cue.start_s, 2),
                         "phrase_end_s": round(cue.end_s, 2),
                         "context": cue.context,
@@ -232,3 +288,82 @@ def slide_map_from_links(links: Sequence[Link], slide_units: Sequence[EvidenceUn
     page_of = {u.id: u.location.page for u in slide_units}
     return {l.src_id: page_of[l.dst_id] for l in links
             if l.link_type == "audio_slide" and page_of.get(l.dst_id) is not None}
+
+
+def deictic_pairs(links: Sequence[Link]) -> list[dict]:
+    """Collapse deictic links to distinct (segment, figure) pairs, keeping the
+    best-scoring cue for each.
+
+    The raw link count double-counts: one segment can fire six cues at the same
+    figure, which on pilot01 turned 22 real pairs into 41 links. Pairs are the
+    honest unit for "how many things did we resolve"; the cue count is a secondary
+    statistic about how noisy the trigger was.
+    """
+    best: dict[tuple[str, str], dict] = {}
+    for link in links:
+        if link.link_type != "deictic":
+            continue
+        key = (link.src_id, link.dst_id)
+        current = best.get(key)
+        if current is None or link.score > current["score"]:
+            # carry the running cue count across the replacement, or a pair whose
+            # best cue arrives second reports 1 instead of its true count
+            seen = current["cues"] if current else 0
+            best[key] = {
+                "src_id": link.src_id,
+                "dst_id": link.dst_id,
+                "score": float(link.score),
+                "tier": int(link.metadata.get("tier", 3)),
+                "phrase": link.metadata.get("phrase", ""),
+                "sentence": link.metadata.get("sentence", ""),
+                "slide_page": link.metadata.get("slide_page"),
+                "phrase_start_s": link.metadata.get("phrase_start_s"),
+                "cues": seen,
+            }
+        best[key]["cues"] += 1
+    return sorted(best.values(), key=lambda r: (-r["score"], r["src_id"]))
+
+
+def tier_breakdown(pairs: Sequence[dict]) -> dict[int, dict[str, float]]:
+    """Per-tier count and mean score over distinct pairs."""
+    out: dict[int, dict[str, float]] = {}
+    for row in pairs:
+        entry = out.setdefault(int(row["tier"]), {"count": 0, "total": 0.0})
+        entry["count"] += 1
+        entry["total"] += row["score"]
+    for entry in out.values():
+        entry["mean_score"] = entry["total"] / entry["count"] if entry["count"] else 0.0
+        del entry["total"]
+    return dict(sorted(out.items()))
+
+
+def write_pairs_csv(
+    pairs: Sequence[dict],
+    units_by_id: dict[str, EvidenceUnit],
+    path: str | Path,
+) -> Path:
+    """One row per (segment, figure) pair, for checking against ear labels."""
+    import csv
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["segment_id", "segment_start_s", "segment_end_s", "phrase",
+                         "phrase_start_s", "tier", "cues", "figure_id", "figure_page",
+                         "score", "sentence"])
+        for row in pairs:
+            seg = units_by_id.get(row["src_id"])
+            fig = units_by_id.get(row["dst_id"])
+            writer.writerow([
+                row["src_id"],
+                f"{seg.location.start_s:.2f}" if seg and seg.location.start_s is not None else "",
+                f"{seg.location.end_s:.2f}" if seg and seg.location.end_s is not None else "",
+                row["phrase"],
+                f"{row['phrase_start_s']:.2f}" if row.get("phrase_start_s") is not None else "",
+                row["tier"], row["cues"], row["dst_id"],
+                fig.location.page if fig and fig.location.page is not None else row.get("slide_page", ""),
+                f"{row['score']:.4f}",
+                " ".join((row.get("sentence") or "").split()),
+            ])
+    return path

@@ -2,8 +2,21 @@
 __pycache__/
 *.egg-info/
 .pytest_cache/
-data/raw/*
-data/processed/*
-tests/fixtures/
-!data/**/.gitkeep
 .env
+
+# Corpus. Source media is third-party copyrighted material and is NOT redistributed
+# here; see data/raw/README.md for what the pilot corpus is and where to get it.
+data/raw/*
+!data/raw/README.md
+!data/raw/.gitkeep
+
+# Derived artefacts are regenerable, with one exception: the frozen transcripts.
+# Whisper is not deterministic across model/settings changes, and DESIGN.md pins
+# pilot01 to a specific transcript -- so the text is tracked (it is derived text,
+# not the copyrighted audio) while indexes, links and figure crops are not.
+data/processed/*
+!data/processed/transcripts/
+!data/processed/.gitkeep
+
+# Generated at test time by tests/conftest.py
+tests/fixtures/

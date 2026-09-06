@@ -202,6 +202,23 @@ uncontrolled timings produced a confident, wrong, and paper-bound conclusion.
 Correctness numbers (accuracy, WER, recall) are not covered by this rule, but their
 provenance still has to be stated — see the ASR and alignment sections.
 
+**Two results are presumed to be bugs until proven otherwise. Neither may be
+reported until it has been inspected.**
+
+1. **An ablation condition whose metrics exactly equal the full system, or are
+   exactly zero.** Identical means the conditions are probably not separated;
+   zero usually means the weaker condition is handicapped by construction rather
+   than beaten on merit. Both have already happened here: `deictic` baseline
+   returned exactly the same 18 links as linkrag because it still added
+   `w_slide * on_slide` (it was *using* the alignment it was meant to be measured
+   against), and once that was fixed it returned exactly 0 because its score
+   ceiling sat below the shared threshold. Check the wiring, then check whether
+   the losing condition could reach the threshold at all, before believing either.
+2. **A table whose per-category counts do not sum to the stated total.** Reconcile
+   before reporting. The link table once showed 51+22+5 against a stated 97 —
+   `build_graph` was keying edges by `link_type` and silently dropping 19 of 41
+   deictic links. The discrepancy was the only visible symptom.
+
 ## Rejected approaches (do not re-propose)
 
 - **`ingest ↔ interest` query-time alias.** Rejected 2026-09-06. Lecture-specific;
@@ -315,11 +332,53 @@ Link types are `figure_text` and `deictic` (renamed from the earlier
 
 ### Measured on pilot01
 
-| link type | count | avg score |
-|---|---:|---:|
-| audio_slide | 51 | 0.6749 |
-| deictic | 41 | 0.5896 |
-| figure_text | 5 | 0.5786 |
+| link type | count | avg score | baseline |
+|---|---:|---:|---:|
+| audio_slide | 51 | 0.6749 | 51 |
+| deictic (raw cue hits) | 41 | 0.5956 | 14 |
+| **deictic (distinct segment–figure pairs)** | **22** | — | **11** |
+| figure_text | 5 | 0.5786 | 5 |
+| same_slide | 18 | 1.0000 | 0 |
+
+Total 115, and the per-type counts sum to it (measurement rule 2).
+
+Both suspicious readings were inspected per measurement rule 1: `figure_text` is
+identical in both conditions because all 5 links are same-page, so the same-page-only
+baseline keeps every one — this corpus has no cross-page figure references at all.
+`same_slide` is 0 in baseline *by construction*: baseline is the ablation that removes
+that link type, not a condition competing and losing.
+
+### Deictic cue tiers
+
+Cues are tiered, and the tier weight multiplies `weights.cue` — so tier changes
+ranking without moving any threshold:
+
+| tier | meaning | weight | pilot01 pairs | avg score |
+|---|---|---:|---:|---:|
+| 1 | explicit object deixis ("this arrow here") | 1.0 | **0** | — |
+| 2 | bare pronoun + visual word in the same sentence | 0.6 | 4 | 0.6183 |
+| 3 | bare pronoun alone | 0.3 | 18 | 0.5947 |
+
+**Tier 1 is empty.** This speaker never produces explicit object deixis, so 18 of 22
+pairs rest on a bare "this"/"that" with no visual word anywhere in the sentence. The
+tiering exists to make that visible in the output rather than averaged away — the
+earlier report of "41 deictic links" was two illusions at once: raw cue hits
+double-counting 22 real pairs, and no indication that almost all of them were the
+weakest possible trigger.
+
+Reporting therefore leads with **distinct (segment, figure) pairs at max score**, with
+the raw cue count as a secondary statistic. Every pair is listed in
+`reports/deictic_pairs_pilot01.csv` (segment start, phrase, tier, figure page, score,
+sentence) for checking against ear labels.
+
+### same_slide
+
+Each figure on a deck page links to that page's text at a fixed score of 1.0. Deck-ness
+is detected at ingest from page geometry (pilot01: 27/27 landscape) and overridable per
+file via `ingest.slide_deck_files`. This relation is *certain*, not scored — the figure
+was rendered on that page — so it does not compete inside `figure_text`, where it would
+be judged on caption and reference evidence that a slide structurally cannot produce.
+Ablatable via `link.same_slide.enabled` or `--link-mode baseline`.
 
 ### Two bugs found by the counts disagreeing — keep the guards
 

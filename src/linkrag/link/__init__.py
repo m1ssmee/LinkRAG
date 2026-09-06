@@ -33,6 +33,7 @@ from linkrag.link.figure_text import (
     referenced_numbers,
     vertical_gap,
 )
+from linkrag.link.same_slide import is_slide_deck, link_same_slide
 from linkrag.link.align import (
     Alignment,
     align,
@@ -47,6 +48,8 @@ from linkrag.link.align import (
 __all__ = [
     "Alignment",
     "Cue",
+    "is_slide_deck",
+    "link_same_slide",
     "find_cues",
     "descriptive_refs",
     "figure_kind",

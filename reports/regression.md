@@ -125,3 +125,51 @@ mode=`baseline` · index=`data/processed/index` · embedder=`BAAI/bge-m3` · uni
 | Q3 | `cross_modal_split` | text 1/8, audio 7/8 | **partial** | osdi18_slides_hsieh.pdf p.1 | — |
 | Q4 | `cross_modal_deictic` | 8/8 audio | **partial** | osdi18_slides_hsieh.pdf p.20 | — |
 
+## 2026-09-06 21:16 — phase3 rev2: deictic tiering + same_slide (retrieval still not link-aware)
+
+mode=`baseline` · index=`data/processed/index` · embedder=`BAAI/bge-m3` · units=96 · top_k=8
+
+| Q | type | modality distribution | gold evidence | gold missed | gold terms in answer |
+|---|---|---|---|---|---|
+| Q1 | `slides_only` | 8/8 audio | **no** | osdi18_slides_hsieh.pdf p.5 | 0/2 |
+| Q2 | `audio_only` | 8/8 audio | **yes** | — | 3/3 |
+| Q3 | `cross_modal_split` | text 1/8, audio 7/8 | **partial** | osdi18_slides_hsieh.pdf p.1 | 2/4 |
+| Q4 | `cross_modal_deictic` | 8/8 audio | **partial** | osdi18_slides_hsieh.pdf p.20 | 1/3 |
+
+<details><summary>Q1 answer (2 citations)</summary>
+
+The talk cites **NoScope** as the **state-of-the-art query-time** approach [hsieh:a32] [hsieh:a8].
+
+The **venue and year** are **not provided in the evidence**.
+
+</details>
+
+<details><summary>Q2 answer (2 citations)</summary>
+
+In the Q&A, the speaker says they currently produce cheap CNNs with a simple manual approach: they start with a simple CNN, specifically ResNet18, and remove layers one by one to create a set of cheaper CNNs for exploration [hsieh:a49].  
+
+He also says this is **not automatic**: they “don’t have the automatic way to generate the cheap CNNs based on the architecture of the expensive ones” [hsieh:a50].
+
+</details>
+
+<details><summary>Q3 answer (1 citations)</summary>
+
+The evidence only states that *Focus* is “a joint work with my collaborators in Carnegie Mellon University, Microsoft, University of Wisconsin, and ETH Zurich,” but it does not name the authors. [hsieh:a0]
+
+So, based on the provided evidence:
+- Institutions: Carnegie Mellon University, Microsoft, University of Wisconsin, and ETH Zurich. [hsieh:a0]
+- Authors: not specified in the provided evidence. [hsieh:a0]
+
+</details>
+
+<details><summary>Q4 answer (2 citations)</summary>
+
+The evidence says the plot contains “different set of configurations” and that they can choose among options based on goals like balancing cost and latency, favoring lower latency, or favoring lower ingest cost [hsieh:a30]. It also says the tunable configuration parameters include “which cheap CNN we use,” “what’s the top-k results that we are selecting,” and “what’s the threshold for clustering” [hsieh:a28].
+
+However, the provided evidence does **not** list the exact labels shown on the plot, and it does **not** say a single specific option the speaker personally selects from that plot. It only says they could select:
+- an option that balances the two metrics,
+- an option that pays a bit more ingest cost for lower query latency,
+- or an option that optimizes ingest cost with higher latency [hsieh:a30].
+
+</details>
+

@@ -132,6 +132,8 @@ def ingest_pdf(
     min_figure_area_px: int = 10_000,
     ocr_figures: bool = False,
     vlm_cfg: dict | None = None,
+    slide_deck: bool | None = None,
+    landscape_ratio: float = 0.6,
 ) -> list[EvidenceUnit]:
     """ocr_figures: when a figure has no caption, read the text inside the image.
 
@@ -149,6 +151,11 @@ def ingest_pdf(
     with stage_timer("ingest.pdf", file=path.name) as t:
         doc = pymupdf.open(path)
         page_count = doc.page_count
+        # A deck is landscape; a paper is portrait. Explicit config wins over the
+        # heuristic so an unusual document can always be declared by hand.
+        landscape = sum(1 for pg in doc if pg.rect.width > pg.rect.height)
+        is_deck = (slide_deck if slide_deck is not None
+                   else page_count > 0 and landscape / page_count >= landscape_ratio)
         try:
             for page_no, page in enumerate(doc, start=1):
                 blocks = _page_blocks(page)
@@ -211,6 +218,9 @@ def ingest_pdf(
 
         t["pages"] = page_count
         t["text"] = sum(u.modality == "text" for u in units)
+        for unit in units:
+            unit.metadata["slide_deck"] = is_deck
+        t["deck"] = is_deck
         t["figures"] = sum(u.modality == "figure" for u in units)
         t["ocr"] = ocr_used
         t["vlm"] = vlm_used

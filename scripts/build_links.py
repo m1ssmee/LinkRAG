@@ -19,7 +19,15 @@ import numpy as np
 from linkrag.core import load_config, setup_logging, stage_timer
 from linkrag.index import Index, default_encoder
 from linkrag.link.align import align, build_links, save_links
-from linkrag.link.deictic import expand_cues, resolve_deictic, slide_map_from_links
+from linkrag.link.deictic import (
+    deictic_pairs,
+    expand_cues,
+    resolve_deictic,
+    slide_map_from_links,
+    tier_breakdown,
+    write_pairs_csv,
+)
+from linkrag.link.same_slide import link_same_slide
 from linkrag.link.figure_text import link_figures_to_text
 from linkrag.link.graph import build_graph, export_graphml, summarise
 
@@ -49,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--slide-source", default=None, help="basename, e.g. slides.pdf")
     ap.add_argument("--links", default=None)
     ap.add_argument("--npz", default=None)
+    ap.add_argument("--pairs-csv", default=None)
     ap.add_argument("--link-mode", choices=["baseline", "linkrag"], default="linkrag",
                     help="baseline: same-page figures, no alignment for deixis")
     args = ap.parse_args(argv)
@@ -86,8 +95,12 @@ def main(argv: list[str] | None = None) -> int:
         layout_max_gap_pt=fcfg["layout_max_gap_pt"],
         reference_page_window=fcfg["reference_page_window"],
     )
+    scfg = lcfg["same_slide"]
+    links += link_same_slide(figures, slides, mode=args.link_mode,
+                             enabled=scfg["enabled"], score=scfg["score"])
+
     dcfg = lcfg["deictic"]
-    links += resolve_deictic(
+    deictic_links = resolve_deictic(
         audio, figures, encoder=encoder,
         slide_of_audio=slide_map_from_links(audio_slide, slides),
         mode=args.link_mode,
@@ -96,7 +109,10 @@ def main(argv: list[str] | None = None) -> int:
         threshold=lcfg["deictic_threshold"],
         max_links_per_unit=lcfg["max_links_per_unit"],
         weights=dcfg["weights"],
+        tier_weights=dcfg["tier_weights"],
+        visual_terms=dcfg["visual_terms"],
     )
+    links += deictic_links
 
     links_path = Path(args.links or acfg["links_path"])
     if method != acfg["method"] and args.links is None:
@@ -120,6 +136,20 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  {'link_type':18} {'count':>6} {'avg score':>10}")
     for name in sorted(stats):
         print(f"  {name:18} {int(stats[name]['count']):>6} {stats[name]['mean_score']:>10.4f}")
+    pairs = deictic_pairs(deictic_links)
+    if deictic_links:
+        tiers = tier_breakdown(pairs)
+        print(f"  deictic: {len(pairs)} distinct (segment, figure) pairs "
+              f"from {len(deictic_links)} raw cue hits")
+        print(f"    {'tier':<6} {'pairs':>6} {'avg score':>10}")
+        for tier in sorted(tiers):
+            label = {1: "1 explicit", 2: "2 pron+vis", 3: "3 pronoun"}.get(tier, str(tier))
+            print(f"    {label:<12} {int(tiers[tier]['count']):>4} "
+                  f"{tiers[tier]['mean_score']:>10.4f}")
+        csv_path = write_pairs_csv(pairs, {u.id: u for u in index.units},
+                                   args.pairs_csv or "reports/deictic_pairs_pilot01.csv")
+        print(f"    wrote {csv_path}")
+
     if graph.graph.get("dropped_links"):
         print(f"  WARNING {graph.graph['dropped_links']} link(s) referenced unknown units")
     print(f"  slides covered   : {result.slides_used()}/{len(slides)}")

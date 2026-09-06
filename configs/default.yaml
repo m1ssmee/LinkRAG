@@ -37,6 +37,10 @@ ingest:
   # Slide decks caption nothing: 13/18 pilot01 figures had empty content because
   # find_caption looks below the image (a paper convention). OCR the image itself.
   ocr_figures: true
+  # A deck is landscape, a paper is portrait. Per-file entries override the
+  # heuristic: {my_odd_file.pdf: true}
+  slide_deck_landscape_ratio: 0.6
+  slide_deck_files: {}
   # Optional VLM figure descriptions via a local Ollama vision model. OFF by
   # default: a 7B VLM on CPU is tens of seconds per image. Results are cached by
   # image content hash, so enabling it costs the full pass exactly once.
@@ -87,6 +91,11 @@ link:
     layout_max_gap_pt: 220.0   # beyond this vertical gap, layout contributes nothing
     reference_page_window: 1   # "Figure 3" matches only this page or an adjacent one
 
+  # --- figure <-> its own slide's text (Phase 3) ---
+  same_slide:
+    enabled: true              # ablatable: false emits none
+    score: 1.0                 # co-location on a deck page is certain, not scored
+
   # --- deictic speech <-> visual element (Phase 3) ---
   deictic:
     weights:              # D = w_s*on_slide + w_c*cue + w_d*cos + w_o*keyword_overlap
@@ -102,6 +111,14 @@ link:
                    block, region, curve, axis]
     directions: [above, below, "on the left", "on the right", here, there]
     determiners: [the, this, that]
+    # Cue tiers: 1 = explicit object deixis ("this arrow here"), 2 = bare pronoun
+    # with a visual word in the same sentence, 3 = bare pronoun alone. The weight
+    # multiplies `weights.cue`, so tier changes ranking without moving thresholds.
+    tier_weights: {1: 1.0, 2: 0.6, 3: 0.3}
+    visual_terms: [see, seen, show, shows, showing, shown, look, looking, plot,
+                   plotted, screen, slide, figure, graph, diagram, arrow, chart,
+                   picture, image, axis, curve, table, box, column, row, highlight,
+                   highlighted, display, displayed, draw, drawn, point, pointing]
 
   # Thresholds are per link_type; tune on the dev set, don't hardcode one global.
   audio_slide_threshold: 0.55
