@@ -8,6 +8,7 @@ linkrag:  same extraction; the linker later consumes the bboxes and captions
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -20,6 +21,13 @@ from linkrag.core import EvidenceUnit, Location, stage_timer
 WORDS_PER_TOKEN = 0.75
 
 CAPTION_MAX_GAP_PT = 120.0  # a text block further below an image isn't its caption
+
+# "Figure 3:" / "Table 2." at the start of a block -- a real caption, not a mention.
+CAPTION_START = re.compile(r"^\s*(figure|table)\s+(\d{1,2})\s*[:.]", re.I)
+MIN_CAPTION_FIGURE_PT = 40.0    # a region shorter than this is not a figure
+MAX_CAPTION_FIGURE_PT = 420.0   # nor is half a page of prose above a caption
+COLUMN_OVERLAP = 0.3            # fraction of caption width a block must share to count
+BODY_TEXT_WORDS = 12            # a block this long is prose, not a figure's own label
 
 
 @dataclass
@@ -111,6 +119,47 @@ def find_caption(image_bbox: tuple[float, float, float, float], blocks: list[_Bl
     return best[1] if best else ""
 
 
+def caption_regions(
+    page: pymupdf.Page, blocks: list[_Block]
+) -> list[tuple[tuple[float, float, float, float], str]]:
+    """Figure regions inferred from their captions, for documents whose figures are
+    vector drawings.
+
+    `page.get_images()` only sees *raster* images. A LaTeX paper draws its plots with
+    vector operators, so the extractor finds nothing: the Focus paper has 13 captioned
+    figures and yielded 2 units, both logo fragments. The caption, however, is real
+    text at a known position -- so take the region directly above it, bounded by the
+    next block up in the same column, and render that.
+
+    Returns (bbox, caption_text) pairs. Column membership is by horizontal overlap
+    with the caption, which is what keeps a two-column paper's left figure from
+    swallowing the right column.
+    """
+    regions = []
+    for block in blocks:
+        if not CAPTION_START.match(block.text):
+            continue
+        x0, y0, x1, y1 = block.bbox
+        width = max(x1 - x0, 1.0)
+        # Stop at the nearest *prose* block, not the nearest block: a vector plot's
+        # axis labels and legend are themselves text blocks sitting a few points
+        # above the caption, and bounding on those collapsed 9 of 14 regions in the
+        # Focus paper to 6-16pt of nothing.
+        above = [
+            other.bbox[3] for other in blocks
+            if other is not block and other.bbox[3] <= y0
+            and (min(other.bbox[2], x1) - max(other.bbox[0], x0)) > COLUMN_OVERLAP * width
+            and len(other.text.split()) >= BODY_TEXT_WORDS
+        ]
+        top = max(above) if above else max(y0 - MAX_CAPTION_FIGURE_PT, 0.0)
+        top = max(top, y0 - MAX_CAPTION_FIGURE_PT)
+        height = y0 - top
+        if height < MIN_CAPTION_FIGURE_PT:
+            continue
+        regions.append(((x0, top, x1, y0), block.text))
+    return regions
+
+
 def _save_image(doc: pymupdf.Document, xref: int, out: Path) -> bool:
     pix = pymupdf.Pixmap(doc, xref)
     try:
@@ -134,6 +183,7 @@ def ingest_pdf(
     vlm_cfg: dict | None = None,
     slide_deck: bool | None = None,
     landscape_ratio: float = 0.6,
+    figures_from_captions: bool | None = None,
 ) -> list[EvidenceUnit]:
     """ocr_figures: when a figure has no caption, read the text inside the image.
 
@@ -148,6 +198,7 @@ def ingest_pdf(
 
     ocr_used = 0
     vlm_used = 0
+    caption_figures = 0
     with stage_timer("ingest.pdf", file=path.name) as t:
         doc = pymupdf.open(path)
         page_count = doc.page_count
@@ -156,6 +207,9 @@ def ingest_pdf(
         landscape = sum(1 for pg in doc if pg.rect.width > pg.rect.height)
         is_deck = (slide_deck if slide_deck is not None
                    else page_count > 0 and landscape / page_count >= landscape_ratio)
+        # Decks caption nothing and draw nothing vectorially; papers do both.
+        if figures_from_captions is None:
+            figures_from_captions = not is_deck
         try:
             for page_no, page in enumerate(doc, start=1):
                 blocks = _page_blocks(page)
@@ -172,6 +226,29 @@ def ingest_pdf(
                             location=Location(page=page_no, bbox=bbox),
                         )
                     )
+
+                # Caption-anchored figures: the only way to reach vector plots.
+                if figures_from_captions:
+                    for c, (bbox, caption) in enumerate(caption_regions(page, blocks)):
+                        out = figures_dir / f"{path.stem}_p{page_no}_c{c}.png"
+                        out.parent.mkdir(parents=True, exist_ok=True)
+                        try:
+                            pix = page.get_pixmap(clip=pymupdf.Rect(*bbox), dpi=120)
+                            pix.save(out)
+                        except Exception:  # a region we cannot render is not fatal
+                            continue
+                        caption_figures += 1
+                        units.append(
+                            EvidenceUnit(
+                                id=f"{path.stem}:p{page_no}:c{c}",
+                                modality="figure",
+                                content=" ".join(caption.split()),
+                                source_file=str(path),
+                                location=Location(page=page_no, bbox=bbox),
+                                metadata={"image_path": str(out),
+                                          "content_source": "caption_region"},
+                            )
+                        )
 
                 for i, (xref, *_rest) in enumerate(page.get_images(full=True)):
                     rects = page.get_image_rects(xref)
@@ -224,4 +301,5 @@ def ingest_pdf(
         t["figures"] = sum(u.modality == "figure" for u in units)
         t["ocr"] = ocr_used
         t["vlm"] = vlm_used
+        t["cap_figs"] = caption_figures
     return units

@@ -41,6 +41,10 @@ ingest:
   # heuristic: {my_odd_file.pdf: true}
   slide_deck_landscape_ratio: 0.6
   slide_deck_files: {}
+  # Papers draw figures as vector graphics, which page.get_images() cannot see --
+  # the Focus paper has 13 captioned figures and yielded 2 raster fragments. When
+  # null, this is enabled for non-decks and disabled for decks.
+  figures_from_captions: null
   # Optional VLM figure descriptions via a local Ollama vision model. OFF by
   # default: a 7B VLM on CPU is tens of seconds per image. Results are cached by
   # image content hash, so enabling it costs the full pass exactly once.

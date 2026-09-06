@@ -413,6 +413,73 @@ cross-page `As Figure 1 shows` reference and `test_figure_text_links_the_cross_p
 reference` proves the mechanism reaches across pages and that baseline does not.
 Evaluating it on real data still needs a paper-style PDF.
 
+## Phase 3b — the OSDI paper added (3-document corpus)
+
+`data/raw/pilot01/osdi18-hsieh.pdf`, 19 pages, 612x792 **portrait → deck=False**.
+
+| source | text | figure | audio |
+|---|---:|---:|---:|
+| `osdi18_slides_hsieh.pdf` (deck) | 27 | 18 | — |
+| `osdi18-hsieh.pdf` (paper) | 84 | 16 | — |
+| `hsieh.mp3` (frozen transcript) | — | — | 51 |
+| **total 196** | 111 | 34 | 51 |
+
+### Figure extraction had to be fixed first
+
+The paper has **13 captioned figures**; the extractor produced **2**, both logo
+fragments. `page.get_images()` sees only *raster* images and a LaTeX paper draws its
+plots with vector operators — 239 draw-ops on p4, invisible to the extractor. Of 30
+raster images, 28 were sub-fragments below `min_figure_area_px`.
+
+Fixed by anchoring figures to their captions (`ingest.figures_from_captions`, on for
+non-decks): find blocks matching `^(Figure|Table) N[:.]`, take the region above,
+render it. The first attempt bounded that region at the nearest block above and
+collapsed 9 of 14 regions to 6–16pt — because a vector plot's own axis labels are text
+blocks sitting just above its caption. Bounding at the nearest *prose* block
+(`BODY_TEXT_WORDS`) fixed it: 14 regions, 72–238pt. **This is an extraction change,
+not threshold tuning.**
+
+### figure_text links in the paper, by signal
+
+| signal | links | avg score |
+|---|---:|---:|
+| explicit (numbered `Figure N` / `Table N`) | 31 | 0.8355 |
+| explicit (descriptive, "the diagram below") | 0 | — |
+| proximity (bbox layout) | 21 | 0.5394 |
+| semantic only | 0 | — |
+| **total (paper)** | **52** | |
+
+Counts sum to the total (measurement rule 2). Corpus-wide `figure_text` went 5 → 66;
+10 of those are cross-document (9 deck-figure → paper-text, 1 paper-figure →
+deck-text). The paper is the corpus this mechanism was designed for: explicit numbered
+references dominate and score 0.84, which the deck could never produce.
+
+### Cross-document figure↔figure: nothing real
+
+**A first pass looked like a strong result and was an artifact.** Top pairs sat at
+0.92 — all of them *empty-content* figures, because `embeddable_text` falls back to a
+provenance descriptor for captionless figures, so they all embed near-identically and
+match each other.
+
+Restricted to content-bearing figures (15/16 paper, 10/18 deck): max cosine **0.546**,
+9 pairs ≥ 0.5, **none ≥ 0.6**, and the top pairs match a real paper caption against
+deck OCR crumbs ("trucks Object clusters"). **There are no meaningful cross-document
+figure↔figure semantic links in this corpus** — the paper has captions, the deck has
+fragments, and there is nothing to match on. No links were emitted.
+
+### same_slide correctly skipped the paper
+
+18 links, all from deck figures; **0 from paper figures**, via portrait geometry.
+
+### Regression moved — and the gold set is now incomplete
+
+Adding the paper **broke the modality collapse**: Q1 went from 8/8 audio to 6/8 text,
+Q4 from 8/8 audio to 5/8 text. Q3 now scores **4/4 gold terms** while its gold
+*locators* are both missed — the paper supplies the authors and affiliations that
+previously only the title slide and opening audio carried. The Q1–Q4 gold locators
+were written for a 2-document corpus and now under-credit a legitimate third source.
+They need extending before the next phase's numbers mean anything.
+
 ## Known issues, not fixed
 
 - **(a) Discourse boundaries.** Units are cut by sentence and duration only, with no

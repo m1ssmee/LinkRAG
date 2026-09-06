@@ -80,6 +80,7 @@ def ingest_file(
             vlm_cfg=ing.get("vlm_captions"),
             slide_deck=(ing.get("slide_deck_files") or {}).get(path.name),
             landscape_ratio=ing.get("slide_deck_landscape_ratio", 0.6),
+            figures_from_captions=ing.get("figures_from_captions"),
             **chunk,
         )
     if kind == "docx":

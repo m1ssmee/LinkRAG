@@ -33,19 +33,28 @@ from linkrag.link.graph import build_graph, export_graphml, summarise
 
 
 def split_units(index: Index, audio_source: str | None, slide_source: str | None):
+    """audio, deck-slide text, all paged text, all figures.
+
+    `slides` is the alignment target and must be *deck* pages only: a lecturer walks
+    through a deck, not through a paper. With the OSDI paper in the corpus, taking
+    every paged text unit would have aligned 51 audio segments against 111 candidates
+    spanning two unrelated documents. `texts` stays corpus-wide, because figure_text
+    is supposed to reach across documents.
+    """
     audio = [u for u in index.units if u.modality == "audio"]
-    slides = [u for u in index.units if u.modality == "text" and u.location.page is not None]
+    paged = [u for u in index.units if u.modality == "text" and u.location.page is not None]
+    decks = [u for u in paged if u.metadata.get("slide_deck")]
+    slides = decks or paged  # fall back when nothing is flagged as a deck
     figures = [u for u in index.units if u.modality == "figure"]
     if audio_source:
         audio = [u for u in audio if Path(u.source_file).name == audio_source]
     if slide_source:
         slides = [u for u in slides if Path(u.source_file).name == slide_source]
-    if slide_source:
-        figures = [u for u in figures if Path(u.source_file).name == slide_source]
     audio.sort(key=lambda u: (u.location.start_s or 0.0))
     slides.sort(key=lambda u: (u.location.page or 0))
-    figures.sort(key=lambda u: (u.location.page or 0, u.id))
-    return audio, slides, figures
+    paged.sort(key=lambda u: (Path(u.source_file).name, u.location.page or 0))
+    figures.sort(key=lambda u: (Path(u.source_file).name, u.location.page or 0, u.id))
+    return audio, slides, paged, figures
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -68,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     method = args.method or acfg["method"]
 
     index = Index.load(args.index or cfg["index"]["store_dir"])
-    audio, slides, figures = split_units(index, args.audio_source, args.slide_source)
+    audio, slides, texts, figures = split_units(index, args.audio_source, args.slide_source)
     if not audio or not slides:
         raise SystemExit(f"need both modalities: {len(audio)} audio, {len(slides)} slide units")
 
@@ -88,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     lcfg = cfg["link"]
     fcfg = lcfg["figure_text"]
     links += link_figures_to_text(
-        figures, slides, encoder=encoder, mode=args.link_mode,
+        figures, texts, encoder=encoder, mode=args.link_mode,
         threshold=lcfg["figure_text_threshold"],
         max_links_per_unit=lcfg["max_links_per_unit"],
         weights=fcfg["weights"], page_decay=fcfg["page_decay"],
@@ -96,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
         reference_page_window=fcfg["reference_page_window"],
     )
     scfg = lcfg["same_slide"]
-    links += link_same_slide(figures, slides, mode=args.link_mode,
+    links += link_same_slide(figures, texts, mode=args.link_mode,
                              enabled=scfg["enabled"], score=scfg["score"])
 
     dcfg = lcfg["deictic"]
@@ -132,7 +141,8 @@ def main(argv: list[str] | None = None) -> int:
 
     stats = summarise(graph)
     print(f"align={method} link_mode={args.link_mode}  audio={len(audio)} "
-          f"slides={len(slides)} figures={len(figures)}  links={len(links)}")
+          f"deck_slides={len(slides)} all_text={len(texts)} figures={len(figures)}  "
+          f"links={len(links)}")
     print(f"  {'link_type':18} {'count':>6} {'avg score':>10}")
     for name in sorted(stats):
         print(f"  {name:18} {int(stats[name]['count']):>6} {stats[name]['mean_score']:>10.4f}")

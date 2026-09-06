@@ -71,22 +71,49 @@ def test_ingest_pdf_produces_text_and_figure_units(pdf_path: Path, tmp_path: Pat
     text_units = [u for u in units if u.modality == "text"]
     figures = [u for u in units if u.modality == "figure"]
     assert len(text_units) > 1
-    assert len(figures) == 1
+    # Two mechanisms fire on this portrait fixture: the embedded raster image, and
+    # the "Figure 1:" caption anchoring a region above itself (which is how vector
+    # figures in papers are reached at all).
+    sources = {f.metadata["content_source"] for f in figures}
+    assert sources == {"caption", "caption_region"}, sources
+    assert len(figures) == 2
 
     for unit in text_units:
         assert unit.location.page in (1, 2)
         assert unit.location.bbox is not None
         assert unit.id.startswith("notes:p")
 
-    figure = figures[0]
+    figure = next(f for f in figures if f.metadata["content_source"] == "caption")
     assert figure.location.page == 2
     assert "attention heatmap" in figure.content.lower(), "naive caption lookup should find it"
     assert Path(figure.metadata["image_path"]).exists()
 
 
-def test_ingest_pdf_skips_tiny_images(pdf_path: Path, tmp_path: Path) -> None:
+def test_min_figure_area_filters_rasters_only(pdf_path: Path, tmp_path: Path) -> None:
+    """min_figure_area_px is a filter on embedded raster images. Caption-anchored
+    regions are found from text position and are deliberately not area-filtered --
+    a vector plot has no raster area to measure."""
     units = ingest_pdf(pdf_path, figures_dir=tmp_path / "f", min_figure_area_px=10**9)
-    assert not [u for u in units if u.modality == "figure"]
+    figures = [u for u in units if u.modality == "figure"]
+    assert all(f.metadata["content_source"] == "caption_region" for f in figures)
+    assert figures, "caption anchoring must survive an impossible raster threshold"
+
+
+def test_caption_anchoring_is_off_for_slide_decks(pdf_path: Path, tmp_path: Path) -> None:
+    """Decks caption nothing and draw nothing vectorially; running it there would
+    only invent regions above stray text."""
+    units = ingest_pdf(pdf_path, figures_dir=tmp_path / "f", figures_from_captions=False)
+    figures = [u for u in units if u.modality == "figure"]
+    assert all(f.metadata["content_source"] != "caption_region" for f in figures)
+
+
+def test_caption_regions_are_bounded_by_prose_not_by_figure_labels() -> None:
+    """A vector plot's own axis labels sit a few points above its caption. Bounding
+    on the nearest block collapsed 9 of 14 Focus-paper regions to 6-16pt."""
+    from linkrag.ingest.pdf import BODY_TEXT_WORDS, MIN_CAPTION_FIGURE_PT
+
+    assert BODY_TEXT_WORDS >= 8
+    assert MIN_CAPTION_FIGURE_PT > 0
 
 
 def test_ingest_docx_chunks_text(docx_path: Path) -> None:
