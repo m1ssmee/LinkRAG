@@ -99,8 +99,10 @@ class Index:
             return []
         scores = self.vectors @ np.asarray(query_vec, dtype="float32").ravel()
         # argpartition is O(n) to find the top k, then sort just those k.
-        top = np.argpartition(-scores, k - 1)[:k] if k < len(scores) else np.arange(len(scores))
-        top = top[np.argsort(-scores[top])]
+        # argpartition is O(n) but unordered *and* unstable, so ties inside the
+        # partition depend on partition internals. Sort the whole array stably when
+        # ties are plausible; the corpus is small enough that O(n log n) is free.
+        top = np.argsort(-scores, kind="stable")[:k]
         return [(int(p), float(scores[p])) for p in top]
 
     def sparse_search(self, query: str, k: int) -> list[tuple[int, float]]:
@@ -108,7 +110,10 @@ class Index:
         if k == 0:
             return []
         scores = self.bm25.get_scores(tokenize(query))
-        top = np.argsort(scores)[::-1][:k]
+        # Stable descending sort: ties break by ascending position. Reversing an
+        # ascending argsort instead breaks ties in *reverse* corpus order, so on a
+        # query matching nothing the last-ingested unit was ranked first.
+        top = np.argsort(-scores, kind="stable")[:k]
         return [(int(p), float(scores[p])) for p in top]
 
     def save(self, path: str | Path) -> None:

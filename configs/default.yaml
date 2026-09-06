@@ -80,6 +80,8 @@ link:
     skip_penalty: 0.02         # sigma: charged per slide never assigned (incl. head/tail)
     back_penalty: 0.15         # beta: charged per slide when going backwards
     max_back: 2                # B: 0 == strictly monotonic
+    start_prior_mu: 0.02       # mu: extra pull of segment 1 toward slide 1;
+                               # 0.0 reproduces every pre-existing measurement
     min_score: 0.0             # drop links scoring below this
     links_path: data/processed/links.jsonl
 
@@ -125,10 +127,8 @@ link:
                    highlighted, display, displayed, draw, drawn, point, pointing]
 
   # Thresholds are per link_type; tune on the dev set, don't hardcode one global.
-  audio_slide_threshold: 0.55
   figure_text_threshold: 0.50
   deictic_threshold: 0.45
-  same_topic_threshold: 0.70
   deictic_cues: ["here", "this", "that", "that one", "this one", "shown",
                  "on the left", "on the right", "this slide", "as you can see",
                  "as you see", "look at this", "over here", "right here"]
@@ -138,12 +138,20 @@ retrieve:
   top_k: 8                       # units handed to the LLM
   candidates: 50                 # pulled from each ranker before fusion
   rrf_k: 60                      # reciprocal rank fusion constant (Cormack 2009)
-  link_hops: 1                   # 0 == baseline behaviour
-  max_evidence_units: 12         # size of the final set handed to the LLM
-  rerank:
-    method: complementarity      # complementarity | score  ("score" == baseline)
-    redundancy_penalty: 0.4      # lambda on max-similarity to already-picked units
-    modality_bonus: 0.15         # reward for adding an unrepresented modality
+
+  # --- link-following retrieval (Phase 4, novel component 2) ---
+  linkrag:
+    k_seed: 5                    # seeds from the hybrid retriever
+    k_final: 8                   # units handed to the generator
+    hops: 1
+    link_types: [audio_slide, figure_text, deictic]
+    min_link_score: 0.0
+    decay: 0.5                   # expanded score = seed_score * link_score * decay
+
+  # --- iterative re-querying, our P1 (MI-RAG) approximation ---
+  iterative:
+    rounds: 2                    # total retrievals, including the first
+    k_per_round: 8
 
 eval:
   metrics: [answer_accuracy, evidence_precision, evidence_recall, cross_modal_coverage, citation_faithfulness]

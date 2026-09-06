@@ -1,0 +1,29 @@
+slide,start,end,note
+1,0:00,0:30,
+2,0:30,0:45,
+3,0:45,1:37,
+4,1:37,3:10,
+5,3:10,3:42,
+6,3:42,4:10,
+7,4:10,5:10,
+8,5:10,5:40,end inferred from next slide start
+9,5:40,5:40,zero-length: skipped or shown only briefly
+10,5:40,6:30,end inferred from next slide start
+11,6:30,6:30,zero-length: skipped or shown only briefly
+12,6:30,7:27,
+13,7:27,9:18,
+14,9:18,10:20,
+15,10:20,10:30,
+16,10:30,11:24,
+17,11:24,12:20,end inferred from next slide start
+18,12:20,12:20,zero-length: skipped or shown only briefly
+19,12:20,12:25,
+20,12:25,13:36,
+21,13:36,14:22,
+22,14:22,15:33,
+23,15:33,16:10,
+24,16:10,18:20,
+25,18:20,18:24,
+26,18:24,19:05,
+27,,,never shown
+outro,19:05,22:51,Q&A; no slide change; slide 26 presumably remains on screen

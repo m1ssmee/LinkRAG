@@ -183,6 +183,15 @@ def resolve_deictic(
 ) -> list[Link]:
     """deictic Links from audio segments to the figures they point at.
 
+    **`threshold` does not filter in linkrag mode.** Line ~250 discards every
+    off-slide figure, so `on_slide == 1.0` for every candidate that gets scored, and
+    `mass` includes `w_slide`. Every candidate therefore starts at
+    `w_slide / mass = 0.45`, which is the default threshold -- measured floor across
+    98 pilot links was 0.5622, none below 0.50. Treat the emitted set as
+    **unfiltered**: it is "every cue on a slide that has a figure", capped by
+    `max_links_per_unit`. Not retuned deliberately; changing it changes every
+    recorded deictic number.
+
     baseline: no alignment; every figure is a candidate, ranked by similarity.
     linkrag:  candidates restricted to the aligned slide (requires slide_of_audio).
     """
@@ -258,7 +267,9 @@ def resolve_deictic(
                          + w_dense * float(dense[row, j])
                          + w_overlap * overlap) / mass
                 scored.append((score, j, overlap))
-            scored.sort(reverse=True)
+            # (-score, j): ties break by ascending figure index. Plain
+            # reverse-sort on the tuple broke them by *descending* index.
+            scored.sort(key=lambda t: (-t[0], t[1]))
             for score, j, overlap in scored:
                 if score < threshold:
                     break

@@ -13,7 +13,11 @@ from linkrag.core import load_config, setup_logging, stage_timer
 from linkrag.eval import format_modality_distribution
 from linkrag.generate.answer import answer, cited_ids
 from linkrag.index import Index, default_encoder
+from linkrag.link.align import load_links
+from linkrag.manifest import MANIFEST_NAME, load_manifest
+from linkrag.link.graph import build_graph
 from linkrag.retrieve.baseline import retrieve_scored
+from linkrag.retrieve.linkrag import retrieve_linkrag
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,6 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", choices=["baseline", "linkrag"], default="baseline")
     parser.add_argument("--index", default=None)
     parser.add_argument("--top-k", type=int, default=None)
+    parser.add_argument("--links", default=None, help="links.jsonl for --mode linkrag")
     parser.add_argument("--show-evidence", action="store_true")
     args = parser.parse_args(argv)
 
@@ -31,9 +36,6 @@ def main(argv: list[str] | None = None) -> int:
     index_dir = args.index or cfg["index"]["store_dir"]
     if not Path(index_dir).exists():
         parser.error(f"no index at {index_dir} -- run scripts/ingest.py first")
-
-    if args.mode == "linkrag":
-        parser.error("linkrag mode is not implemented yet; only --mode baseline works")
 
     with stage_timer("index.load", dir=index_dir) as t:
         index = Index.load(index_dir)
@@ -45,23 +47,46 @@ def main(argv: list[str] | None = None) -> int:
     with stage_timer("encoder.warmup", model=index.embedding_model):
         encoder([""])
 
-    retrieved = retrieve_scored(
-        args.question,
-        index,
-        encoder=encoder,
-        top_k=args.top_k or cfg["retrieve"]["top_k"],
-        candidates=cfg["retrieve"]["candidates"],
-        rrf_k=cfg["retrieve"]["rrf_k"],
-    )
-    units = [u for u, _ in retrieved]
+    manifest_hash = (load_manifest(Path(index_dir).parent / MANIFEST_NAME) or {}).get("hash")
+    lcfg = cfg["retrieve"]["linkrag"]
+    if args.mode == "linkrag":
+        links_path = args.links or cfg["link"]["align"]["links_path"]
+        if not Path(links_path).exists():
+            parser.error(f"no links at {links_path} -- run scripts/build_links.py first")
+        graph = build_graph(list(index.units),
+                            load_links(links_path, expect_manifest=manifest_hash))
+        results = retrieve_linkrag(
+            args.question, index, graph, encoder=encoder, mode="linkrag",
+            k_seed=lcfg["k_seed"], k_final=args.top_k or lcfg["k_final"],
+            hops=lcfg["hops"], link_types=lcfg["link_types"],
+            min_link_score=lcfg["min_link_score"], decay=lcfg["decay"],
+            candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"],
+        )
+    else:
+        results = [
+            type("R", (), {"unit": u, "score": s, "origin": "seed",
+                           "explain": (lambda self: "seed")})()
+            for u, s in retrieve_scored(
+                args.question, index, encoder=encoder,
+                top_k=args.top_k or cfg["retrieve"]["top_k"],
+                candidates=cfg["retrieve"]["candidates"],
+                rrf_k=cfg["retrieve"]["rrf_k"])
+        ]
+    retrieved = [(r.unit, r.score) for r in results]
+    units = [r.unit for r in results]
 
     # Instrument #1 (DESIGN.md): always report what the retrieved set is made of.
     print(f"retrieved {len(units)} units — modality: {format_modality_distribution(units)}")
 
+    if args.mode == "linkrag":
+        n_expanded = sum(1 for r in results if r.origin == "expanded")
+        print(f"  {len(results) - n_expanded} seed + {n_expanded} expanded via links")
+
     if args.show_evidence:
         print("--- evidence ---")
-        for unit, score in retrieved:
-            print(f"  {score:.4f}  [{unit.id}, {unit.modality}] {unit.content[:90]}")
+        for r in results:
+            print(f"  {r.score:.4f}  [{r.unit.id}, {r.unit.modality}]  <{r.explain()}>")
+            print(f"           {' '.join(r.unit.content.split())[:88]}")
         print()
 
     text = answer(args.question, units, cfg, mode=args.mode)

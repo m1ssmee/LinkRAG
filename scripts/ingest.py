@@ -12,6 +12,7 @@ import sys
 from linkrag.core import load_config, setup_logging, stage_timer
 from linkrag.index import build_index, default_encoder
 from linkrag.ingest import ingest_files
+from linkrag.manifest import MANIFEST_NAME, build_manifest, write_manifest
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -36,11 +37,17 @@ def main(argv: list[str] | None = None) -> int:
         print("no units extracted; nothing to index", file=sys.stderr)
         return 1
 
+    encoder = default_encoder(
+        cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"]
+    )
+    # Warm outside the build timer, or index.build reports the model load as
+    # embedding time -- every other script already does this.
+    with stage_timer("encoder.warmup", model=cfg["models"]["embedding"]):
+        encoder([""])
+
     index = build_index(
         units,
-        encoder=default_encoder(
-            cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"]
-        ),
+        encoder=encoder,
         embedding_model=cfg["models"]["embedding"],
         device=cfg["device"],
         normalize=cfg["index"]["normalize_embeddings"],
@@ -48,10 +55,14 @@ def main(argv: list[str] | None = None) -> int:
     with stage_timer("index.save", dir=out):
         index.save(out)
 
+    manifest = build_manifest(args.files, units)
+    manifest_path = write_manifest(manifest, Path(out).parent / MANIFEST_NAME)
+
     by_modality: dict[str, int] = {}
     for unit in units:
         by_modality[unit.modality] = by_modality.get(unit.modality, 0) + 1
     print(f"indexed {len(units)} units -> {out}  {by_modality}")
+    print(f"corpus manifest {manifest['hash']} -> {manifest_path}")
     failed = getattr(ingest_files, "last_failures", [])
     if failed:
         print(f"WARNING: {len(failed)} file(s) failed to ingest:", file=sys.stderr)

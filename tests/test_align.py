@@ -244,3 +244,22 @@ def test_alignment_reports_its_own_diagnostics() -> None:
     assert a.n == 10 and a.m == 8
     assert a.slides_used() == 8
     assert a.back_jumps() == 1
+
+
+# ------------------------------------------------- ear-label conversion rules
+
+def test_start_prior_pulls_the_first_segment_toward_the_front() -> None:
+    """mu fixes the head-of-sequence error: on pilot01 the opening segment (the
+    title slide, certain) was assigned p3 at mu=0."""
+    rng = np.random.default_rng(4)
+    S = rng.random((12, 10))
+    S[0, 6] = 0.95   # a late slide looks best locally for segment 1
+    S[0, 0] = 0.90
+    assert align_monotonic(S, start_prior_mu=0.0)[0] == 6
+    assert align_monotonic(S, start_prior_mu=0.5)[0] == 0
+
+
+def test_start_prior_defaults_to_zero_reproducing_earlier_numbers() -> None:
+    rng = np.random.default_rng(9)
+    S = rng.random((15, 8))
+    assert align_monotonic(S) == align_monotonic(S, start_prior_mu=0.0)

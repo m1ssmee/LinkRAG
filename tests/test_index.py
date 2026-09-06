@@ -152,3 +152,34 @@ def test_vectors_persist_as_npy(index: Index, tmp_path: Path) -> None:
     assert (tmp_path / "idx" / "vectors.npy").exists()
     loaded = Index.load(tmp_path / "idx")
     assert np.allclose(loaded.vectors, index.vectors)
+
+
+def test_sparse_ties_break_by_position_not_reverse_position(stub_encoder) -> None:
+    """BM25 returns 0.0 for every unit a query does not match. Reversing an
+    ascending argsort ranked the *last*-ingested unit first among those ties, so a
+    query matching nothing still put a specific unit near the top of the results."""
+    contents = [f"alpha{i} beta{i}" for i in range(8)]
+    units = [
+        EvidenceUnit(id=f"u{i}", modality="text", content=c, source_file="a.pdf",
+                     location=Location(page=i + 1))
+        for i, c in enumerate(contents)
+    ]
+    index = build_index(units, encoder=stub_encoder(contents))
+    hits = index.sparse_search("zzz qqq nothing matches", k=4)
+    assert all(score == 0.0 for _p, score in hits)
+    assert [p for p, _ in hits] == [0, 1, 2, 3], "ties must follow corpus order"
+
+
+def test_dense_ties_break_by_position(stub_encoder) -> None:
+    """argpartition is unstable, so ties inside the partition depended on partition
+    internals. Identical content must rank by corpus order, not by luck."""
+    contents = ["same text here"] * 6
+    units = [
+        EvidenceUnit(id=f"u{i}", modality="text", content=c, source_file="a.pdf",
+                     location=Location(page=i + 1))
+        for i, c in enumerate(contents)
+    ]
+    index = build_index(units, encoder=stub_encoder(contents))
+    query = stub_encoder(contents)(["same text here"])[0]
+    hits = index.dense_search(query, k=4)
+    assert [p for p, _ in hits] == [0, 1, 2, 3]

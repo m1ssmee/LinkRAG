@@ -52,6 +52,10 @@ def test_default_config_has_keys_every_stage_reads() -> None:
     assert cfg["mode"] in ("baseline", "linkrag")
     assert cfg["models"]["embedding"] == "BAAI/bge-m3"
     assert cfg["retrieve"]["top_k"] > 0
-    assert cfg["retrieve"]["rerank"]["method"] in ("complementarity", "score")
-    for link_type in ("audio_slide", "figure_text", "deictic"):
+    assert cfg["retrieve"]["linkrag"]["k_seed"] > 0
+    assert cfg["retrieve"]["linkrag"]["k_final"] >= cfg["retrieve"]["linkrag"]["k_seed"]
+    # Only thresholds the code actually reads. Seven keys that were read nowhere
+    # were removed in the audit; audio_slide filtering is link.align.min_score.
+    for link_type in ("figure_text", "deictic"):
         assert 0.0 < cfg["link"][f"{link_type}_threshold"] < 1.0
+    assert cfg["link"]["align"]["min_score"] >= 0.0

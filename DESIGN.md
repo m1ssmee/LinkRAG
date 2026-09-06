@@ -277,30 +277,39 @@ silence.
 Ablation is `link.align.method: naive` — per-segment argmax, no sequence structure,
 roughly what P2 does.
 
-### Measured on pilot01 (53 audio segments × 27 slides)
+### Measured on pilot01 (51 audio segments × 27 slides)
+
+Evaluated against an **ear-labelled slide timeline, approximate (±3 s), n=42 talk
+segments** (`data/labels/pilot01/`), plus 9 Q&A segments with no true slide.
 
 | | monotonic DP | naive argmax |
 |---|---|---|
-| accuracy vs labels (n=11) | **72.7%** | 54.5% |
-| accuracy, ±1 slide | **90.9%** | 63.6% |
-| slides covered | 20/27 | 16/27 |
-| backward steps | 0 | **15** |
+| exact (talk, n=42) | **29/42 = 69.0%** | 22/42 = 52.4% |
+| ±1 slide | **90.5%** | 71.4% |
+| exact (non-ambiguous, n=27) | **63.0%** | 51.9% |
+| backward steps | **0** | 9 |
+| slides covered (23 showable) | **21/23** | 15/23 |
+| Q&A (n=9): distinct slides assigned | **1 — holds slide 26** | 5 — wanders |
 
-The naive baseline's errors are *catastrophic* (p22→p26, p23→p5, p24→p3); the DP's
-are adjacent slides. Its one remaining ±1 error is the opening segment (predicts p3,
-truth p1): σ=0.02 is too weak to pull the path's head onto slide 1. Raising σ or
-adding an explicit start-at-first-slide prior is the obvious next tune.
+The naive baseline's errors are *catastrophic*; the DP's are adjacent slides, and
+**11 of 13 are off-by-one ahead of truth** (p5→p6, p8→p9, p13→p14, p17→p18) — the path
+runs slightly early, consistent with a speaker discussing the next slide before
+advancing. A lag term is the obvious next parameter; not attempted.
 
-**The labels are provisional and I could not verify them by watching the talk** —
-see `data/labels/pilot01/alignment_labels.README.md`. n=11, biased toward the results
-section, and derived from text overlap (one of the three signals the scorer uses).
-The DP-vs-naive *delta* is meaningful because the monotonic prior is independent of
-how the labels were made; the *absolute* numbers are optimistic. Re-label by
-watching before publishing.
+`start_prior_mu` was added and tuned 0.0 → **0.02**, fixing the head-of-sequence error
+(first segment p3 → p1). Two caveats, recorded in full in `reports/regression.md`: it
+was fitted on the same labels it is scored on (no held-out split, so 69.0% is
+optimistic), and the entire gain sits on *ambiguous* segments — the non-ambiguous
+subset is 63.0% at every value of mu.
 
-Artifacts: `data/processed/links.jsonl` (53 audio_slide Links), `links.npz`
+**Deictic precision proxy** against the same labels: 42/51 = 82.4% of deictic pairs
+link a figure sitting on the segment's true slide — **tier 2 scores 16/16 = 100%**,
+tier 3 26/35 = 74.3%. Direct evidence that the cue tiering separates reliable deixis
+from noise. It checks the slide, not the referent; referent labels do not exist.
+
+Artifacts: `data/processed/links.jsonl` (51 audio_slide Links), `links.npz`
 (similarity + path, so plotting and eval skip re-embedding),
-`reports/alignment_hsieh.png`.
+`reports/alignment_pilot01.png` (heatmap with DP, naive and ear-labelled truth).
 
 ## Phase 3 — figure_text, deictic, and the link graph
 
@@ -317,7 +326,13 @@ Link types are `figure_text` and `deictic` (renamed from the earlier
   **bbox vertical-gap layout proximity** on the same page; page-distance prior; and
   semantic similarity over caption + OCR + optional VLM text. Every link records
   *why* it was made in `metadata`.
-- **deictic**: cue phrases are generated as determiner × noun × direction
+- **deictic**: ⚠️ the emitted set is **unfiltered**. `mass` includes `w_slide`, and
+  every scored candidate is on the aligned slide, so all of them start at
+  `w_slide/mass = 0.45` — exactly `deictic_threshold`. Measured floor over 98 pilot
+  links: 0.5622, none below 0.50. "Links above threshold" is a vacuous phrase here;
+  the set is "every cue on a slide that has a figure", capped by `max_links_per_unit`.
+  Deliberately not retuned — retuning changes every recorded deictic number.
+  Cue phrases are generated as determiner × noun × direction
   (`this arrow here`, `the box on the right`, `that step below`) plus a base list —
   266 phrases from two short config lists. Candidates are restricted to the aligned
   slide, and ties between figures on one slide are broken by **IDF keyword overlap**
@@ -480,6 +495,57 @@ previously only the title slide and opening audio carried. The Q1–Q4 gold loca
 were written for a 2-document corpus and now under-credit a legitimate third source.
 They need extending before the next phase's numbers mean anything.
 
+## Phase 4 — link-following retrieval (`retrieve/linkrag.py`)
+
+Top-k becomes **seeds**; the Evidence Linking Layer is then traversed outward, so a
+unit enters the set because something already retrieved depends on it. Expanded score
+is `seed_score * link_score * decay`, and every unit records whether it was a seed or
+expanded and via which seed and link (`RetrievedUnit.explain()`).
+
+`retrieve/iterative.py` is a third, fairer baseline: our approximation of P1 (MI-RAG) —
+retrieve, ask the LLM for a follow-up query, retrieve again, merge. It exists so
+link-following is not credited merely for returning more units than single-shot top-k.
+
+### Measured on the 4-question pilot set (k=8, 196 units)
+
+| method | recall@8 | precision@8 | LLM calls |
+|---|---:|---:|---:|
+| baseline (top-k) | 37.5% | 9.4% | 0 |
+| **iterative (P1)** | **62.5%** | **18.8%** | **4** |
+| linkrag | 50.0% | 12.5% | **0** |
+
+Per question: Q1 0/0/0, Q2 100/100/100, Q3 0/**50**/0, Q4 50/**100**/**100**.
+
+**P1 currently beats link-following on recall.** It wins Q3, which link-following
+cannot reach because no link runs from anything retrieved to the title slide. It pays
+one LLM call per question on the critical path; link-following pays none. State it that
+way — recall alone favours P1 on this set.
+
+What link-following does buy, concretely: **Q4 went 50% → 100%**, and
+`osdi18_slides_hsieh:p20:t0` entered an evidence set **for the first time in any run**.
+The chain is `hsieh:a28` → `audio_slide` (0.681) → slide p20, whose text carries
+`Optimize for Ingest Cost / Balance / Optimize for Query Latency`. That slide has been
+the missing gold unit in every regression since Phase 1, and no amount of re-querying
+had found it. The generated answer then names the three configurations and cites p20.
+
+Caveats, in order of size: **n=4 questions**; the gold set is still stamped for the
+2-document corpus and known to under-credit Q1/Q3; and expansion currently cannot
+displace a weak seed, because RRF seed scores (~0.03) dwarf `seed x link x decay`
+(~0.01) — with `k_seed < k_final` expansion only fills the remaining slots. Phase 5's
+complementarity reranker is what changes that.
+
+**Latency was measured but is not reportable** under the measurement rules above:
+single run, non-idle machine, no repeats. The LLM-call counts (0 vs 4) are exact and
+are the cost comparison that stands.
+
+### Bug found while testing: BM25 tie-break
+
+`sparse_search` used `np.argsort(scores)[::-1]`, which breaks ties in **reverse corpus
+order** — so for a query matching nothing, every unit ties at BM25 0.0 and the
+*last-ingested* unit ranked first. It surfaced because a deliberately unreachable test
+unit kept appearing in baseline top-5. Now a stable descending sort (ties break by
+ascending position); `test_sparse_ties_break_by_position_not_reverse_position` guards it.
+
 ## Known issues, not fixed
 
 - **(a) Discourse boundaries.** Units are cut by sentence and duration only, with no
@@ -488,11 +554,14 @@ They need extending before the next phase's numbers mean anything.
   Q3 produced a false author with a *valid* citation. Segment-level speaker/discourse
   turn detection would fix it; not attempted. Any evidence unit may therefore span a
   speaker change.
-- **(b) Modality imbalance.** Audio is 53 of 98 units (54%) and dominates similarity
-  ranking: pilot Q1/Q3 returned 7/8 audio, Q4 returned 8/8. Both rankers are
-  modality-blind and RRF fuses ranks without rebalancing, so the largest modality wins
-  on volume. Not fixed — complementarity-aware reranking (novel component 3) is the
-  intended fix, and until then every cross-modal number is depressed by this.
+- **(b) Modality imbalance — now known to be a corpus effect, not a retriever one.**
+  On the 2-document corpus audio was 53 of 96 units (55%) and dominated every ranking
+  (Q1/Q3 7-8/8 audio). Adding the OSDI paper moved audio to 51 of 196 (26%) and it now
+  dominates nothing — **with no change to retrieval code, weights or thresholds**. See
+  the standing observation in `reports/regression.md`. Consequence: a future
+  modality-balance improvement cannot be credited to a retrieval change unless the
+  corpus manifest is identical across the compared runs. Complementarity-aware
+  reranking is still the intended fix for the underlying blindness.
 
 ## Environment decisions worth not re-litigating
 

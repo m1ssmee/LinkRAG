@@ -197,8 +197,16 @@ def align_monotonic(
     skip_penalty: float = 0.02,
     back_penalty: float = 0.15,
     max_back: int = 2,
+    start_prior_mu: float = 0.0,
 ) -> list[int]:
-    """Viterbi-style DP over the recurrence in the module docstring. O(n*m)."""
+    """Viterbi-style DP over the recurrence in the module docstring. O(n*m).
+
+    `start_prior_mu` adds -mu*j to the initialisation, pulling the first segment
+    toward the front of the deck. sigma already charges for skipped head slides, but
+    at sigma=0.02 that pull is weak: on pilot01 the opening segment (title slide,
+    certain) was assigned p3. mu defaults to 0.0, which is exactly the behaviour every
+    number recorded before this parameter existed.
+    """
     n, m = similarity.shape
     if n == 0 or m == 0:
         return []
@@ -206,7 +214,7 @@ def align_monotonic(
     max_back = max(0, int(max_back))
 
     # D[j] = best score for the current segment ending on slide j.
-    prev = similarity[0] - sig * np.arange(m)
+    prev = similarity[0] - (sig + float(start_prior_mu)) * np.arange(m)
     backptr = np.full((n, m), -1, dtype=np.int32)
 
     for i in range(1, n):
@@ -266,6 +274,7 @@ def align(
     skip_penalty: float = 0.02,
     back_penalty: float = 0.15,
     max_back: int = 2,
+    start_prior_mu: float = 0.0,
 ) -> Alignment:
     if method not in ("monotonic", "naive"):
         raise ValueError(f"unknown alignment method {method!r}: use 'monotonic' or 'naive'")
@@ -281,7 +290,7 @@ def align(
         path = (align_naive(similarity) if method == "naive" else
                 align_monotonic(similarity, jump_penalty=jump_penalty,
                                 skip_penalty=skip_penalty, back_penalty=back_penalty,
-                                max_back=max_back))
+                                max_back=max_back, start_prior_mu=start_prior_mu))
         total = float(sum(similarity[i, j] for i, j in enumerate(path)))
         t["slides_used"] = len(set(path))
         t["back_jumps"] = sum(1 for a, b in zip(path, path[1:]) if b < a)
@@ -306,11 +315,21 @@ def build_links(
     return links
 
 
-def save_links(links: Sequence[Link], path: str | Path) -> Path:
-    """JSONL, one Link per line -- append-friendly and diffable, unlike a pickle."""
+def save_links(
+    links: Sequence[Link], path: str | Path, manifest_hash: str | None = None
+) -> Path:
+    """JSONL, one Link per line -- append-friendly and diffable, unlike a pickle.
+
+    The first line is a `_meta` record carrying the corpus manifest hash. Link ids
+    only mean anything against the index that produced them; a links file silently
+    paired with a different corpus degrades link-following to plain top-k with no
+    error, which is exactly the ablation-looks-identical failure the measurement
+    rules exist to catch.
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as fh:
+        fh.write(json.dumps({"_meta": {"manifest_hash": manifest_hash}}) + "\n")
         for link in links:
             record = {
                 "src_id": link.src_id, "dst_id": link.dst_id,
@@ -322,5 +341,20 @@ def save_links(links: Sequence[Link], path: str | Path) -> Path:
     return path
 
 
-def load_links(path: str | Path) -> list[Link]:
-    return [Link(**json.loads(line)) for line in Path(path).read_text().splitlines() if line.strip()]
+class LinkManifestMismatch(RuntimeError):
+    """Links were built against a different corpus than the one being queried."""
+
+
+def load_links(path: str | Path, expect_manifest: str | None = None) -> list[Link]:
+    """Links from JSONL. Raises if the file's corpus stamp disagrees with
+    `expect_manifest` -- a hard error, not a warning: every link id would be
+    meaningless and expansion would silently return nothing."""
+    records = [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
+    meta = next((r["_meta"] for r in records if "_meta" in r), {})
+    stamp = meta.get("manifest_hash")
+    if expect_manifest is not None and stamp != expect_manifest:
+        raise LinkManifestMismatch(
+            f"{path} was built against corpus {stamp or 'UNSTAMPED'}, but the index "
+            f"is corpus {expect_manifest}. Re-run scripts/build_links.py."
+        )
+    return [Link(**r) for r in records if "_meta" not in r]

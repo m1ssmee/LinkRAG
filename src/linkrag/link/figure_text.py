@@ -233,7 +233,8 @@ def link_figures_to_text(
         links: list[Link] = []
         cross_page = 0
         for i, fig in enumerate(figures):
-            order = np.argsort(-scores[i])
+            # stable: ties break by ascending text-unit position, not arbitrarily
+            order = np.argsort(-scores[i], kind="stable")
             kept = 0
             for j in order:
                 if kept >= max_links_per_unit:

@@ -14,7 +14,9 @@ import argparse
 import json
 from pathlib import Path
 
-from linkrag.core import Link, load_config, setup_logging
+from linkrag.core import load_config, setup_logging
+from linkrag.link.align import load_links
+from linkrag.manifest import MANIFEST_NAME, load_manifest
 from linkrag.index import Index
 from linkrag.link.graph import build_graph, neighbors, subgraph_around
 
@@ -25,14 +27,6 @@ EDGE_STYLE = {
     "same_topic": ("#BDBDBD", ":"),
 }
 NODE_COLOUR = {"audio": "#1565C0", "text": "#2E7D32", "figure": "#EF6C00", "table": "#6A1B9A"}
-
-
-def load_links(path: str | Path) -> list[Link]:
-    out = []
-    for line in Path(path).read_text().splitlines():
-        if line.strip():
-            out.append(Link(**json.loads(line)))
-    return out
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -50,7 +44,10 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging()
     cfg = load_config(args.config)
     index = Index.load(args.index or cfg["index"]["store_dir"])
-    links = load_links(args.links or cfg["link"]["align"]["links_path"])
+    links = load_links(args.links or cfg["link"]["align"]["links_path"],
+                       expect_manifest=(load_manifest(
+                           Path(args.index or cfg["index"]["store_dir"]).parent
+                           / MANIFEST_NAME) or {}).get("hash"))
     graph = build_graph(list(index.units), links)
 
     if args.unit not in graph:

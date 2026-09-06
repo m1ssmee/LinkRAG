@@ -330,3 +330,24 @@ def test_keyword_overlap_breaks_ties_between_figures_on_one_slide(stub_encoder) 
                             slide_of_audio={"a1": 5}, mode="linkrag", threshold=0.0)
     assert links[0].dst_id == "f_match"
     assert links[0].metadata["keyword_overlap"] > 0.0
+
+
+def test_figure_text_ties_break_by_text_position(stub_encoder) -> None:
+    """np.argsort default is quicksort: identical scores ordered arbitrarily,
+    deciding which figure_text links get emitted under max_links_per_unit."""
+    fig = _fig("f", 1, "attention heatmap")
+    texts = [_txt(f"t{i}", 1, "attention heatmap") for i in range(5)]
+    links = link_figures_to_text([fig], texts, encoder=stub_encoder(["attention heatmap"]),
+                                 threshold=0.0, max_links_per_unit=3)
+    assert [l.dst_id for l in links] == ["t0", "t1", "t2"]
+
+
+def test_deictic_ties_break_by_ascending_figure_index(stub_encoder) -> None:
+    """`scored.sort(reverse=True)` on (score, j, overlap) broke ties by *descending*
+    figure index, so the last figure on a slide silently won every tie."""
+    audio = _audio("a1", "as you can see here the attention heatmap")
+    figs = [_fig(f"f{i}", 5, "attention heatmap") for i in range(4)]
+    enc = stub_encoder(["attention heatmap", audio.content])
+    links = resolve_deictic([audio], figs, encoder=enc, slide_of_audio={"a1": 5},
+                            mode="linkrag", threshold=0.0, max_links_per_unit=2)
+    assert [l.dst_id for l in links] == ["f0", "f1"]

@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from linkrag.core import load_config, setup_logging, stage_timer
+from linkrag.manifest import MANIFEST_NAME, load_manifest
 from linkrag.index import Index, default_encoder
 from linkrag.link.align import align, build_links, save_links
 from linkrag.link.deictic import (
@@ -89,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
         audio, slides, encoder=encoder, method=method,
         weights=acfg["weights"], jump_penalty=acfg["jump_penalty"],
         skip_penalty=acfg["skip_penalty"], back_penalty=acfg["back_penalty"],
-        max_back=acfg["max_back"],
+        max_back=acfg["max_back"], start_prior_mu=acfg.get("start_prior_mu", 0.0),
     )
     links = build_links(audio, slides, result, min_score=acfg["min_score"])
     audio_slide = list(links)
@@ -123,13 +124,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     links += deictic_links
 
+    index_dir = Path(args.index or cfg["index"]["store_dir"])
+    manifest = load_manifest(index_dir.parent / MANIFEST_NAME) or {}
+    manifest_hash = manifest.get("hash")
+
     links_path = Path(args.links or acfg["links_path"])
     if method != acfg["method"] and args.links is None:
         links_path = links_path.with_name(links_path.stem + f"_{method}" + links_path.suffix)
-    save_links(links, links_path)
+    save_links(links, links_path, manifest_hash=manifest_hash)
 
     npz = Path(args.npz or links_path.with_suffix(".npz"))
     np.savez(npz, similarity=result.similarity, path=np.asarray(result.path),
+             manifest_hash=np.asarray(manifest_hash or ""),
              audio_ids=np.asarray([u.id for u in audio]),
              slide_ids=np.asarray([u.id for u in slides]),
              audio_start=np.asarray([u.location.start_s for u in audio], dtype="float64"),
@@ -140,6 +146,12 @@ def main(argv: list[str] | None = None) -> int:
     graphml = export_graphml(graph, links_path.with_suffix(".graphml"))
 
     stats = summarise(graph)
+    # Measurement rule 2: per-category counts must sum to the stated total.
+    assert sum(int(v["count"]) for v in stats.values()) == len(links), (
+        f"per-type counts {sum(int(v['count']) for v in stats.values())} != "
+        f"total {len(links)}; links are being dropped between list and graph"
+    )
+    print(f"corpus manifest {manifest_hash or 'NONE'}")
     print(f"align={method} link_mode={args.link_mode}  audio={len(audio)} "
           f"deck_slides={len(slides)} all_text={len(texts)} figures={len(figures)}  "
           f"links={len(links)}")
@@ -150,7 +162,8 @@ def main(argv: list[str] | None = None) -> int:
     if deictic_links:
         tiers = tier_breakdown(pairs)
         print(f"  deictic: {len(pairs)} distinct (segment, figure) pairs "
-              f"from {len(deictic_links)} raw cue hits")
+              f"from {len(deictic_links)} raw cue hits (UNFILTERED -- the "
+              f"threshold cannot reject an on-slide candidate)")
         print(f"    {'tier':<6} {'pairs':>6} {'avg score':>10}")
         for tier in sorted(tiers):
             label = {1: "1 explicit", 2: "2 pron+vis", 3: "3 pronoun"}.get(tier, str(tier))
