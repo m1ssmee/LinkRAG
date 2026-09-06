@@ -1,0 +1,129 @@
+# LinkRAG default config. Every stage reads this; override per-experiment by
+# copying to configs/<name>.yaml and passing --config.
+
+mode: linkrag            # linkrag | baseline  -- global default, per-stage overridable
+device: cpu              # cpu | cuda | mps    -- CPU-first; GPU is optional
+
+models:
+  embedding: BAAI/bge-m3         # shared text/figure-caption embedder
+  whisper: small                 # faster-whisper size: tiny|base|small|medium|large-v3
+  whisper_compute_type: int8     # int8 on CPU, float16 on GPU
+  llm:
+    # Ollama speaks the OpenAI /v1/chat/completions shape, so both providers use
+    # one code path; `provider` only picks a default base_url.
+    provider: openai             # ollama | openai | any OpenAI-compatible server
+    # Verified against this account's GET /v1/models on 2026-09-06. Dated
+    # snapshot, not a floating alias, so pilot numbers stay reproducible.
+    # gpt-5.5 was rejected: it only accepts its default temperature (1), and a
+    # non-deterministic baseline is not usable as a paper comparison point.
+    model: gpt-5.4-2026-03-05
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY  # read from the environment; never commit the key
+    temperature: 0.0             # deterministic: this is an eval harness (null = omit)
+    max_tokens: 1024
+    timeout_s: 120
+
+ingest:
+  chunk_tokens: 300              # text chunk target
+  chunk_overlap_tokens: 60
+  audio_segment_seconds: 30      # window for audio EvidenceUnits
+  # sentence: merge whole whisper segments up to the window (never splits one).
+  # fixed: equal-time windows, what the baseline papers do -- cut 70% of
+  # boundaries mid-sentence on pilot01. Kept as an ablation axis.
+  audio_segmentation: sentence   # sentence | fixed
+  min_figure_area_px: 10000      # ignore rules, bullets, logos
+  figures_dir: data/processed/figures
+  ocr_images: true               # standalone images: pytesseract (needs the tesseract binary)
+  # Slide decks caption nothing: 13/18 pilot01 figures had empty content because
+  # find_caption looks below the image (a paper convention). OCR the image itself.
+  ocr_figures: true
+  # Optional VLM figure descriptions via a local Ollama vision model. OFF by
+  # default: a 7B VLM on CPU is tens of seconds per image. Results are cached by
+  # image content hash, so enabling it costs the full pass exactly once.
+  vlm_captions:
+    enabled: false
+    model: llava:7b            # or qwen2-vl:7b
+    base_url: http://localhost:11434
+    max_words: 60
+    cache_dir: data/processed/vlm_captions
+    timeout_s: 300
+  # Prime whisper with vocabulary mined from the slide deck. Untuned, whisper
+  # transcribed *ingest* as "interest" throughout pilot01 -- the talk's central
+  # term, which BM25 then cannot match. Documents are always ingested first.
+  asr_vocab_from_slides: true
+  # If <stem>.frozen.json exists here, it is used verbatim and whisper never runs.
+  # pilot01 is frozen on the guided-v2 transcript; see DESIGN.md measurement rules.
+  frozen_transcript_dir: data/processed/transcripts
+
+index:
+  backend: numpy                 # exact inner-product search; see Index docstring for the ceiling
+  normalize_embeddings: true
+  store_dir: data/processed/index
+
+link:
+  # --- audio-to-slide alignment (Phase 2, novel component 1) ---
+  align:
+    method: monotonic          # monotonic | naive ("naive" == P2-style local argmax)
+    weights:                   # S = w_dense*cos + w_bm25*BM25norm + w_keyword*IDF-overlap
+      dense: 0.6
+      bm25: 0.25
+      keyword: 0.15
+    jump_penalty: 0.05         # lambda: charged per slide when advancing by >1
+    skip_penalty: 0.02         # sigma: charged per slide never assigned (incl. head/tail)
+    back_penalty: 0.15         # beta: charged per slide when going backwards
+    max_back: 2                # B: 0 == strictly monotonic
+    min_score: 0.0             # drop links scoring below this
+    links_path: data/processed/links.jsonl
+
+  # --- figure <-> paragraph (Phase 3) ---
+  figure_text:
+    weights:                   # F = w_r*ref + w_l*layout + w_p*page + w_d*cos + w_o*overlap
+      reference: 0.30          # "Figure 3" / "Table 2", or "the diagram below"
+      layout: 0.15             # same page, vertical whitespace between bboxes
+      page: 0.15
+      dense: 0.25
+      overlap: 0.15
+    page_decay: 2.0            # tau in exp(-|dp|/tau); a prior, never a filter
+    layout_max_gap_pt: 220.0   # beyond this vertical gap, layout contributes nothing
+    reference_page_window: 1   # "Figure 3" matches only this page or an adjacent one
+
+  # --- deictic speech <-> visual element (Phase 3) ---
+  deictic:
+    weights:              # D = w_s*on_slide + w_c*cue + w_d*cos + w_o*keyword_overlap
+      slide: 0.45
+      cue: 0.15
+      dense: 0.20
+      overlap: 0.20       # IDF keyword overlap vs figure OCR/caption -- the
+                          # tie-break when a slide carries several figures
+    # Object deixis is generated as determiner x noun x direction rather than
+    # listed by hand, so coverage stays uniform ("this arrow here", "the box
+    # on the right", "that step below").
+    object_nouns: [arrow, box, step, line, circle, node, column, row, bar, point,
+                   block, region, curve, axis]
+    directions: [above, below, "on the left", "on the right", here, there]
+    determiners: [the, this, that]
+
+  # Thresholds are per link_type; tune on the dev set, don't hardcode one global.
+  audio_slide_threshold: 0.55
+  figure_text_threshold: 0.50
+  deictic_threshold: 0.45
+  same_topic_threshold: 0.70
+  deictic_cues: ["here", "this", "that", "that one", "this one", "shown",
+                 "on the left", "on the right", "this slide", "as you can see",
+                 "as you see", "look at this", "over here", "right here"]
+  max_links_per_unit: 8
+
+retrieve:
+  top_k: 8                       # units handed to the LLM
+  candidates: 50                 # pulled from each ranker before fusion
+  rrf_k: 60                      # reciprocal rank fusion constant (Cormack 2009)
+  link_hops: 1                   # 0 == baseline behaviour
+  max_evidence_units: 12         # size of the final set handed to the LLM
+  rerank:
+    method: complementarity      # complementarity | score  ("score" == baseline)
+    redundancy_penalty: 0.4      # lambda on max-similarity to already-picked units
+    modality_bonus: 0.15         # reward for adding an unrepresented modality
+
+eval:
+  metrics: [answer_accuracy, evidence_precision, evidence_recall, cross_modal_coverage, citation_faithfulness]
+  report_both_modes: true

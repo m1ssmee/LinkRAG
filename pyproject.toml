@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "linkrag"
+version = "0.1.0"
+description = "Cross-modal RAG with an explicit Evidence Linking Layer"
+requires-python = ">=3.11"
+# Runtime deps are pinned in requirements.txt (kept separate so experiments can
+# reproduce an exact environment). Keep the two in sync when adding a dep.
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Model-downloading tests are opt-in: `pytest -m slow` to run them.
+addopts = "-m 'not slow'"
+markers = ["slow: downloads a model or otherwise takes minutes"]

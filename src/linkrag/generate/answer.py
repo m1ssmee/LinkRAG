@@ -1,0 +1,162 @@
+"""Cited answer synthesis over a retrieved evidence set.
+
+baseline: the top-k units are pasted into the prompt in rank order and the model
+          answers. No statement that they relate to one another.
+linkrag:  the link-expanded, complementarity-reranked set, with the traversed
+          links described so the model composes across modalities.
+
+Both Ollama and any OpenAI-compatible endpoint are driven through the same
+/v1/chat/completions call -- Ollama implements that shape, so "provider" only
+selects a default base_url.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+from typing import Any, Callable
+
+import requests
+
+from linkrag.core import EvidenceUnit, Mode, stage_timer
+
+Completer = Callable[[str, str], str]
+"""(system, user) -> assistant text. Injectable so tests never hit a server."""
+
+PROVIDER_BASE_URLS = {
+    "ollama": "http://localhost:11434/v1",
+    "openai": "https://api.openai.com/v1",
+}
+
+SYSTEM = """You answer questions using ONLY the numbered evidence given to you.
+
+Rules:
+- Cite the evidence for every claim, using its exact id in square brackets: [id].
+- An id looks like [notes:p2:t0] or [lecture03:a5]. Copy it exactly.
+- If the evidence does not answer the question, say so plainly. Do not guess and
+  do not use outside knowledge -- an uncited or unsupported claim is a failure.
+- Be concise."""
+
+LINKRAG_SYSTEM_SUFFIX = """
+- The evidence spans several files and modalities and has been linked as covering
+  the same content. Prefer an answer that combines them over one that picks a
+  single unit."""
+
+CITATION_RE = re.compile(r"\[([A-Za-z0-9_.:\-]+)\]")
+
+
+def format_evidence(units: list[EvidenceUnit]) -> str:
+    """Each unit tagged [id, modality, location] so the model can cite it."""
+    lines = []
+    for unit in units:
+        where = f"{Path(unit.source_file).name} {unit.location.cite()}"
+        content = unit.content.strip() or "(no text extracted)"
+        lines.append(f"[{unit.id}, {unit.modality}, {where}]\n{content}")
+    return "\n\n".join(lines)
+
+
+def build_prompt(question: str, units: list[EvidenceUnit]) -> str:
+    return f"Evidence:\n\n{format_evidence(units)}\n\nQuestion: {question}\n\nAnswer with citations:"
+
+
+def cited_ids(answer_text: str) -> list[str]:
+    """Ids the answer actually cited, in order of first appearance."""
+    seen: dict[str, None] = {}
+    for match in CITATION_RE.findall(answer_text):
+        seen.setdefault(match, None)
+    return list(seen)
+
+
+def http_completer(llm_cfg: dict[str, Any]) -> Completer:
+    """OpenAI-compatible /chat/completions. Works for Ollama, vLLM, OpenAI, etc."""
+    import os
+
+    provider = llm_cfg.get("provider", "ollama")
+    base_url = (llm_cfg.get("base_url") or PROVIDER_BASE_URLS.get(provider, "")).rstrip("/")
+    if not base_url:
+        raise ValueError(f"no base_url for provider {provider!r}; set models.llm.base_url")
+    model = llm_cfg.get("model")
+    if not model:
+        raise ValueError("models.llm.model is not set in the config")
+
+    headers = {"Content-Type": "application/json"}
+    key_env = llm_cfg.get("api_key_env")
+    if key_env:
+        key = os.environ.get(key_env)
+        if not key:
+            raise RuntimeError(f"{key_env} is not set (models.llm.api_key_env)")
+        headers["Authorization"] = f"Bearer {key}"
+
+    limit = llm_cfg.get("max_tokens", 1024)
+    # Older models take `max_tokens`; newer ones reject it and require
+    # `max_completion_tokens`. Model *names* are not a usable signal for which --
+    # the families change faster than any prefix list survives -- so discover it
+    # once from the server's own error and remember the answer.
+    token_param = "max_tokens"
+
+    def post(payload: dict[str, Any]):
+        return requests.post(
+            f"{base_url}/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=llm_cfg.get("timeout_s", 120),
+        )
+
+    def complete(system: str, user: str) -> str:
+        nonlocal token_param
+        payload: dict[str, Any] = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "stream": False,
+            token_param: limit,
+        }
+        # temperature: null omits the field, for models that only allow their
+        # default. Never silently substitute a different temperature -- this is an
+        # eval harness and determinism is a property the results depend on.
+        if llm_cfg.get("temperature") is not None:
+            payload["temperature"] = llm_cfg["temperature"]
+
+        try:
+            response = post(payload)
+            if (
+                response.status_code == 400
+                and token_param == "max_tokens"
+                and "max_completion_tokens" in response.text
+            ):
+                token_param = "max_completion_tokens"
+                payload[token_param] = payload.pop("max_tokens")
+                response = post(payload)
+        except requests.ConnectionError as exc:
+            hint = " Is `ollama serve` running?" if provider == "ollama" else ""
+            raise RuntimeError(f"cannot reach LLM at {base_url}.{hint}") from exc
+
+        if response.status_code != 200:
+            raise RuntimeError(f"LLM returned {response.status_code}: {response.text[:300]}")
+        return response.json()["choices"][0]["message"]["content"]
+
+    return complete
+
+
+def answer(
+    question: str,
+    units: list[EvidenceUnit],
+    cfg: dict[str, Any] | None = None,
+    *,
+    mode: Mode = "baseline",
+    complete: Completer | None = None,
+) -> str:
+    if not units:
+        return "No evidence was retrieved for this question, so I cannot answer it."
+
+    llm_cfg = (cfg or {}).get("models", {}).get("llm", {})
+    complete = complete or http_completer(llm_cfg)
+
+    system = SYSTEM + (LINKRAG_SYSTEM_SUFFIX if mode == "linkrag" else "")
+    with stage_timer("generate.answer", mode=mode, units=len(units)) as t:
+        text = complete(system, build_prompt(question, units))
+        t["chars"] = len(text)
+        t["citations"] = len(cited_ids(text))
+    return text

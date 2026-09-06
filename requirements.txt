@@ -1,0 +1,36 @@
+# Pinned for reproducibility. CPU-first: torch resolves to the CPU build on
+# macOS/Linux without extra index URLs. For GPU, reinstall torch from the CUDA
+# index and set device: cuda in configs/default.yaml -- nothing else changes.
+
+# core
+pyyaml==6.0.3
+numpy==2.4.6
+
+# ingest
+pymupdf==1.28.2                 # PDF text, figure images + bboxes
+python-docx==1.2.0
+pillow==12.3.0
+pytesseract==0.3.13             # needs the tesseract binary: brew install tesseract
+faster-whisper==1.2.1           # CTranslate2 whisper; int8 on CPU
+
+# index / embed
+sentence-transformers==6.0.1    # BAAI/bge-m3
+torch==2.14.0                   # transitive, pinned: it decides CPU vs GPU
+rank-bm25==0.2.2                # sparse; dense search is a numpy matmul (see index/)
+
+# link layer
+networkx==3.6.1                # evidence graph: traversal + GraphML export
+
+# generate -- Ollama and OpenAI-compatible servers share one /v1 HTTP shape,
+# so no vendor SDK is needed. Also used for the optional local VLM captioner.
+requests==2.34.2
+
+# visualisation
+matplotlib==3.11.1             # alignment heatmap + link-graph renders
+
+# ui
+streamlit==1.63.0
+
+# dev
+pytest==9.1.1
+reportlab==5.0.1                # generates the fixture PDF in tests/

@@ -1,0 +1,12 @@
+audio_start,audio_end,true_slide,note
+0.6,30.0,1,"title + collaborator list spoken verbatim from the title slide"
+230.0,257.7,7,"'background ... convolutional neural networks' matches the Background/CNN slide"
+476.1,505.6,13,"'YOLO V2 as our ground truth ... three different ResNet 18 architecture removing different number of layers' = p13's ResNet18 (N fewer layers) series"
+745.8,773.2,20,"'flexible tradeoff between ingest cost versus query latency ... which cheap CNN ... top-k ... threshold for clustering' = p20's three bullets"
+807.4,837.3,21,"'how we evaluate our system ... 11 live traffic cameras' = p21 '11 live traffic and enterprise videos'"
+837.5,863.5,21,"'first baseline is ingest-heavy ... the other baseline is NoScope' = p21 Baselines"
+864.2,892.2,22,"'here I plot the results ... $380 ... five hours' = p22 plotted values"
+921.6,949.9,22,"'two minutes instead of five hours' = p22 '5 hours -> 2 mins'"
+949.9,969.6,23,"'89 times faster ... 162 times ... both techniques are important' = p23 89X/162X caption"
+1003.0,1021.3,24,"live demo narration = p24 'Demo'"
+1100.1,1118.4,26,"'the key takeaway is ... querying objects in massive videos is challenging' = p26 Key Takeaways"
