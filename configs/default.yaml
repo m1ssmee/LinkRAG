@@ -151,6 +151,10 @@ retrieve:
     link_types: [audio_slide, figure_text, deictic]
     min_link_score: 0.0
     decay: 0.5                   # expanded score = seed_score * link_score * decay
+    # Rank-normalise seed scores to (0,1]. Raw RRF is ~0.03 against link weights of
+    # ~0.6-1.0, so expansion can only fill the tail; normalising lets an expanded
+    # unit outrank a weak seed. Off by default: it changes every recorded number.
+    normalise_seeds: false
 
   # --- iterative re-querying, our P1 (MI-RAG) approximation ---
   iterative:

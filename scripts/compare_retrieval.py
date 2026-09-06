@@ -29,7 +29,7 @@ from linkrag.link.align import load_links
 from linkrag.manifest import MANIFEST_NAME, load_manifest
 from linkrag.link.graph import build_graph
 from linkrag.retrieve.baseline import retrieve_scored
-from linkrag.retrieve.iterative import retrieve_iterative
+from linkrag.retrieve.iterative import retrieve_iterative, retrieve_linkrag_iter
 from linkrag.retrieve.linkrag import expansion_report, retrieve_linkrag
 
 
@@ -56,7 +56,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--index", default=None)
     ap.add_argument("--links", default=None)
     ap.add_argument("--k", type=int, default=None, help="k for all methods (default k_final)")
-    ap.add_argument("--no-iterative", action="store_true", help="skip the LLM-spending method")
+    ap.add_argument("--no-iterative", action="store_true", help="skip the LLM-spending methods")
+    ap.add_argument("--normalise-seeds", action="store_true",
+                    help="rank-normalise seed scores so expansion can outrank a weak seed")
     ap.add_argument("--out", default=None, help="also append a markdown table here")
     args = ap.parse_args(argv)
 
@@ -78,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     rows = [json.loads(l) for l in Path(args.questions).read_text().splitlines()
             if l.strip() and "_meta" not in l]
     complete = None if args.no_iterative else http_completer(cfg["models"]["llm"])
+    norm = args.normalise_seeds or lcfg.get("normalise_seeds", False)
 
     methods: dict[str, dict] = {}
     expansion: dict[str, tuple[int, int]] = {}
@@ -105,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
             k_seed=lcfg["k_seed"], k_final=k, hops=lcfg["hops"],
             link_types=lcfg["link_types"], min_link_score=lcfg["min_link_score"],
             decay=lcfg["decay"], candidates=cfg["retrieve"]["candidates"],
-            rrf_k=cfg["retrieve"]["rrf_k"])
+            rrf_k=cfg["retrieve"]["rrf_k"], normalise_seeds=norm)
         link_ids = [r.id for r in link_results]
         expanded, seeded = expansion_report(link_results, graph)
         expansion[qid] = (expanded, seeded)
@@ -123,10 +126,25 @@ def main(argv: list[str] | None = None) -> int:
             record("iterative (P1)", qid, *prf(it.ids, gold), it.latency_s,
                    it.llm_calls, it.ids)
 
-    mean = lambda xs: sum(xs) / len(xs) if xs else float("nan")
-    order = [m for m in ("baseline", "iterative (P1)", "linkrag") if m in methods]
+            t0 = time.perf_counter()
+            combo, combo_it = retrieve_linkrag_iter(
+                row["question"], index, graph, encoder=encoder, complete=complete,
+                rounds=icfg["rounds"], k_seed=lcfg["k_seed"], k_final=k,
+                candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"],
+                hops=lcfg["hops"], link_types=lcfg["link_types"],
+                min_link_score=lcfg["min_link_score"], decay=lcfg["decay"],
+                normalise_seeds=norm)
+            combo_ids = [r.id for r in combo]
+            expansion[qid] = expansion.get(qid, (0, 0))
+            record("linkrag_iter", qid, *prf(combo_ids, gold),
+                   time.perf_counter() - t0, combo_it.llm_calls, combo_ids)
 
-    print(f"\n{len(rows)} questions · k={k} · corpus {len(index)} units\n")
+    mean = lambda xs: sum(xs) / len(xs) if xs else float("nan")
+    order = [m for m in ("baseline", "iterative (P1)", "linkrag", "linkrag_iter")
+             if m in methods]
+
+    print(f"\n{len(rows)} questions · k={k} · corpus {len(index)} units · "
+          f"normalise_seeds={norm}\n")
     header = f"{'method':<16}{'recall@k':>10}{'prec@k':>9}{'latency':>10}{'LLM calls':>11}"
     print(header); print("-" * len(header))
     lines = ["", f"| method | recall@{k} | precision@{k} | avg latency | LLM calls |",

@@ -118,6 +118,20 @@ Caveats: n=4; the gold set is still stamped `dded007ab45f5b9f` (2-document corpu
 is known to under-credit Q1/Q3; latency was measured but is **not reportable** under
 the measurement rules (single run, non-idle machine, no repeats).
 
+## Q3 — design intent no longer holds
+
+**`Q3 cross_modal_split` is retained unchanged and must not be rewritten.** Its design
+intent — force composition of author names in one modality with affiliations in another,
+across two files — **no longer holds after slide figure extraction: it is answerable
+from one page.** Slide 1 now yields both `osdi18_slides_hsieh:p1:t0` (names, text) and
+`osdi18_slides_hsieh:p1:g1` (affiliations, OCR'd from the logo band, figure). The OSDI
+paper's title block had already collapsed it once; the deck now collapses it again.
+
+Consequence for reading this file: **a Q3 pass is no longer evidence of cross-modal
+composition.** Treat its gold-term column as a single-source retrieval measure until the
+question is scoped or replaced. Every historical Q3 row stays valid for what it measured
+at the time.
+
 ## Standing observation — modality dominance is a corpus-composition effect
 
 Adding the OSDI paper (2 documents → 3, 96 → 196 units) inverted retrieved-set
@@ -645,3 +659,50 @@ contain it. Retrieval got more cross-modal and slightly less lexically complete.
 **Figures now appear in every linkrag evidence set** (2–3 of 8), where before the
 clustering they were largely absent. That is the intended effect of the extraction fix,
 and it is visible in the modality column rather than in the gold column.
+
+## Four-mode retrieval comparison (2026-09-07)
+
+`scripts/compare_retrieval.py`, 4 pilot questions, k=8, corpus `2f3b35f27e86caf8`
+(209 units). `linkrag_iter` seeds link-following from the iterative retriever.
+
+| method | recall@8 | prec@8 | LLM calls | recall@8 (normalise_seeds) | prec@8 |
+|---|---:|---:|---:|---:|---:|
+| baseline | 33.3% | 9.4% | 0 | 33.3% | 9.4% |
+| iterative (P1) | 52.1% | 18.8% | 4 | 56.2% | 18.8% |
+| linkrag | 41.7% | 12.5% | **0** | **50.0%** | 15.6% |
+| **linkrag_iter** | **60.4%** | **21.9%** | 4 | **75.0%** | **28.1%** |
+
+Per-question recall@8 with `normalise_seeds=true`:
+
+| qid | baseline | iterative | linkrag | linkrag_iter |
+|---|---:|---:|---:|---:|
+| Q1 | 0% | 0% | 0% | 0% |
+| Q2 | 100% | 100% | 100% | 100% |
+| Q3 | 0% | 25% | 0% | **100%** |
+| Q4 | 33% | 100% | 100% | **100%** |
+
+**The two mechanisms are complementary, and the per-question table shows why.**
+Q4 needs an *edge* — `hsieh:a28 → audio_slide → p20` — and link-following finds it while
+plain iterative does not reliably. Q3 needs a *seed*: the `hsieh:a0 → audio_slide →
+p1:t0` edge exists, but `hsieh:a0` never enters the top-8 (Q3's seeds are all paper text
+units), so traversal never starts there. A second query supplies the missing entry
+point. Neither alone solves both; composed, they solve both.
+
+**This is the diagnosis for Q3 requested as a Phase-4 follow-up: link-following inherits
+the seed retriever's recall and cannot reach a region of the graph that has no seed.**
+
+`normalise_seeds` rank-normalises seeds to (0,1] so `seed × link × decay` is
+commensurable with a seed score. Without it, RRF seeds (~0.03) dwarf expanded scores
+(~0.01) and expansion can only fill the tail. It is **off by default** — turning it on
+changes every recorded linkrag number.
+
+### Caveats
+
+- **n=4.** Nothing here is a result; it is a direction.
+- **Gold is the old 2-document set** (`dded007ab45f5b9f`), pending re-approval. Q1 scores
+  0% in every mode partly because its gold locator is a slide the retriever never reaches.
+- **The two LLM-using modes are not deterministic.** `iterative` moved 52.1% → 56.2%
+  between two runs whose only difference was a flag it does not read; that is follow-up
+  query variation, not the flag. Only `baseline` and `linkrag` repeat exactly.
+- Latencies were recorded but are **not reportable** under the measurement rules
+  (single run, non-idle machine).

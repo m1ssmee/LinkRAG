@@ -219,6 +219,21 @@ reported until it has been inspected.**
    `build_graph` was keying edges by `link_type` and silently dropping 19 of 41
    deictic links. The discrepancy was the only visible symptom.
 
+## Execution rule (binding)
+
+**Every new script or code path must be executed once for real — not mocked — before it
+is considered complete.** Unit tests with stubs do not discharge this.
+
+Three defects reached the repository because a path was only ever exercised through
+mocks or never at all: `scripts/ingest.py` raised `NameError: Path` on its manifest
+write, which had never run once (earlier manifests came from a separate script);
+`run_regression.py --mode linkrag` silently used baseline retrieval while every test
+passed; and the faiss/torch OpenMP crash was invisible to a test suite whose stub
+encoder never loaded torch. In all three the test suite was green.
+
+"For real" means against the actual corpus, with the actual models and files, and
+reading the output — not just checking the exit code.
+
 ## Rejected approaches (do not re-propose)
 
 - **`ingest ↔ interest` query-time alias.** Rejected 2026-09-06. Lecture-specific;
@@ -525,7 +540,12 @@ link-following is not credited merely for returning more units than single-shot 
 
 Per question: Q1 0/0/0, Q2 100/100/100, Q3 0/**50**/0, Q4 50/**100**/**100**.
 
-**P1 currently beats link-following on recall.** It wins Q3, which link-following
+**Composing the two beats either alone.** `linkrag_iter` (iterative seeds + link
+expansion) reaches 75.0% recall / 28.1% precision with `normalise_seeds`, against 56.2%
+for P1 and 50.0% for link-following. Q4 needs an *edge*, Q3 needs a *seed*; each
+mechanism supplies one. See `reports/regression.md`.
+
+On the plain 4-question set without composition, **P1 beats link-following on recall.** It wins Q3, which link-following
 cannot reach because no link runs from anything retrieved to the title slide. It pays
 one LLM call per question on the critical path; link-following pays none. State it that
 way — recall alone favours P1 on this set.

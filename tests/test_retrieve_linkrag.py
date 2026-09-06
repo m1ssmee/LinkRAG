@@ -230,3 +230,55 @@ def test_expansion_report_distinguishes_empty_graph_from_filtered_links(corpus, 
                                link_types=["figure_text"])
     expanded, seeded = expansion_report(results, graph)
     assert expanded == 0 and seeded >= 1, "filtered out, but the edges existed"
+
+
+# ------------------------------------------------ seed normalisation / combo mode
+
+def test_normalise_seeds_puts_seeds_and_links_on_one_scale(corpus, graph) -> None:
+    """Raw RRF seeds (~0.03) against link weights (~0.9) leave expanded scores two
+    orders of magnitude down, so expansion can only ever fill the tail."""
+    index, encode, _ = corpus
+    raw = retrieve_linkrag(QUESTION, index, graph, encoder=encode, k_seed=3)
+    norm = retrieve_linkrag(QUESTION, index, graph, encoder=encode, k_seed=3,
+                            normalise_seeds=True)
+    assert max(r.score for r in raw if r.origin == "seed") < 0.5, "RRF scale"
+    assert max(r.score for r in norm if r.origin == "seed") == pytest.approx(1.0)
+    assert min(r.score for r in norm if r.origin == "seed") > 0.0
+
+
+def test_normalisation_lets_an_expanded_unit_outrank_a_weak_seed(corpus, graph) -> None:
+    index, encode, _ = corpus
+    raw = retrieve_linkrag(QUESTION, index, graph, encoder=encode, k_seed=3, decay=1.0)
+    norm = retrieve_linkrag(QUESTION, index, graph, encoder=encode, k_seed=3, decay=1.0,
+                            normalise_seeds=True)
+    rank = lambda rs: [r.origin for r in rs]
+    assert rank(raw)[:3] == ["seed"] * 3, "unnormalised: seeds always come first"
+    assert "expanded" in rank(norm)[:3], "normalised: expansion can beat a weak seed"
+
+
+def test_seed_results_override_lets_another_retriever_supply_seeds(corpus, graph) -> None:
+    index, encode, units = corpus
+    gold_unit = next(u for u in units if u.id == "GOLD")
+    a1 = next(u for u in units if u.id == "a1")
+    results = retrieve_linkrag(QUESTION, index, graph, encoder=encode, k_seed=2,
+                               seed_results=[(a1, 0.9), (gold_unit, 0.8)])
+    assert {r.id for r in results if r.origin == "seed"} == {"a1", "GOLD"}
+
+
+def test_linkrag_iter_seeds_from_the_iterative_retriever(corpus, graph) -> None:
+    """Q3's failure mode: the a0->p1 edge exists but a0 is never a seed. A second
+    query can supply the missing entry point."""
+    from linkrag.retrieve.iterative import retrieve_linkrag_iter
+
+    index, encode, _ = corpus
+    calls = []
+
+    def complete(system, user):
+        calls.append(user)
+        return "optimizer cosine schedule with warmup"
+
+    results, it = retrieve_linkrag_iter(QUESTION, index, graph, encoder=encode,
+                                        complete=complete, rounds=2, k_seed=3, k_final=8)
+    assert it.llm_calls == 1 and len(calls) == 1
+    assert any(r.origin == "expanded" for r in results), "expansion must still run"
+    assert "t2" in {r.id for r in results}, "the follow-up query's hit must be seeded"

@@ -109,3 +109,37 @@ def retrieve_iterative(
     result.units = sorted(chosen.values(), key=lambda r: (-r.score, r.id))[:limit]
     result.latency_s = time.perf_counter() - started
     return result
+
+
+def retrieve_linkrag_iter(
+    question: str,
+    index: Index,
+    graph,
+    *,
+    encoder: Encoder,
+    complete: Completer | None = None,
+    rounds: int = 2,
+    k_seed: int = 5,
+    k_final: int = 8,
+    candidates: int = 50,
+    rrf_k: int = RRF_K,
+    **linkrag_kwargs,
+) -> tuple[list, IterativeResult]:
+    """P1's re-querying feeding LinkRAG's expansion.
+
+    The two enlarge the evidence set by unrelated mechanisms -- one asks a second
+    question, the other walks typed relations -- so composing them tests whether they
+    find the same units or different ones. Q3 showed the failure this targets: the
+    a0 -> p1 edge exists, but a0 is never a seed, so traversal never starts there.
+    A second query can supply the missing seed.
+    """
+    from linkrag.retrieve.linkrag import retrieve_linkrag
+
+    it = retrieve_iterative(question, index, encoder=encoder, complete=complete,
+                            rounds=rounds, k_per_round=k_seed, k_final=k_seed,
+                            candidates=candidates, rrf_k=rrf_k)
+    seeds = [(r.unit, r.score) for r in it.units]
+    results = retrieve_linkrag(question, index, graph, encoder=encoder, mode="linkrag",
+                               k_seed=k_seed, k_final=k_final, candidates=candidates,
+                               rrf_k=rrf_k, seed_results=seeds, **linkrag_kwargs)
+    return results, it

@@ -83,8 +83,19 @@ def retrieve_linkrag(
     hops: int = 1,
     candidates: int = 50,
     rrf_k: int = RRF_K,
+    normalise_seeds: bool = False,
+    seed_results: Sequence[tuple[EvidenceUnit, float]] | None = None,
 ) -> list[RetrievedUnit]:
     """Seed with the hybrid retriever, expand along links, keep the best k_final.
+
+    `normalise_seeds` rank-normalises seed scores to (0, 1]: rank r of n becomes
+    (n-r+1)/n. Raw RRF scores are ~0.03 while link weights are ~0.6-1.0, so
+    `seed x link x decay` lands two orders of magnitude below any seed and expansion
+    can only ever fill the tail. Normalising puts the two on one scale so an expanded
+    unit can outrank a weak seed.
+
+    `seed_results` supplies seeds from elsewhere (used by `linkrag_iter`, which seeds
+    from the iterative retriever) instead of running the hybrid retriever here.
 
     baseline: no expansion at all -- plain top-k_final, identical to
               `retrieve.baseline`. This is the ablation.
@@ -98,8 +109,15 @@ def retrieve_linkrag(
 
     with stage_timer("retrieve.linkrag", mode=mode, k_seed=k_seed, k_final=k_final) as t:
         seed_k = k_final if mode == "baseline" else k_seed
-        seeds = retrieve_scored(question, index, encoder=encoder, top_k=seed_k,
-                                candidates=candidates, rrf_k=rrf_k)
+        if seed_results is None:
+            seeds = retrieve_scored(question, index, encoder=encoder, top_k=seed_k,
+                                    candidates=candidates, rrf_k=rrf_k)
+        else:
+            seeds = list(seed_results)[:seed_k]
+
+        if normalise_seeds and seeds:
+            n = len(seeds)
+            seeds = [(u, (n - r) / n) for r, (u, _s) in enumerate(seeds)]
 
         chosen: dict[str, RetrievedUnit] = {
             unit.id: RetrievedUnit(unit=unit, score=float(score), origin="seed")
