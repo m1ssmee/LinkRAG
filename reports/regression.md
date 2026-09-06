@@ -501,3 +501,147 @@ apparent gain is v1 mislabelling. The DP-over-naive margin is stable (+16.7pp v1
 
 One v1 caveat is retired: the mu gain no longer sits only on ambiguous segments — the
 non-ambiguous subset moves 69.7% → 72.7% with mu, so the head-of-sequence fix is real.
+## 2026-09-07 01:37 — post figure-clustering: baseline (OLD gold, pending re-approval)
+
+mode=`baseline` · index=`data/processed/index` · embedder=`BAAI/bge-m3` · units=209 · top_k=8
+
+corpus manifest `2f3b35f27e86caf8` (209 units) · gold stamped `dded007ab45f5b9f`
+
+> **WARNING** gold set was written against corpus dded007ab45f5b9f, but the current corpus is 2f3b35f27e86caf8 (209 units: hsieh.mp3, osdi18-hsieh.pdf, osdi18_slides_hsieh.pdf). Gold coverage may be understated -- a newly added document can answer a question its gold locators do not mention.
+
+| Q | type | modality distribution | expanded | gold evidence | gold missed | gold terms in answer |
+|---|---|---|---:|---|---|---|
+| Q1 | `slides_only` | text 6/8, audio 2/8 | 0 | **no** | osdi18_slides_hsieh.pdf p.5 | 0/2 |
+| Q2 | `audio_only` | text 2/8, audio 6/8 | 0 | **yes** | — | 3/3 |
+| Q3 | `cross_modal_split` | 8/8 text | 0 | **no** | osdi18_slides_hsieh.pdf p.1, hsieh.mp3 0.6-30.0s | 4/4 |
+| Q4 | `cross_modal_deictic` | text 4/8, audio 4/8 | 0 | **partial** | osdi18_slides_hsieh.pdf p.20 | 1/3 |
+
+<details><summary>Q1 answer (3 citations)</summary>
+
+The talk/paper cites **NoScope** as the **state-of-the-art query-time** approach [hsieh:a41][osdi18-hsieh:p11:t3].
+
+The provided evidence does **not state the venue or year** of NoScope’s publication, beyond calling it “a recent state-of-the-art querying system [51]” [osdi18-hsieh:p11:t3].
+
+</details>
+
+<details><summary>Q2 answer (2 citations)</summary>
+
+In the Q&A, the speaker says they currently make cheap CNNs by starting with a simple CNN, specifically ResNet18, and then removing layers one by one to create a set of cheaper CNNs to explore [hsieh:a49]. He also says this is a relatively simple current approach and that they do **not** have an automatic way to generate cheap CNNs from the architecture of the expensive ones [hsieh:a49][hsieh:a50].
+
+</details>
+
+<details><summary>Q3 answer (1 citations)</summary>
+
+The authors of *Focus* are Kevin Hsieh, Ganesh Ananthanarayanan, Peter Bodik, Shivaram Venkataraman, Paramvir Bahl, Matthai Philipose, Phillip B. Gibbons, and Onur Mutlu [osdi18-hsieh:p2:t0].
+
+Their institutions are Carnegie Mellon University, Microsoft, University of Wisconsin, and ETH Zürich [osdi18-hsieh:p2:t0].
+
+</details>
+
+<details><summary>Q4 answer (2 citations)</summary>
+
+The plot’s labeled configuration options are:
+- **Balance** [osdi18-hsieh:p9:t2]
+- **Opt-Query** [osdi18-hsieh:p9:t2]
+- **Opt-Ingest** [osdi18-hsieh:p9:t2]
+
+The speaker says they could select different ones depending on the application, including:
+- the option that **balances** the two metrics [hsieh:a30]
+- an option that pays more ingest cost to get **lower query latency** for query-heavy, low-latency applications [hsieh:a30]
+- an option that optimizes for **ingest cost** with higher latency for cases like home cameras [hsieh:a30]
+
+So the speaker does **not** name a single universally chosen option; they say the selection depends on the application [hsieh:a30].
+
+</details>
+
+## 2026-09-07 01:38 — post figure-clustering: linkrag (OLD gold, pending re-approval)
+
+mode=`linkrag` · index=`data/processed/index` · embedder=`BAAI/bge-m3` · units=209 · top_k=8
+
+corpus manifest `2f3b35f27e86caf8` (209 units) · gold stamped `dded007ab45f5b9f`
+
+> **WARNING** gold set was written against corpus dded007ab45f5b9f, but the current corpus is 2f3b35f27e86caf8 (209 units: hsieh.mp3, osdi18-hsieh.pdf, osdi18_slides_hsieh.pdf). Gold coverage may be understated -- a newly added document can answer a question its gold locators do not mention.
+
+| Q | type | modality distribution | expanded | gold evidence | gold missed | gold terms in answer |
+|---|---|---|---:|---|---|---|
+| Q1 | `slides_only` | text 5/8, figure 2/8, audio 1/8 | 3 | **no** | osdi18_slides_hsieh.pdf p.5 | 0/2 |
+| Q2 | `audio_only` | text 2/8, figure 2/8, audio 4/8 | 3 | **yes** | — | 3/3 |
+| Q3 | `cross_modal_split` | text 5/7, figure 2/7 | 2 | **no** | osdi18_slides_hsieh.pdf p.1, hsieh.mp3 0.6-30.0s | 4/4 |
+| Q4 | `cross_modal_deictic` | text 3/8, figure 3/8, audio 2/8 | 3 | **yes** | — | 2/3 |
+
+<details><summary>Q1 answer (3 citations)</summary>
+
+The talk cites **NoScope** as the state-of-the-art **query-time-only** approach [hsieh:a41][osdi18-hsieh:p11:t3][osdi18_slides_hsieh:p26:t0].
+
+The provided evidence does **not** state the **venue** or **year** in which NoScope was published, so I can’t answer that part from the evidence alone [osdi18-hsieh:p11:t3].
+
+</details>
+
+<details><summary>Q2 answer (2 citations)</summary>
+
+In the Q&A, the speaker says they currently make cheap CNNs by starting with a simple CNN, specifically ResNet18, and then removing layers one by one to create a set of cheaper CNNs for exploration [hsieh:a49]. The speaker also says this process is not automatic: they “don’t have the automatic way” to generate cheap CNNs from the architecture of the expensive ones [hsieh:a50].
+
+</details>
+
+<details><summary>Q3 answer (1 citations)</summary>
+
+The authors of **Focus** are **Kevin Hsieh, Ganesh Ananthanarayanan, Peter Bodik, Shivaram Venkataraman, Paramvir Bahl, Matthai Philipose, Phillip B. Gibbons, and Onur Mutlu** [osdi18-hsieh:p2:t0].
+
+Their institutions are:
+- **Carnegie Mellon University** — Kevin Hsieh, Phillip B. Gibbons [osdi18-hsieh:p2:t0]
+- **Microsoft** — Ganesh Ananthanarayanan, Peter Bodik, Shivaram Venkataraman, Paramvir Bahl, Matthai Philipose [osdi18-hsieh:p2:t0]
+- **University of Wisconsin** — Shivaram Venkataraman [osdi18-hsieh:p2:t0]
+- **ETH Zürich** — Onur Mutlu [osdi18-hsieh:p2:t0]
+
+</details>
+
+<details><summary>Q4 answer (2 citations)</summary>
+
+The plot’s labeled configuration options are:
+
+- **Balance** [osdi18_slides_hsieh:p20:g0]
+- **Optimize for Ingest Cost** [osdi18_slides_hsieh:p20:g0]
+- **Query Latency** / effectively optimizing for low query latency [osdi18_slides_hsieh:p20:g0]
+
+The speaker says they would select different ones depending on the application:
+
+- For a default trade-off, select the option that **balances** the two metrics [hsieh:a30].
+- For applications that require **low latency** and are queried a lot, select the option that pays a bit more ingest cost to get **lower query latency** [hsieh:a30].
+- For applications such as **home cameras**, select the option that **optimizes for ingest cost** and accepts higher latency [hsieh:a30].
+
+</details>
+
+
+### Effect of slide-figure clustering alone (gold unchanged)
+
+Both runs above use the **old gold**, stamped `dded007ab45f5b9f`, deliberately: the only
+variable between these and the previous pair is figure extraction. **Gold is pending
+re-approval** — see `reports/gold_proposal_pilot01.md`, which now proposes two more deck
+figure units and argues Q3 has degraded again.
+
+Corpus 196 → 209 units; deck figures 18 → 31; 24 of 27 slides now carry a figure unit
+(was 11).
+
+| Q | baseline before | baseline after | linkrag before | linkrag after |
+|---|---|---|---|---|
+| Q1 | no, 0/2 | no, 0/2 | no, 0/2 | no, 0/2 |
+| Q2 | yes, 3/3 | yes, 3/3 | yes, 3/3 | yes, 3/3 |
+| Q3 | no, **4/4** | no, **4/4** | no, **0/4** | no, **4/4** |
+| Q4 | partial, **2/3** | partial, **1/3** | **yes**, **3/3** | **yes**, **2/3** |
+
+**Q3's linkrag regression disappeared — but not because anything was fixed.** In the
+previous run expansion displaced three seeds, one of which was the paper title block
+answering the question. Here expansion added only two units (one of its targets was
+already a seed), the set came back at 7 units instead of 8, and the answering seed
+survived. That is a corpus-composition accident, not a repair. The structural cause
+recorded earlier still stands: expansion drops whatever ranked last, not whatever is
+least useful, and the complementarity reranker is what addresses it.
+
+**Q4 lost a gold term in both modes** (2/3 → 1/3 baseline, 3/3 → 2/3 linkrag) while
+linkrag retains gold coverage `yes`. Figures now compete for the same eight slots, so
+some text that carried a gold term was displaced by a figure unit whose OCR does not
+contain it. Retrieval got more cross-modal and slightly less lexically complete.
+
+**Figures now appear in every linkrag evidence set** (2–3 of 8), where before the
+clustering they were largely absent. That is the intended effect of the extraction fix,
+and it is visible in the modality column rather than in the gold column.

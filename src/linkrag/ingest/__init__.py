@@ -81,6 +81,7 @@ def ingest_file(
             slide_deck=(ing.get("slide_deck_files") or {}).get(path.name),
             landscape_ratio=ing.get("slide_deck_landscape_ratio", 0.6),
             figures_from_captions=ing.get("figures_from_captions"),
+            cluster_deck_figures=ing.get("cluster_deck_figures", True),
             **chunk,
         )
     if kind == "docx":

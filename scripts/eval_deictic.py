@@ -90,10 +90,10 @@ def main(argv: list[str] | None = None) -> int:
     unres = [x for x in windows if x["kind"].startswith("unresolvable")]
     neg = [x for x in windows if x["kind"] == "known-negative"]
     w("")
-    w(f"**{len(scorable)} of {len(windows)} windows are scorable.** {len(unres)} are "
-      f"unresolvable by the current module and {len(neg)} is a known negative. The deck "
-      f"has extracted figures on pages {sorted(p for p in fig_pages if p <= 26)} only — "
-      f"figure extraction, not the deictic module, is what caps this evaluation.")
+    w(f"**{len(scorable)} of {len(windows)} windows are scorable.** "
+      f"{len(unres)} unresolvable by the current module, {len(neg)} known negative. "
+      f"The deck has extracted figures on pages "
+      f"{sorted(p for p in fig_pages if p <= 26)}.")
     w("")
 
     # (a) precision on positives
@@ -155,9 +155,12 @@ def main(argv: list[str] | None = None) -> int:
     w("## (c) Slide 24 — external demo (known negative)")
     w("")
     fp = [p for p in pairs if int(p["figure_page"]) == 24]
-    w(f"Deictic pairs linking to a figure on slide 24: **{len(fp)}**. The demo is not in")
-    w("the deck and no figure unit exists on that page, so any such link is a false")
-    w("positive by construction.")
+    on24 = 24 in fig_pages
+    w(f"Deictic pairs linking to a figure on slide 24: **{len(fp)}**.")
+    w("")
+    w(f"Slide 24 {'now has' if on24 else 'has no'} extracted figure unit, but the demo "
+      f"itself is live software that is not in the deck, so **any** deictic link during "
+      f"this window is a false positive: there is no correct referent to find.")
     if fp:
         w("")
         for p in fp:
@@ -171,11 +174,18 @@ def main(argv: list[str] | None = None) -> int:
           f"deictic pair**.")
         if during:
             w("")
-            w("Each is a false positive: the module pointed at a deck figure while the")
-            w("speaker was demonstrating software that is not in the deck.")
+            w("Each is a false positive — the module pointed at a deck figure while the")
+            w("speaker was demonstrating software that is not in the deck:")
+            pages_hit = set()
             for s in during:
                 for p in by_seg[s]:
+                    pages_hit.add(int(p["figure_page"]))
                     w(f"- `{s}` → page {p['figure_page']} tier {p['tier']} `{p['phrase']}`")
+            w("")
+            w(f"Note where they land: page(s) {sorted(pages_hit)}, **not** slide 24. The "
+              f"alignment places these segments past the demo (the DP's known p24→p26 "
+              f"lead), and the deictic module then resolves correctly *within the slide it "
+              f"was given*. The failure is upstream, in alignment, not in referent choice.")
         else:
             w("")
             w("**This is the cleanest negative result in the evaluation.** The speaker is")
@@ -215,17 +225,26 @@ def main(argv: list[str] | None = None) -> int:
     w(f"| false positives on the known negative | {len(fp)} | slide 24 |")
     w(f"| windows scorable | {len(scorable)}/{len(windows)} | — |")
     w("")
-    w("**These are small numbers and should be quoted with n attached.** Precision rests")
-    w(f"on {total_n} pairs from {len(scorable)} windows, all of them tier 3 — the")
-    w("evaluation contains no tier-1 or tier-2 pair inside a scorable window, so it says")
-    w("nothing about whether the tiering helps here. The 82.4% slide-agreement figure")
-    w("reported earlier covers all 51 pairs and remains the broader measure; this one is")
-    w("narrower and stricter, and only the intersection of both is well evidenced.")
+    tier_mix = ", ".join(f"tier {t}: {tiers[t][1]}" for t in sorted(tiers)) or "none"
+    w(f"**Quote these with n attached.** Precision rests on {total_n} pairs from "
+      f"{len(scorable)} scorable windows ({tier_mix}).")
+    if len(tiers) > 1:
+        best = max(tiers, key=lambda t: tiers[t][0] / max(tiers[t][1], 1))
+        worst = min(tiers, key=lambda t: tiers[t][0] / max(tiers[t][1], 1))
+        w("")
+        w(f"**The tiering is doing work here.** Tier {best} scores "
+          f"{100*tiers[best][0]/tiers[best][1]:.0f}% against tier {worst}'s "
+          f"{100*tiers[worst][0]/tiers[worst][1]:.0f}%, on referent-level ground truth "
+          f"rather than the slide-agreement proxy used earlier.")
+    else:
+        w("")
+        w(f"Only one tier appears in the scorable windows, so this evaluation says "
+          f"nothing about whether tiering helps.")
     w("")
-    w("**The binding constraint is figure extraction, not deixis.** Seven of ten windows")
-    w("cannot be scored because the slide the speaker was pointing at has no extracted")
-    w("figure unit. Recovering those slides would do more for this evaluation than any")
-    w("change to the deictic module.")
+    w(f"**The binding constraint has moved.** Before slide-figure clustering only "
+      f"{3} of 10 windows were scorable, because most slides yielded no figure unit at "
+      f"all. Now {len(scorable)} are. What remains unresolvable is a table (no table "
+      f"extraction) and the live demo, which has no correct referent by construction.")
     w("")
 
     out = Path(args.out)

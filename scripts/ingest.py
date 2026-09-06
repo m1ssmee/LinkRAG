@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from linkrag.core import load_config, setup_logging, stage_timer
 from linkrag.index import build_index, default_encoder

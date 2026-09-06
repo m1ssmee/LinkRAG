@@ -1,115 +1,99 @@
-# Gold proposal — pilot01 Q1–Q4 against the 3-document corpus
+# Gold proposal — pilot01 Q1–Q4 (re-issued against the clustered-figure corpus)
 
 **Proposal only. Nothing here is applied.** `tests/regression/pilot01_questions.jsonl`
-is unchanged and still stamped `dded007ab45f5b9f` (2-document corpus). Approve or edit,
-then I apply and re-stamp with `6ee13080f9ad2084`.
+is unchanged and still stamped `dded007ab45f5b9f` (2-document corpus).
 
-| corpus | manifest | units |
-|---|---|---|
-| gold was written against | `dded007ab45f5b9f` | 96 — deck + audio |
-| current | `6ee13080f9ad2084` | 196 — deck + audio + **OSDI paper** |
+| corpus | manifest | units | figures |
+|---|---|---:|---:|
+| gold was written against | `dded007ab45f5b9f` | 96 | 18 |
+| previous proposal | `6ee13080f9ad2084` | 196 | 34 |
+| **current** | **`2f3b35f27e86caf8`** | **209** | **47** |
 
-Every unit below was verified by reading its indexed content, not inferred from
-similarity scores.
-
----
-
-## Q1 · `slides_only` — which prior system, and its venue/year?
-
-**Current gold:** `osdi18_slides_hsieh.pdf` p.5 — the slide reading
-`Kang et al., NoScope, PVLDB'17`.
-
-| propose | unit | justification |
-|---|---|---|
-| **add** | `osdi18-hsieh:p17:t2` | Reference [51] in full: *"D. Kang, J. Emmons, F. Abuzaid, P. Bailis, and M. Zaharia. NoScope: Optimizing deep CNN-based queries over video streams at scale. **PVLDB, 2017**."* — answers both halves outright. |
-| **add (partial)** | `osdi18-hsieh:p17:t1` | Same reference, truncated by chunking before the venue. Sufficient for the system name only. |
-| keep | deck p.5 | Still valid and still the only *slide* source. |
-
-⚠️ **The type label is now wrong.** With the paper present this is no longer
-`slides_only` — the paper answers it more completely than the slide does. Either
-rename the type to `document_text` or exclude the paper from Q1's scope.
+Slide-deck figure extraction now clusters vector drawing ops as well as raster images,
+so deck figures went 18 → 31 and 24 of 27 slides have at least one figure unit (was 11).
+**That changed the gold picture for Q3 and Q4** — the sections below mark every
+difference from the previous proposal.
 
 ---
 
-## Q2 · `audio_only` — how are cheap CNNs produced, and is that automatic?
+## Q1 · `slides_only` — **unchanged from the previous proposal**
 
-**Current gold:** `hsieh.mp3` 1338.8–1368.5s — the Q&A answer.
+Gold: deck p.5 (existing) + `osdi18-hsieh:p17:t2` (proposed: the full
+`Kang … NoScope … PVLDB, 2017` reference) + `osdi18-hsieh:p17:t1` (partial).
 
-| propose | unit | justification |
-|---|---|---|
-| **add (partial)** | `osdi18-hsieh:p7:t0` | *"Focus applies various levels of compression, such as removing convolutional layers and reducing input resolution"* — answers **how**. |
-| **add (partial)** | `osdi18-hsieh:p7:t1` | *"cheaper ResNet18 models by removing one layer at a time"* — the concrete mechanism the speaker describes. |
-| keep | audio 1338.8–1368.5s | **The only source for the second half.** |
+The new figure unit on slide 5 (`osdi18_slides_hsieh:p5:g0`) OCRs to noise
+(`Loading... [| PRR a aR ara Ree`) and carries neither `kang` nor `pvldb`. **No change.**
 
-✅ **Q2 survives as a genuine `audio_only` question**, but only for its second clause.
-The paper says *how* cheap CNNs are made; **no document states that the process is not
-automatic** — that admission exists only in the Q&A. Recommend keeping the audio unit
-as required gold and marking the two paper units optional, so the question still fails
-if the audio is missed.
+⚠️ Still true: with the paper present the `slides_only` type label is wrong.
 
 ---
 
-## Q3 · `cross_modal_split` — who are the authors, and from which institutions?
+## Q2 · `audio_only` — **unchanged from the previous proposal**
 
-**Current gold:** deck p.1 (author names) + `hsieh.mp3` 0.6–30.0s (affiliations).
+Gold: `hsieh.mp3` 1338.8–1368.5s (required) + `osdi18-hsieh:p7:t0`, `p7:t1` (optional,
+they answer *how* but not *whether it is automatic*).
 
-| propose | unit | justification |
-|---|---|---|
-| **add** | `osdi18-hsieh:p2:t0` | Title block carries the **full author list *and* the expanded affiliations** (`†Carnegie Mellon…`, `§Microsoft…`) in one unit. |
-| keep | deck p.1, audio 0.6–30.0s | Still valid sources. |
-
-🚨 **This destroys Q3's purpose and is the most important decision here.** Q3 exists to
-test cross-modal composition — names in one modality, affiliations in another. The
-paper's title block contains **both halves in a single text unit**, so the question is
-now answerable without composing anything. This is exactly what the last regression
-showed: **4/4 gold terms with 0/2 gold locators retrieved**, 8/8 text.
-
-Three options:
-1. **Scope Q3 to exclude the paper** — keeps a real cross-modal test; needs a
-   per-question source filter, which the runner does not have yet.
-2. **Retire Q3 and write a replacement** whose halves genuinely cannot co-occur in one
-   document (audio-only Q&A content + a slide-only figure label).
-3. Accept it as a single-source question and lose the cross-modal probe.
-
-I recommend **(1) or (2)**. Do not simply add the paper unit: the question would then
-report success while testing nothing.
+No new deck figure carries the Q&A content. **No change.** Q2 remains the only question
+whose second clause is genuinely audio-only.
 
 ---
 
-## Q4 · `cross_modal_deictic` — plotted configuration labels + what the speaker selects
+## Q3 · `cross_modal_split` — 🔴 **changed again, and worse**
 
-**Current gold:** deck p.20 (`Optimize for Ingest Cost` / `Balance` /
-`Optimize for Query Latency`) + `hsieh.mp3` 773.9–806.3s (the spoken selection).
+**New candidate:** `osdi18_slides_hsieh:p1:g1` — the title slide's logo band, now
+extracted as a figure and OCR'd to `… negieMellon © Microsoft Carnes TOS" WISCONSIN`.
+`osdi18_slides_hsieh:p27:g1` is the same band on the closing slide, cleaner:
+`CarnegieMellon B™ Microsoft`.
 
-| propose | unit | justification |
-|---|---|---|
-| **add** | `osdi18-hsieh:p3:t4` | Names the same three configurations as **`Focus-Opt-Query`, `Focus-Opt-Ingest`, `Focus-Balance`** on the Figure 1 trade-off plot. |
-| **add** | `osdi18-hsieh:p9:c0` | *"Figure 6: Parameter selection based on the ingest cost and query latency trade-off"* — the paper's counterpart to deck p.20. |
-| **add** | `osdi18-hsieh:p13:t2` | *"depicts three alternative settings"* — prose describing the same three-way choice. |
-| keep | deck p.20, audio 773.9–806.3s | Still valid. |
+| propose | unit | justification | vs previous proposal |
+|---|---|---|---|
+| **add** | `osdi18_slides_hsieh:p1:g1` | affiliations, OCR'd from the logo band | **NEW** |
+| **add** | `osdi18_slides_hsieh:p27:g1` | same band, cleaner OCR | **NEW** |
+| add | `osdi18-hsieh:p2:t0` | paper title block: names **and** affiliations | unchanged |
+| keep | deck p.1, audio 0.6–30.0s | existing gold | unchanged |
 
-⚠️ **Weaker than Q3's problem but the same shape.** The paper names the configurations
-under *different* labels (`Focus-Opt-Ingest` vs `Optimize for Ingest Cost`), so a
-string-matching gold term check will not credit them — but a model reading the paper
-can still answer the first half without the slide. The deictic half ("which one does
-the speaker say they would select") remains **audio-only**, so Q4 keeps its cross-modal
+**Q3 has now degraded twice.** The previous proposal noted that the paper's title block
+collapsed it into a single-source question. It is now worse: **the deck alone answers
+it** — names in `p1:t0` (text) and affiliations in `p1:g1` (figure), same page. The
+question was designed to require composing across *modalities and files*; it now
+requires composing across two units of the same slide.
+
+Recommendation stands and strengthens: **scope the question, or replace it.** Adding
+these units without scoping would make Q3 report success while testing nothing.
+
+---
+
+## Q4 · `cross_modal_deictic` — 🟡 **changed; gold gets stronger, the test gets weaker**
+
+**New candidate:** `osdi18_slides_hsieh:p20:g0` — the tradeoff plot, now extracted, OCR
+containing `Optimize for Ingest Cost … Balance`.
+
+| propose | unit | justification | vs previous proposal |
+|---|---|---|---|
+| **add** | `osdi18_slides_hsieh:p20:g0` | the plot itself; OCR carries two of the three labels | **NEW** |
+| add | `osdi18-hsieh:p3:t4` | names `Focus-Opt-Query/-Ingest/-Balance` | unchanged |
+| add | `osdi18-hsieh:p9:c0` | paper's counterpart figure (Figure 6) | unchanged |
+| add | `osdi18-hsieh:p13:t2` | prose describing the three settings | unchanged |
+| keep | deck p.20 text, audio 773.9–806.3s | existing gold | unchanged |
+
+The labels are now reachable from a *figure* as well as the slide's text, which is the
+correct modelling of the deck — but it means the "slide-only half" of Q4 is now
+satisfiable by two different units on the same page. The deictic half ("which one does
+the speaker say they would select") is still audio-only, so Q4 keeps its cross-modal
 character better than Q3 does.
 
 ---
 
 ## Summary
 
-| Q | additions | still cross-modal? | action |
+| Q | change since previous proposal | still cross-modal? | action |
 |---|---|---|---|
-| Q1 | 2 paper units | n/a (single-modality by design) | rename type or scope out the paper |
-| Q2 | 2 paper units (partial) | ✅ yes — "not automatic" is audio-only | add as optional gold |
-| Q3 | 1 paper unit | ❌ **no — collapses to one unit** | **scope out the paper, or replace the question** |
-| Q4 | 3 paper units | ⚠️ partly — second half stays audio-only | add; consider tightening gold terms |
+| Q1 | none | n/a by design | rename type or scope out the paper |
+| Q2 | none | ✅ yes | add 2 paper units as optional |
+| Q3 | **+2 deck figure units; now answerable from one slide** | ❌ **no** | **scope or replace — urgent** |
+| Q4 | +1 deck figure unit | ⚠️ partly | add; second half stays audio-only |
 
-Two capabilities the runner needs before some of this can be applied:
+Runner capabilities still needed before some options can be applied: **per-question
+source scoping** and **required vs optional gold**. Neither is built.
 
-- **per-question source scoping** (for Q1/Q3 option 1)
-- **required vs optional gold**, so Q2 fails when the audio is missed even though the
-  paper units were retrieved
-
-Say which options you want and I will implement both and re-stamp the gold file.
+Say which options you want and I will implement and re-stamp with `2f3b35f27e86caf8`.

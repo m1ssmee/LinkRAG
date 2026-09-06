@@ -14,7 +14,11 @@ from pathlib import Path
 
 import pymupdf
 
+import logging
+
 from linkrag.core import EvidenceUnit, Location, stage_timer
+
+log = logging.getLogger("linkrag")
 
 # Note: word count stands in for a real tokenizer. ~0.75 words per token on
 # English prose; swap in the bge-m3 tokenizer if chunk sizes ever need to be exact.
@@ -28,6 +32,93 @@ MIN_CAPTION_FIGURE_PT = 40.0    # a region shorter than this is not a figure
 MAX_CAPTION_FIGURE_PT = 420.0   # nor is half a page of prose above a caption
 COLUMN_OVERLAP = 0.3            # fraction of caption width a block must share to count
 BODY_TEXT_WORDS = 12            # a block this long is prose, not a figure's own label
+
+# --- slide-deck figure clustering -------------------------------------------
+# A deck draws its plots as vector operators, so page.get_images() sees nothing:
+# slides 13, 22 and 23 of pilot01 have zero raster images and produced zero figure
+# units. Cluster the drawing and image boxes instead. These are new parameters, not
+# retuned ones -- no existing threshold is changed.
+CLUSTER_GAP_PT = 12.0           # boxes closer than this belong to one figure
+CLUSTER_MIN_AREA_PT2 = 8000.0   # ~90x90pt; below this it is a rule or a bullet
+BACKGROUND_PAGE_FRACTION = 0.8  # a box covering this much of the page is the backdrop
+TEMPLATE_MIN_PAGES = 3          # an identical box on this many pages is deck chrome
+LOGO_MAX_AREA_PT2 = 15000.0     # a small box in a page corner is branding
+LOGO_CORNER_PT = 100.0
+
+
+def _merge_boxes(boxes, gap: float):
+    """Union boxes that overlap or sit within `gap` of each other, to fixpoint."""
+    boxes = [tuple(b) for b in boxes]
+    changed = True
+    while changed:
+        changed = False
+        merged = []
+        while boxes:
+            b = boxes.pop()
+            touching = [o for o in boxes
+                        if not (b[2] + gap < o[0] or o[2] + gap < b[0]
+                                or b[3] + gap < o[1] or o[3] + gap < b[1])]
+            for o in touching:
+                boxes.remove(o)
+                b = (min(b[0], o[0]), min(b[1], o[1]), max(b[2], o[2]), max(b[3], o[3]))
+                changed = True
+            merged.append(b)
+        boxes = merged
+    return boxes
+
+
+def _is_logo(box, page_rect, max_area: float, corner: float) -> bool:
+    area = (box[2] - box[0]) * (box[3] - box[1])
+    if area > max_area:
+        return False
+    cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    return min(cx, page_rect.width - cx) < corner and min(cy, page_rect.height - cy) < corner
+
+
+def cluster_figure_regions(
+    page: pymupdf.Page,
+    *,
+    gap_pt: float = CLUSTER_GAP_PT,
+    min_area_pt2: float = CLUSTER_MIN_AREA_PT2,
+    background_fraction: float = BACKGROUND_PAGE_FRACTION,
+    logo_max_area_pt2: float = LOGO_MAX_AREA_PT2,
+    logo_corner_pt: float = LOGO_CORNER_PT,
+) -> tuple[list[tuple[float, float, float, float]], dict[str, int]]:
+    """Spatial clusters of vector drawings + raster images on one deck page.
+
+    Returns (kept boxes, counters). Drops, in order: the page backdrop, degenerate
+    boxes, clusters below `min_area_pt2`, and corner logos.
+    """
+    rect = page.rect
+    page_area = rect.width * rect.height
+    boxes = [tuple(d["rect"]) for d in page.get_drawings()]
+    n_draw = len(boxes)
+    n_img = 0
+    for xref, *_rest in page.get_images(full=True):
+        for r in page.get_image_rects(xref):
+            boxes.append(tuple(r))
+            n_img += 1
+
+    boxes = [b for b in boxes
+             if b[2] > b[0] and b[3] > b[1]
+             and (b[2] - b[0]) * (b[3] - b[1]) < background_fraction * page_area]
+
+    clusters = _merge_boxes(boxes, gap_pt)
+    kept, small, logos = [], 0, 0
+    for c in clusters:
+        if (c[2] - c[0]) * (c[3] - c[1]) < min_area_pt2:
+            small += 1
+        elif _is_logo(c, rect, logo_max_area_pt2, logo_corner_pt):
+            logos += 1
+        else:
+            kept.append(c)
+    return sorted(kept), {"draw_ops": n_draw, "images": n_img, "clusters": len(clusters),
+                          "kept": len(kept), "small": small, "logos": logos}
+
+
+def slide_title(blocks: list[_Block]) -> str:
+    """Topmost text block on the page -- a deck's de-facto caption for everything on it."""
+    return min(blocks, key=lambda b: b.bbox[1]).text if blocks else ""
 
 
 @dataclass
@@ -184,6 +275,7 @@ def ingest_pdf(
     slide_deck: bool | None = None,
     landscape_ratio: float = 0.6,
     figures_from_captions: bool | None = None,
+    cluster_deck_figures: bool = True,
 ) -> list[EvidenceUnit]:
     """ocr_figures: when a figure has no caption, read the text inside the image.
 
@@ -199,6 +291,10 @@ def ingest_pdf(
     ocr_used = 0
     vlm_used = 0
     caption_figures = 0
+    cluster_figs = 0
+    template_dropped = 0
+    deck_candidates: list[tuple[int, tuple[float, float, float, float], str]] = []
+    cluster_log: list[tuple[int, dict[str, int]]] = []
     with stage_timer("ingest.pdf", file=path.name) as t:
         doc = pymupdf.open(path)
         page_count = doc.page_count
@@ -226,6 +322,13 @@ def ingest_pdf(
                             location=Location(page=page_no, bbox=bbox),
                         )
                     )
+
+                if is_deck and cluster_deck_figures:
+                    boxes, stats = cluster_figure_regions(page)
+                    cluster_log.append((page_no, stats))
+                    for box in boxes:
+                        deck_candidates.append((page_no, box, slide_title(blocks)))
+                    continue  # deck figures are emitted after template filtering
 
                 # Caption-anchored figures: the only way to reach vector plots.
                 if figures_from_captions:
@@ -290,6 +393,50 @@ def ingest_pdf(
                             metadata={"image_path": str(out), "content_source": source},
                         )
                     )
+            # Template chrome (title banners, footers) clusters identically on many
+            # pages. Emitting it would add one junk figure per slide, so drop any box
+            # whose rounded geometry repeats across TEMPLATE_MIN_PAGES pages.
+            repeats: dict[tuple[int, ...], int] = {}
+            for _pno, box, _title in deck_candidates:
+                repeats[tuple(round(v) for v in box)] = \
+                    repeats.get(tuple(round(v) for v in box), 0) + 1
+            per_page: dict[int, int] = {}
+            for page_no, box, title in deck_candidates:
+                if repeats[tuple(round(v) for v in box)] >= TEMPLATE_MIN_PAGES:
+                    template_dropped += 1
+                    continue
+                i = per_page.get(page_no, 0)
+                per_page[page_no] = i + 1
+                out = figures_dir / f"{path.stem}_p{page_no}_g{i}.png"
+                out.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    doc[page_no - 1].get_pixmap(clip=pymupdf.Rect(*box), dpi=120).save(out)
+                except Exception as exc:
+                    log.warning("cluster crop failed on p%s: %s", page_no, exc)
+                    continue
+                text = ""
+                source = "slide_title"
+                if ocr_figures:
+                    from linkrag.ingest.image import ocr, tesseract_available
+
+                    if tesseract_available():
+                        text = ocr(out)
+                        if text:
+                            source = "slide_title+ocr"
+                            ocr_used += 1
+                content = " ".join(f"{title} {text}".split())
+                units.append(
+                    EvidenceUnit(
+                        id=f"{path.stem}:p{page_no}:g{i}",
+                        modality="figure",
+                        content=content,
+                        source_file=str(path),
+                        location=Location(page=page_no, bbox=box),
+                        metadata={"image_path": str(out), "content_source": source,
+                                  "cluster": True},
+                    )
+                )
+                cluster_figs += 1
         finally:
             doc.close()
 
@@ -302,4 +449,10 @@ def ingest_pdf(
         t["ocr"] = ocr_used
         t["vlm"] = vlm_used
         t["cap_figs"] = caption_figures
+        t["cluster_figs"] = cluster_figs
+        t["tmpl_dropped"] = template_dropped
+        for page_no, st in cluster_log:
+            log.info("  p%-3d draw_ops=%-4d images=%-3d clusters=%-3d kept=%-2d "
+                     "small=%-2d logos=%d", page_no, st["draw_ops"], st["images"],
+                     st["clusters"], st["kept"], st["small"], st["logos"])
     return units
