@@ -1,0 +1,52 @@
+segment_id,start,end,true_slide,also_correct,section,ambiguous
+hsieh:a0,0.00,29.98,1,,talk,true
+hsieh:a1,30.54,50.52,2,,talk,false
+hsieh:a2,50.52,73.02,3,,talk,false
+hsieh:a3,74.00,94.82,3,,talk,true
+hsieh:a4,95.76,119.28,4,,talk,true
+hsieh:a5,119.28,146.34,4,,talk,false
+hsieh:a6,146.34,175.14,4,,talk,false
+hsieh:a7,175.56,205.18,5,,talk,false
+hsieh:a8,205.94,229.46,5,,talk,false
+hsieh:a9,229.98,257.76,6,,talk,false
+hsieh:a10,258.28,283.64,7,,talk,false
+hsieh:a11,285.10,314.72,7,,talk,false
+hsieh:a12,315.32,338.92,8,,talk,true
+hsieh:a13,340.32,368.96,10,10 11,talk,true
+hsieh:a14,368.96,394.74,10,10 11,talk,false
+hsieh:a15,394.74,420.22,12,,talk,false
+hsieh:a16,420.22,446.58,12,,talk,false
+hsieh:a17,446.90,476.06,13,,talk,false
+hsieh:a18,476.14,505.60,13,,talk,false
+hsieh:a19,506.30,536.28,13,,talk,false
+hsieh:a20,537.18,563.26,13,,talk,false
+hsieh:a21,563.78,580.08,14,,talk,false
+hsieh:a22,580.66,608.54,14,,talk,false
+hsieh:a23,609.10,636.22,15,,talk,false
+hsieh:a24,636.64,661.94,16,,talk,false
+hsieh:a25,662.26,686.52,16,,talk,false
+hsieh:a26,687.30,709.70,17,17 18,talk,false
+hsieh:a27,710.24,737.42,17,17 18,talk,true
+hsieh:a28,739.44,763.84,20,,talk,true
+hsieh:a29,764.78,773.20,20,,talk,false
+hsieh:a30,773.94,806.24,20,,talk,false
+hsieh:a31,807.44,837.24,21,,talk,false
+hsieh:a32,837.46,863.44,21,,talk,false
+hsieh:a33,864.08,892.24,22,,talk,false
+hsieh:a34,893.00,921.12,22,,talk,false
+hsieh:a35,921.52,949.40,23,,talk,false
+hsieh:a36,950.16,969.62,23,,talk,true
+hsieh:a37,993.44,1021.30,24,,talk,false
+hsieh:a38,1022.04,1049.76,24,,talk,false
+hsieh:a39,1051.86,1080.72,24,,talk,false
+hsieh:a40,1081.18,1109.66,24,,talk,false
+hsieh:a41,1109.66,1138.26,26,,talk,true
+hsieh:a42,1146.16,1173.10,none,,qa,false
+hsieh:a43,1173.50,1199.12,none,,qa,false
+hsieh:a44,1199.82,1226.12,none,,qa,false
+hsieh:a45,1226.64,1245.62,none,,qa,false
+hsieh:a46,1245.90,1271.96,none,,qa,false
+hsieh:a47,1272.42,1295.14,none,,qa,false
+hsieh:a48,1295.14,1324.68,none,,qa,false
+hsieh:a49,1325.04,1354.28,none,,qa,false
+hsieh:a50,1355.56,1367.44,none,,qa,false

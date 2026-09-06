@@ -7,11 +7,14 @@ the cross-modal gain LinkRAG claims.
 
 ## Ear-labelled alignment evaluation (2026-09-06)
 
-Ground truth is now a hand-made slide timeline read from the recording
-(`data/labels/pilot01/pilot01_slide_timeline.csv`), converted to per-segment labels
-for all 51 frozen audio segments. **Ear-labelled, approximate (±3 s), n=42 talk
-segments** (15 of them ambiguous), plus 9 Q&A segments with no true slide.
-23 of 27 slides are showable — slide 27 was never shown; 9, 11 and 18 are zero-length.
+Ground truth is a hand-made slide timeline read from the recording. **v2
+(`pilot01_slide_timeline_v2.csv`) replaces v1 entirely — v1 is deleted.** Converted to
+per-segment labels for all 51 frozen audio segments: **ear-labelled v2, approximate (±3 s), n=42 talk segments, pointing windows n=10** (9 ambiguous), plus 9 Q&A
+segments with no true slide. 26 of 27 pages are showable (27 never shown), forming 24
+distinct slides — 10/11 and 17/18 are build slides where either page scores correct.
+
+*The numbers below were regenerated against v2; the v1 figures they replace are given
+in the v1→v2 table further down.*
 
 The labelled slide sequence is **monotonic non-decreasing**, independently confirming
 the assumption `align_monotonic` is built on.
@@ -20,15 +23,15 @@ the assumption `align_monotonic` is built on.
 
 | method | exact | ±1 | backward steps | slides covered |
 |---|---:|---:|---:|---:|
-| **monotonic DP (ours)** | **29/42 = 69.0%** | **90.5%** | **0** | **21/23** |
-| naive argmax (P2-style) | 22/42 = 52.4% | 71.4% | 9 | 15/23 |
+| **monotonic DP (ours)** | **32/42 = 76.2%** | **92.9%** | **0** | **21/26** |
+| naive argmax (P2-style) | 24/42 = 57.1% | 73.8% | 9 | 15/26 |
 
-### Talk section — non-ambiguous subset (n=27)
+### Talk section — non-ambiguous subset (n=33)
 
 | method | exact | ±1 | backward steps | slides covered |
 |---|---:|---:|---:|---:|
-| **monotonic DP (ours)** | **17/27 = 63.0%** | **85.2%** | **0** | 15/23 |
-| naive argmax (P2-style) | 14/27 = 51.9% | 74.1% | 5 | 13/23 |
+| **monotonic DP (ours)** | **24/33 = 72.7%** | **90.9%** | **0** | 17/26 |
+| naive argmax (P2-style) | 19/33 = 57.6% | 78.8% | 6 | 14/26 |
 
 ### Q&A section (n=9) — no slide changes after 19:05
 
@@ -469,3 +472,32 @@ the Phase 4 notes, now with a measured cost attached.
 Net on this set: link-following converts one partial to a pass and one pass to a fail.
 It is not yet a win, and the complementarity reranker (Phase 5) is the component meant
 to decide *which* units get displaced rather than dropping whatever ranked last.
+
+## Labels v1 → v2: every number that moved
+
+v2 corrects inferred slide ends, removes three phantom zero-length slides, identifies
+two build-slide pairs, and moves the outro start 19:05 → 19:00. **No retrieval, link or
+alignment code changed between these two columns** — only the ground truth did.
+
+| measure | v1 | v2 |
+|---|---:|---:|
+| talk segments | 42 | 42 |
+| ambiguous talk segments | 15 | **9** |
+| showable slides | 23 | 26 pages / 24 distinct |
+| DP exact | 69.0% | **76.2%** |
+| DP ±1 | 90.5% | **92.9%** |
+| DP exact, non-ambiguous | 63.0% (n=27) | **72.7%** (n=33) |
+| naive exact | 52.4% | **57.1%** |
+| naive ±1 | 71.4% | **73.8%** |
+| DP pages covered | 21/23 | 21/26 |
+| DP backward steps | 0 | 0 |
+| Q&A: DP distinct slides | 1 | 1 |
+| Q&A: naive distinct slides | 5 | 5 |
+| tuned `start_prior_mu` | 0.02 | **0.02 (unchanged)** |
+
+**The aligner did not improve; the measurement did.** Roughly seven points of the DP's
+apparent gain is v1 mislabelling. The DP-over-naive margin is stable (+16.7pp v1,
++19.1pp v2), which is the part that was never dependent on label quality.
+
+One v1 caveat is retired: the mu gain no longer sits only on ambiguous segments — the
+non-ambiguous subset moves 69.7% → 72.7% with mu, so the head-of-sequence fix is real.

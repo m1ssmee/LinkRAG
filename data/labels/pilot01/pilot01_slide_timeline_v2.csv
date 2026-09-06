@@ -1,0 +1,29 @@
+slide,start,end,note
+1,0:00,0:25,
+2,0:25,0:43,
+3,0:43,1:35,
+4,1:35,2:49,
+5,2:50,3:40,
+6,3:40,4:08,
+7,4:08,5:05,
+8,5:05,5:35,
+9,5:35,5:40,short but real (5 s)
+10,5:40,6:28,build slide: 10 and 11 are the same slide; either label is correct
+11,5:40,6:28,build slide: 10 and 11 are the same slide; either label is correct
+12,6:28,7:19,
+13,7:19,9:14,
+14,9:14,10:19,
+15,10:19,10:29,
+16,10:29,11:34,start corrected from 10:20 (overlapped slide 15)
+17,11:34,12:18,build slide: 17 and 18 are the same slide with changed diagrams; either label is correct
+18,11:34,12:18,build slide: 17 and 18 are the same slide with changed diagrams; either label is correct
+19,12:18,12:25,
+20,12:25,13:31,
+21,13:31,14:20,
+22,14:20,15:33,
+23,15:33,16:07,
+24,16:07,18:20,speaker shows a live demo not present in the deck
+25,18:20,18:23,
+26,18:23,19:00,
+27,,,never shown
+outro,19:00,22:51,Q&A with students; no slide changes

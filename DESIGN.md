@@ -279,33 +279,42 @@ roughly what P2 does.
 
 ### Measured on pilot01 (51 audio segments × 27 slides)
 
-Evaluated against an **ear-labelled slide timeline, approximate (±3 s), n=42 talk
-segments** (`data/labels/pilot01/`), plus 9 Q&A segments with no true slide.
+Evaluated against **ear-labelled v2, approximate (±3 s), n=42 talk segments, pointing windows n=10** (`data/labels/pilot01/`), plus 9 Q&A segments with no true
+slide. **Labels v2 replaced v1 entirely**; v1 is deleted and must not be used.
 
 | | monotonic DP | naive argmax |
 |---|---|---|
-| exact (talk, n=42) | **29/42 = 69.0%** | 22/42 = 52.4% |
-| ±1 slide | **90.5%** | 71.4% |
-| exact (non-ambiguous, n=27) | **63.0%** | 51.9% |
+| exact (talk, n=42) | **32/42 = 76.2%** | 24/42 = 57.1% |
+| ±1 slide | **92.9%** | 73.8% |
+| exact (non-ambiguous, n=33) | **72.7%** | 57.6% |
 | backward steps | **0** | 9 |
-| slides covered (23 showable) | **21/23** | 15/23 |
+| pages covered (26 showable = 24 distinct slides) | **21/26** | 15/26 |
 | Q&A (n=9): distinct slides assigned | **1 — holds slide 26** | 5 — wanders |
+
+Build slides (10/11 and 17/18) are one slide with two page numbers; either is scored
+correct. v1's three "zero-length" slides were an artifact of inferred ends — v2 has
+none, and its corrected boundaries cut ambiguous segments from 15 to 9.
 
 The naive baseline's errors are *catastrophic*; the DP's are adjacent slides, and
 **11 of 13 are off-by-one ahead of truth** (p5→p6, p8→p9, p13→p14, p17→p18) — the path
 runs slightly early, consistent with a speaker discussing the next slide before
 advancing. A lag term is the obvious next parameter; not attempted.
 
-`start_prior_mu` was added and tuned 0.0 → **0.02**, fixing the head-of-sequence error
-(first segment p3 → p1). Two caveats, recorded in full in `reports/regression.md`: it
-was fitted on the same labels it is scored on (no held-out split, so 69.0% is
-optimistic), and the entire gain sits on *ambiguous* segments — the non-ambiguous
-subset is 63.0% at every value of mu.
+`start_prior_mu` is **0.02**, re-checked against v2 and unchanged (same plateau).
+Unlike v1, the gain now also shows on the non-ambiguous subset (69.7% → 72.7%), which
+retires the v1 caveat that it only moved unreliable labels. It is still fitted on the
+same labels it is scored on — no held-out split, so 76.2% is optimistic.
 
-**Deictic precision proxy** against the same labels: 42/51 = 82.4% of deictic pairs
-link a figure sitting on the segment's true slide — **tier 2 scores 16/16 = 100%**,
-tier 3 26/35 = 74.3%. Direct evidence that the cue tiering separates reliable deixis
-from noise. It checks the slide, not the referent; referent labels do not exist.
+**Deictic evaluation** now has referent-ish ground truth: `pilot01_pointing_windows.csv`
+marks 10 windows where the speaker is referring to something on screen (outside a
+window the label is UNKNOWN, not negative). Full report:
+`reports/deictic_eval_pilot01.md`.
+
+Only **3 of 10 windows are scorable** — seven point at a slide with no extracted figure
+unit, one is a table, one is the external demo. Within those: precision **6/6 = 100%**,
+detection recall **3/5 = 60%**, and **0 false positives** on the slide-24 known
+negative. All six scorable pairs are tier 3, so this evaluation says nothing about
+whether tiering helps. **The binding constraint is figure extraction, not deixis.**
 
 Artifacts: `data/processed/links.jsonl` (51 audio_slide Links), `links.npz`
 (similarity + path, so plotting and eval skip re-embedding),

@@ -2,7 +2,7 @@
 """DP vs naive alignment against the ear-labelled slide timeline.
 
 Labels: segment_id,start,end,true_slide,section,ambiguous
-(`data/labels/pilot01/pilot01_alignment_labels.csv`, built by make_alignment_labels.py).
+(`data/labels/pilot01/pilot01_alignment_labels_v2.csv`, built by make_alignment_labels.py).
 
 Reported per condition: exact accuracy, +/-1 accuracy, backward steps, and slides
 covered out of the showable count. The Q&A section is scored separately -- it has no
@@ -25,11 +25,15 @@ from linkrag.link.align import align_monotonic, align_naive
 def load_labels(path: str | Path) -> list[dict]:
     rows = []
     for row in csv.DictReader(open(path, newline="")):
+        alt = {int(p) for p in (row.get("also_correct") or "").split() if p}
+        true = None if row["true_slide"] in ("none", "") else int(row["true_slide"])
         rows.append({
             "segment_id": row["segment_id"],
             "start": float(row["start"]),
             "end": float(row["end"]),
-            "true_slide": None if row["true_slide"] in ("none", "") else int(row["true_slide"]),
+            "true_slide": true,
+            # A build slide has two page numbers for one slide; either is correct.
+            "accept": ({true} | alt) if true is not None else set(),
             "section": row.get("section", "talk"),
             "ambiguous": str(row.get("ambiguous", "")).lower() == "true",
         })
@@ -57,7 +61,8 @@ def score(path, labels, index_of, pages, tolerance=0):
             continue
         predicted = int(pages[path[i]])
         total += 1
-        if abs(predicted - row["true_slide"]) <= tolerance:
+        accept = row["accept"] or {row["true_slide"]}
+        if min(abs(predicted - a) for a in accept) <= tolerance:
             hits += 1
         else:
             misses.append((row["segment_id"], row["true_slide"], predicted))
@@ -66,10 +71,11 @@ def score(path, labels, index_of, pages, tolerance=0):
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--labels", default="data/labels/pilot01/pilot01_alignment_labels.csv")
+    ap.add_argument("--labels", default="data/labels/pilot01/pilot01_alignment_labels_v2.csv")
     ap.add_argument("--npz", default="data/processed/links.npz")
     ap.add_argument("--config", default="configs/default.yaml")
-    ap.add_argument("--showable", type=int, default=23)
+    ap.add_argument("--showable", type=int, default=26,
+                    help="showable PAGES (v2: 26 pages = 24 distinct slides)")
     ap.add_argument("--mu", type=float, default=None, help="override start_prior_mu")
     args = ap.parse_args(argv)
 

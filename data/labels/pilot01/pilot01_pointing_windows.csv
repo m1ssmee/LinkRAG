@@ -1,0 +1,11 @@
+start,end,slide,target,coverage,note
+2:21,2:49,4,diagram,from_timestamp,speaker starts discussing the diagram at 2:21; end assumed = slide end
+6:37,7:19,12,table,from_timestamp,example table; end assumed = slide end
+7:48,9:14,13,graph,from_timestamp,graph diagram; end assumed = slide end
+9:14,10:19,14,diagram,entire_slide,talking about the diagrams the whole time
+11:18,11:34,16,figure,from_timestamp,example figures; end assumed = slide end
+11:34,12:18,17,diagram,entire_slide,build slide 17/18; talking about diagrams the entire time
+12:44,13:31,20,figure,from_timestamp,end assumed = slide end
+14:20,15:33,22,graph_and_figure,entire_slide,talking about graph and figure the entire time
+15:33,16:07,23,graph,entire_slide,talking about graph the entire time
+16:07,18:20,24,external_demo,entire_slide,live demo not in the deck; no figure unit exists to link to
