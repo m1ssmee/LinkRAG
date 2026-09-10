@@ -156,6 +156,16 @@ retrieve:
     # unit outrank a weak seed. Off by default: it changes every recorded number.
     normalise_seeds: false
 
+  # --- complementarity-aware reranking (Phase 5, novel component 3) ---
+  rerank:
+    method: complementarity      # none (plain top-k) | mmr | complementarity
+    alpha: 0.3                   # bonus per newly represented modality
+    beta: 0.2                    # bonus per link edge into the selected set
+    gamma: 0.4                   # penalty on same-modality cosine redundancy
+    mmr_lambda: 0.5              # only used by method: mmr
+    cross_encoder: null          # e.g. BAAI/bge-reranker-base; null = retrieval scores
+    pool: 20                     # candidates retrieved before reranking down to k
+
   # --- iterative re-querying, our P1 (MI-RAG) approximation ---
   iterative:
     rounds: 2                    # total retrievals, including the first

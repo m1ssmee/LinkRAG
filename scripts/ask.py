@@ -17,7 +17,8 @@ from linkrag.link.align import load_links
 from linkrag.manifest import MANIFEST_NAME, load_manifest
 from linkrag.link.graph import build_graph
 from linkrag.retrieve.baseline import retrieve_scored
-from linkrag.retrieve.linkrag import retrieve_linkrag
+from linkrag.retrieve.linkrag import RetrievedUnit, retrieve_linkrag
+from linkrag.retrieve.rerank import METHODS, rerank, set_diagnostics
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -28,6 +29,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--index", default=None)
     parser.add_argument("--top-k", type=int, default=None)
     parser.add_argument("--links", default=None, help="links.jsonl for --mode linkrag")
+    parser.add_argument("--rerank", choices=list(METHODS), default=None,
+                        help="override retrieve.rerank.method")
     parser.add_argument("--show-evidence", action="store_true")
     args = parser.parse_args(argv)
 
@@ -49,6 +52,11 @@ def main(argv: list[str] | None = None) -> int:
 
     manifest_hash = (load_manifest(Path(index_dir).parent / MANIFEST_NAME) or {}).get("hash")
     lcfg = cfg["retrieve"]["linkrag"]
+    rcfg = cfg["retrieve"]["rerank"]
+    method = args.rerank or rcfg["method"]
+    k = args.top_k or lcfg["k_final"]
+    pool = max(int(rcfg.get("pool", k)), k) if method != "none" else k
+    graph = None
     if args.mode == "linkrag":
         links_path = args.links or cfg["link"]["align"]["links_path"]
         if not Path(links_path).exists():
@@ -57,21 +65,23 @@ def main(argv: list[str] | None = None) -> int:
                             load_links(links_path, expect_manifest=manifest_hash))
         results = retrieve_linkrag(
             args.question, index, graph, encoder=encoder, mode="linkrag",
-            k_seed=lcfg["k_seed"], k_final=args.top_k or lcfg["k_final"],
+            k_seed=lcfg["k_seed"], k_final=pool,
             hops=lcfg["hops"], link_types=lcfg["link_types"],
             min_link_score=lcfg["min_link_score"], decay=lcfg["decay"],
             candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"],
         )
     else:
         results = [
-            type("R", (), {"unit": u, "score": s, "origin": "seed",
-                           "explain": (lambda self: "seed")})()
+            RetrievedUnit(unit=u, score=s, origin="seed")
             for u, s in retrieve_scored(
-                args.question, index, encoder=encoder,
-                top_k=args.top_k or cfg["retrieve"]["top_k"],
+                args.question, index, encoder=encoder, top_k=pool,
                 candidates=cfg["retrieve"]["candidates"],
                 rrf_k=cfg["retrieve"]["rrf_k"])
         ]
+    results = rerank(results, k, method=method, index=index, graph=graph,
+                     alpha=rcfg["alpha"], beta=rcfg["beta"], gamma=rcfg["gamma"],
+                     mmr_lambda=rcfg["mmr_lambda"], question=args.question,
+                     cross_encoder=rcfg.get("cross_encoder"), device=cfg["device"])
     retrieved = [(r.unit, r.score) for r in results]
     units = [r.unit for r in results]
 

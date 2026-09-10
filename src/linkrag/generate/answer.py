@@ -129,9 +129,13 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
                 token_param = "max_completion_tokens"
                 payload[token_param] = payload.pop("max_tokens")
                 response = post(payload)
-        except requests.ConnectionError as exc:
+        except requests.RequestException as exc:
+            # RequestException, not ConnectionError: a read timeout is just as fatal
+            # to the call and was previously an unhandled traceback that killed a
+            # whole batch comparison mid-run.
             hint = " Is `ollama serve` running?" if provider == "ollama" else ""
-            raise RuntimeError(f"cannot reach LLM at {base_url}.{hint}") from exc
+            raise RuntimeError(
+                f"LLM call to {base_url} failed ({type(exc).__name__}).{hint}") from exc
 
         if response.status_code != 200:
             raise RuntimeError(f"LLM returned {response.status_code}: {response.text[:300]}")

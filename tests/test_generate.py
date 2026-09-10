@@ -228,3 +228,18 @@ def test_completer_surfaces_a_non_token_400(monkeypatch) -> None:
                                "base_url": "https://api.openai.com/v1"})
     with pytest.raises(RuntimeError, match="temperature"):
         complete("s", "u")
+
+
+def test_completer_reports_a_read_timeout_not_just_a_refused_connection(monkeypatch) -> None:
+    """A 120s read timeout on a hosted API used to escape as an unhandled traceback
+    and kill a whole batch comparison mid-run."""
+    import requests
+
+    def timeout(*a, **k):
+        raise requests.ReadTimeout("read timed out")
+
+    monkeypatch.setattr(requests, "post", timeout)
+    complete = http_completer({"provider": "openai", "model": "m",
+                               "base_url": "https://api.openai.com/v1"})
+    with pytest.raises(RuntimeError, match="ReadTimeout"):
+        complete("sys", "user")

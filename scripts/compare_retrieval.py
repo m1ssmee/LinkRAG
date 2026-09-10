@@ -31,6 +31,7 @@ from linkrag.link.graph import build_graph
 from linkrag.retrieve.baseline import retrieve_scored
 from linkrag.retrieve.iterative import retrieve_iterative, retrieve_linkrag_iter
 from linkrag.retrieve.linkrag import expansion_report, retrieve_linkrag
+from linkrag.retrieve.rerank import set_diagnostics
 
 
 def gold_ids_for(row: dict, index: Index) -> set[str]:
@@ -85,12 +86,17 @@ def main(argv: list[str] | None = None) -> int:
     methods: dict[str, dict] = {}
     expansion: dict[str, tuple[int, int]] = {}
 
-    def record(name, qid, recall, precision, latency, calls, ids):
+    def record(name, qid, recall, precision, latency, calls, ids, results=None):
         m = methods.setdefault(name, {"recall": [], "precision": [], "latency": [],
-                                      "calls": 0, "per_q": {}})
+                                      "calls": 0, "per_q": {}, "mods": [], "red": []})
         m["recall"].append(recall); m["precision"].append(precision)
         m["latency"].append(latency); m["calls"] += calls
         m["per_q"][qid] = (recall, ids)
+        units = results or [type("R", (), {"unit": u, "id": u.id})()
+                            for u in (index.units[index.id_to_pos[i]] for i in ids
+                                      if i in index.id_to_pos)]
+        d = set_diagnostics(units, index)
+        m["mods"].append(d["modalities"]); m["red"].append(d["redundancy"])
 
     for row in rows:
         gold = gold_ids_for(row, index)
@@ -145,16 +151,20 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\n{len(rows)} questions · k={k} · corpus {len(index)} units · "
           f"normalise_seeds={norm}\n")
-    header = f"{'method':<16}{'recall@k':>10}{'prec@k':>9}{'latency':>10}{'LLM calls':>11}"
+    header = (f"{'method':<16}{'recall@k':>10}{'prec@k':>9}{'modalities':>12}"
+              f"{'redundancy':>12}{'latency':>10}{'LLM calls':>11}")
     print(header); print("-" * len(header))
-    lines = ["", f"| method | recall@{k} | precision@{k} | avg latency | LLM calls |",
-             "|---|---:|---:|---:|---:|"]
+    lines = ["", f"| method | recall@{k} | precision@{k} | distinct modalities "
+             f"| redundancy | avg latency | LLM calls |",
+             "|---|---:|---:|---:|---:|---:|---:|"]
     for name in order:
         m = methods[name]
         print(f"{name:<16}{mean(m['recall']):>9.1%}{mean(m['precision']):>9.1%}"
+              f"{mean(m['mods']):>12.2f}{mean(m['red']):>12.3f}"
               f"{mean(m['latency']):>9.2f}s{m['calls']:>11}")
         lines.append(f"| {name} | {mean(m['recall']):.1%} | {mean(m['precision']):.1%} "
-                     f"| {mean(m['latency']):.2f}s | {m['calls']} |")
+                     f"| {mean(m['mods']):.2f} | {mean(m['red']):.3f} "
+             f"| {mean(m['latency']):.2f}s | {m['calls']} |")
 
     print(f"\nlinkrag expansion per question (expanded units / seeds with edges):")
     for qid, (exp, seeded) in expansion.items():

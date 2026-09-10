@@ -575,6 +575,50 @@ order** — so for a query matching nothing, every unit ties at BM25 0.0 and the
 unit kept appearing in baseline top-5. Now a stable descending sort (ties break by
 ascending position); `test_sparse_ties_break_by_position_not_reverse_position` guards it.
 
+## Phase 5 — complementarity-aware reranking (`retrieve/rerank.py`)
+
+Scores the **set**, not the unit. Objective in LaTeX in the module docstring:
+
+```
+F(R) = Σ rel(u)  +  α·|distinct modalities|  +  β·|link edges inside R|
+                 −  γ·Σ cos(u,v) over same-modality pairs
+```
+
+Greedy MMR-style selection (exact maximisation is NP-hard). **Redundancy is charged
+only within a modality** — an audio segment and the slide it describes are *supposed*
+to be similar, and penalising that would defeat the objective.
+
+Two ablations share the same code path so they cannot diverge by accident:
+`none` (plain top-k) and `mmr` (standard MMR, text-diversity only — modality-blind and
+link-blind, which isolates what α and β add).
+
+Optional cross-encoder (`retrieve.rerank.cross_encoder`, e.g. `BAAI/bge-reranker-base`)
+supplies `rel(u)` from a modality-tagged string — `[AUDIO 18:40-19:10] …`,
+`[FIGURE p.12] …`. A missing model degrades to retrieval scores with a warning rather
+than aborting the query.
+
+`--rerank none|mmr|complementarity` on `scripts/ask.py`. Candidates are retrieved to
+`rerank.pool` (20) then selected down to `k_final`, so reranking filters rather than
+merely reorders.
+
+### Measured: modality coverage and redundancy (4 questions, k=8)
+
+| method | recall@8 | prec@8 | distinct modalities | redundancy |
+|---|---:|---:|---:|---:|
+| baseline | 33.3% | 9.4% | 1.75 | 0.711 |
+| iterative (P1) | 39.6% | 12.5% | 2.25 | 0.689 |
+| linkrag | 50.0% | 15.6% | 2.75 | 0.710 |
+| **linkrag_iter** | **75.0%** | **28.1%** | **3.00** | **0.678** |
+
+`linkrag_iter` reaches **3.00 — every question's set spans all three modalities**.
+These figures are from `compare_retrieval.py`, which reports the diagnostics but does
+**not** itself apply the reranker; the reranker runs in `ask.py`. Wiring it into the
+comparison is the obvious next step and would let α/β/γ be ablated on recall.
+
+⚠️ `iterative` scored 56.2% in an earlier run and 39.6% here with no config change —
+the follow-up query is LLM-generated and not deterministic. Only `baseline` and
+`linkrag` repeat exactly.
+
 ## Known issues, not fixed
 
 - **(a) Discourse boundaries.** Units are cut by sentence and duration only, with no
