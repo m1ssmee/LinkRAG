@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
-"""Compare baseline vs iterative (P1) vs linkrag retrieval on a labelled question set.
+"""(retrieval mode x rerank method) matrix on a labelled question set.
 
-    python scripts/compare_retrieval.py --questions tests/regression/pilot01_questions.jsonl
+Modes: baseline, iterative (P1), linkrag, linkrag_iter.
+Rerank: none (plain top-k), mmr (text diversity), complementarity.
+The greedy selection *replaces* the top-k cut: each mode retrieves `rerank.pool`
+candidates and the reranker selects k from them.
 
-Input JSONL, one question per line, either:
-  {"question": "...", "gold_unit_ids": ["id1", "id2"]}
-or the regression format, whose `gold_units` locators (file+page / file+time) are
-resolved against the index -- so the same gold file serves both harnesses.
-
-Reports evidence recall@k and precision@k, plus what each method *costs*: LLM calls
-and wall-clock. Iterative buys its extra evidence with an LLM call on the critical
-path; link-following spends none. A recall win that ignores that is not a fair
-comparison.
+**LLM measurement rule.** Cells whose mode calls an LLM are run `--repeats` times and
+reported as mean +/- std; a single-run number for such a cell is refused, not printed.
+Retrieval happens once per (mode, repeat) and all three rerank methods are applied to
+that same candidate pool, so the rerank axis is not confounded by LLM variance.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import statistics
 import time
 from pathlib import Path
 
@@ -26,12 +25,15 @@ from linkrag.eval import matches_locator
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, default_encoder
 from linkrag.link.align import load_links
-from linkrag.manifest import MANIFEST_NAME, load_manifest
 from linkrag.link.graph import build_graph
+from linkrag.manifest import MANIFEST_NAME, load_manifest
 from linkrag.retrieve.baseline import retrieve_scored
 from linkrag.retrieve.iterative import retrieve_iterative, retrieve_linkrag_iter
-from linkrag.retrieve.linkrag import expansion_report, retrieve_linkrag
-from linkrag.retrieve.rerank import set_diagnostics
+from linkrag.retrieve.linkrag import RetrievedUnit, retrieve_linkrag
+from linkrag.retrieve.rerank import METHODS, rerank, set_diagnostics
+
+MODES = ("baseline", "iterative", "linkrag", "linkrag_iter")
+LLM_MODES = {"iterative", "linkrag_iter"}
 
 
 def gold_ids_for(row: dict, index: Index) -> set[str]:
@@ -43,11 +45,47 @@ def gold_ids_for(row: dict, index: Index) -> set[str]:
     return ids
 
 
-def prf(retrieved_ids: list[str], gold: set[str]) -> tuple[float, float]:
+def prf(retrieved_ids, gold):
     if not gold:
         return float("nan"), float("nan")
     hit = len(set(retrieved_ids) & gold)
     return hit / len(gold), hit / max(len(retrieved_ids), 1)
+
+
+def retrieve_pool(mode, question, index, graph, *, encoder, cfg, complete, pool):
+    """Candidates for one (mode, question). Returns (results, llm_calls, seconds)."""
+    lcfg, icfg = cfg["retrieve"]["linkrag"], cfg["retrieve"]["iterative"]
+    common = dict(candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"])
+    norm = lcfg.get("normalise_seeds", False)
+    t0 = time.perf_counter()
+
+    if mode == "baseline":
+        out = [RetrievedUnit(unit=u, score=s, origin="seed")
+               for u, s in retrieve_scored(question, index, encoder=encoder,
+                                           top_k=pool, **common)]
+        return out, 0, time.perf_counter() - t0
+
+    if mode == "linkrag":
+        out = retrieve_linkrag(question, index, graph, encoder=encoder, mode="linkrag",
+                               k_seed=lcfg["k_seed"], k_final=pool, hops=lcfg["hops"],
+                               link_types=lcfg["link_types"],
+                               min_link_score=lcfg["min_link_score"],
+                               decay=lcfg["decay"], normalise_seeds=norm, **common)
+        return out, 0, time.perf_counter() - t0
+
+    if mode == "iterative":
+        it = retrieve_iterative(question, index, encoder=encoder, complete=complete,
+                                rounds=icfg["rounds"], k_per_round=icfg["k_per_round"],
+                                k_final=pool, **common)
+        return it.units, it.llm_calls, time.perf_counter() - t0
+
+    out, it = retrieve_linkrag_iter(
+        question, index, graph, encoder=encoder, complete=complete,
+        rounds=icfg["rounds"], k_seed=lcfg["k_seed"], k_final=pool,
+        hops=lcfg["hops"], link_types=lcfg["link_types"],
+        min_link_score=lcfg["min_link_score"], decay=lcfg["decay"],
+        normalise_seeds=norm, **common)
+    return out, it.llm_calls, time.perf_counter() - t0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -56,133 +94,124 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--config", default="configs/default.yaml")
     ap.add_argument("--index", default=None)
     ap.add_argument("--links", default=None)
-    ap.add_argument("--k", type=int, default=None, help="k for all methods (default k_final)")
-    ap.add_argument("--no-iterative", action="store_true", help="skip the LLM-spending methods")
-    ap.add_argument("--normalise-seeds", action="store_true",
-                    help="rank-normalise seed scores so expansion can outrank a weak seed")
-    ap.add_argument("--out", default=None, help="also append a markdown table here")
+    ap.add_argument("--k", type=int, default=None)
+    ap.add_argument("--repeats", type=int, default=3, help="runs per LLM-touching cell")
+    ap.add_argument("--no-llm", action="store_true", help="skip modes that call an LLM")
+    ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
 
     setup_logging()
     cfg = load_config(args.config)
-    lcfg = cfg["retrieve"]["linkrag"]
-    icfg = cfg["retrieve"]["iterative"]
+    lcfg, rcfg = cfg["retrieve"]["linkrag"], cfg["retrieve"]["rerank"]
+    llm = cfg["models"]["llm"]
     k = args.k or lcfg["k_final"]
+    pool = max(int(rcfg.get("pool", k)), k)
 
     index = Index.load(args.index or cfg["index"]["store_dir"])
     encoder = default_encoder(index.embedding_model, cfg["device"], index.normalize)
     encoder([""])
     index_dir = Path(args.index or cfg["index"]["store_dir"])
-    manifest_hash = (load_manifest(index_dir.parent / MANIFEST_NAME) or {}).get("hash")
+    manifest = load_manifest(index_dir.parent / MANIFEST_NAME) or {}
     graph = build_graph(list(index.units),
                         load_links(args.links or cfg["link"]["align"]["links_path"],
-                                   expect_manifest=manifest_hash))
+                                   expect_manifest=manifest.get("hash")))
 
     rows = [json.loads(l) for l in Path(args.questions).read_text().splitlines()
             if l.strip() and "_meta" not in l]
-    complete = None if args.no_iterative else http_completer(cfg["models"]["llm"])
-    norm = args.normalise_seeds or lcfg.get("normalise_seeds", False)
+    complete = None if args.no_llm else http_completer(llm)
+    modes = [m for m in MODES if not (args.no_llm and m in LLM_MODES)]
 
-    methods: dict[str, dict] = {}
-    expansion: dict[str, tuple[int, int]] = {}
+    # cell -> list of per-run dicts; a run is the mean over all questions
+    cells: dict[tuple[str, str], list[dict]] = {}
+    id_sets: dict[str, list[tuple]] = {}
+    calls_total = 0
 
-    def record(name, qid, recall, precision, latency, calls, ids, results=None):
-        m = methods.setdefault(name, {"recall": [], "precision": [], "latency": [],
-                                      "calls": 0, "per_q": {}, "mods": [], "red": []})
-        m["recall"].append(recall); m["precision"].append(precision)
-        m["latency"].append(latency); m["calls"] += calls
-        m["per_q"][qid] = (recall, ids)
-        units = results or [type("R", (), {"unit": u, "id": u.id})()
-                            for u in (index.units[index.id_to_pos[i]] for i in ids
-                                      if i in index.id_to_pos)]
-        d = set_diagnostics(units, index)
-        m["mods"].append(d["modalities"]); m["red"].append(d["redundancy"])
+    for mode in modes:
+        repeats = args.repeats if mode in LLM_MODES else 1
+        for run in range(repeats):
+            per_method = {m: {"recall": [], "prec": [], "mods": [], "red": []}
+                          for m in METHODS}
+            latencies, run_ids = [], []
+            for row in rows:
+                gold = gold_ids_for(row, index)
+                results, calls, secs = retrieve_pool(
+                    mode, row["question"], index, graph, encoder=encoder, cfg=cfg,
+                    complete=complete, pool=pool)
+                calls_total += calls
+                latencies.append(secs)
+                for method in METHODS:
+                    picked = rerank(results, k, method=method, index=index, graph=graph,
+                                    alpha=rcfg["alpha"], beta=rcfg["beta"],
+                                    gamma=rcfg["gamma"], mmr_lambda=rcfg["mmr_lambda"],
+                                    question=row["question"],
+                                    cross_encoder=rcfg.get("cross_encoder"),
+                                    device=cfg["device"])
+                    ids = [r.id for r in picked]
+                    r_, p_ = prf(ids, gold)
+                    d = set_diagnostics(picked, index)
+                    per_method[method]["recall"].append(r_)
+                    per_method[method]["prec"].append(p_)
+                    per_method[method]["mods"].append(d["modalities"])
+                    per_method[method]["red"].append(d["redundancy"])
+                    if method == "complementarity":
+                        run_ids.append(tuple(sorted(ids)))
+            id_sets.setdefault(mode, []).append(tuple(run_ids))
+            mean = lambda xs: sum(xs) / len(xs)
+            for method in METHODS:
+                cells.setdefault((mode, method), []).append(
+                    {kk: mean(vv) for kk, vv in per_method[method].items()}
+                    | {"latency": mean(latencies)})
 
-    for row in rows:
-        gold = gold_ids_for(row, index)
-        qid = row.get("qid", row["question"][:24])
+    def fmt(values):
+        if len(values) == 1:
+            return f"{values[0]:.1%}"
+        return f"{statistics.mean(values):.1%} ± {statistics.stdev(values):.1%}"
 
-        t0 = time.perf_counter()
-        base_ids = [u.id for u, _ in retrieve_scored(
-            row["question"], index, encoder=encoder, top_k=k,
-            candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"])]
-        record("baseline", qid, *prf(base_ids, gold), time.perf_counter() - t0, 0, base_ids)
+    print(f"\n{len(rows)} questions · k={k} · pool={pool} · corpus {len(index)} units "
+          f"({manifest.get('hash', '?')})")
+    print(f"backend: {llm.get('provider')} · model: {llm.get('model')} · "
+          f"temperature={llm.get('temperature')} · seed={llm.get('seed')}")
+    print(f"repeats: {args.repeats} for {sorted(LLM_MODES)}, 1 for deterministic modes "
+          f"· total LLM calls: {calls_total}\n")
 
-        t0 = time.perf_counter()
-        link_results = retrieve_linkrag(
-            row["question"], index, graph, encoder=encoder, mode="linkrag",
-            k_seed=lcfg["k_seed"], k_final=k, hops=lcfg["hops"],
-            link_types=lcfg["link_types"], min_link_score=lcfg["min_link_score"],
-            decay=lcfg["decay"], candidates=cfg["retrieve"]["candidates"],
-            rrf_k=cfg["retrieve"]["rrf_k"], normalise_seeds=norm)
-        link_ids = [r.id for r in link_results]
-        expanded, seeded = expansion_report(link_results, graph)
-        expansion[qid] = (expanded, seeded)
-        if expanded == 0 and seeded:
-            print(f"WARNING: {qid}: linkrag expanded 0 units although {seeded} seed(s) "
-                  f"have graph edges -- results are identical to baseline")
-        record("linkrag", qid, *prf(link_ids, gold), time.perf_counter() - t0, 0, link_ids)
-
-        if complete is not None:
-            it = retrieve_iterative(row["question"], index, encoder=encoder,
-                                    complete=complete, rounds=icfg["rounds"],
-                                    k_per_round=icfg["k_per_round"], k_final=k,
-                                    candidates=cfg["retrieve"]["candidates"],
-                                    rrf_k=cfg["retrieve"]["rrf_k"])
-            record("iterative (P1)", qid, *prf(it.ids, gold), it.latency_s,
-                   it.llm_calls, it.ids)
-
-            t0 = time.perf_counter()
-            combo, combo_it = retrieve_linkrag_iter(
-                row["question"], index, graph, encoder=encoder, complete=complete,
-                rounds=icfg["rounds"], k_seed=lcfg["k_seed"], k_final=k,
-                candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"],
-                hops=lcfg["hops"], link_types=lcfg["link_types"],
-                min_link_score=lcfg["min_link_score"], decay=lcfg["decay"],
-                normalise_seeds=norm)
-            combo_ids = [r.id for r in combo]
-            expansion[qid] = expansion.get(qid, (0, 0))
-            record("linkrag_iter", qid, *prf(combo_ids, gold),
-                   time.perf_counter() - t0, combo_it.llm_calls, combo_ids)
-
-    mean = lambda xs: sum(xs) / len(xs) if xs else float("nan")
-    order = [m for m in ("baseline", "iterative (P1)", "linkrag", "linkrag_iter")
-             if m in methods]
-
-    print(f"\n{len(rows)} questions · k={k} · corpus {len(index)} units · "
-          f"normalise_seeds={norm}\n")
-    header = (f"{'method':<16}{'recall@k':>10}{'prec@k':>9}{'modalities':>12}"
-              f"{'redundancy':>12}{'latency':>10}{'LLM calls':>11}")
+    header = (f"{'mode':<14}{'rerank':<17}{'recall@k':>16}{'prec@k':>16}"
+              f"{'modalities':>12}{'redundancy':>12}")
     print(header); print("-" * len(header))
-    lines = ["", f"| method | recall@{k} | precision@{k} | distinct modalities "
-             f"| redundancy | avg latency | LLM calls |",
-             "|---|---:|---:|---:|---:|---:|---:|"]
-    for name in order:
-        m = methods[name]
-        print(f"{name:<16}{mean(m['recall']):>9.1%}{mean(m['precision']):>9.1%}"
-              f"{mean(m['mods']):>12.2f}{mean(m['red']):>12.3f}"
-              f"{mean(m['latency']):>9.2f}s{m['calls']:>11}")
-        lines.append(f"| {name} | {mean(m['recall']):.1%} | {mean(m['precision']):.1%} "
-                     f"| {mean(m['mods']):.2f} | {mean(m['red']):.3f} "
-             f"| {mean(m['latency']):.2f}s | {m['calls']} |")
+    md = ["", f"| mode | rerank | recall@{k} | precision@{k} | distinct modalities "
+          f"| redundancy | runs |", "|---|---|---:|---:|---:|---:|---:|"]
+    for mode in modes:
+        for method in METHODS:
+            runs = cells[(mode, method)]
+            if mode in LLM_MODES and len(runs) < 3:
+                print(f"{mode:<14}{method:<17}{'REFUSED (n<3)':>16}")
+                md.append(f"| {mode} | {method} | REFUSED (n<3) | | | | {len(runs)} |")
+                continue
+            rec = [r["recall"] for r in runs]
+            pre = [r["prec"] for r in runs]
+            mods = statistics.mean([r["mods"] for r in runs])
+            red = statistics.mean([r["red"] for r in runs])
+            print(f"{mode:<14}{method:<17}{fmt(rec):>16}{fmt(pre):>16}"
+                  f"{mods:>12.2f}{red:>12.3f}")
+            md.append(f"| {mode} | {method} | {fmt(rec)} | {fmt(pre)} | {mods:.2f} "
+                      f"| {red:.3f} | {len(runs)} |")
 
-    print(f"\nlinkrag expansion per question (expanded units / seeds with edges):")
-    for qid, (exp, seeded) in expansion.items():
-        flag = "  <-- NO EXPANSION" if exp == 0 and seeded else ""
-        print(f"  {qid:<6} {exp:>2} / {seeded}{flag}")
-
-    print(f"\nper-question recall@{k}:")
-    print(f"  {'qid':<6}" + "".join(f"{n:>18}" for n in order))
-    for row in rows:
-        qid = row.get("qid", row["question"][:24])
-        cells = "".join(f"{methods[n]['per_q'][qid][0]:>17.0%} " for n in order)
-        print(f"  {qid:<6}{cells}")
+    print("\nrepeat determinism (complementarity cell, identical returned id sets?):")
+    md += ["", "Repeat determinism (complementarity cell):", ""]
+    for mode in modes:
+        runs = id_sets[mode]
+        if len(runs) == 1:
+            verdict = "deterministic by construction (no LLM, single run)"
+        else:
+            verdict = ("IDENTICAL across runs" if len(set(runs)) == 1
+                       else f"NOT identical — {len(set(runs))} distinct outcomes in {len(runs)} runs")
+        print(f"  {mode:<14} {verdict}")
+        md.append(f"- `{mode}`: {verdict}")
 
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         with open(args.out, "a") as fh:
-            fh.write("\n".join(lines) + "\n")
-        print(f"\nappended table to {args.out}")
+            fh.write("\n".join(md) + "\n")
+        print(f"\nappended to {args.out}")
     return 0
 
 

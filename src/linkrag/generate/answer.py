@@ -118,6 +118,12 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
         # eval harness and determinism is a property the results depend on.
         if llm_cfg.get("temperature") is not None:
             payload["temperature"] = llm_cfg["temperature"]
+        # seed is best-effort on the OpenAI API, not a guarantee: the server returns
+        # system_fingerprint to signal backend stability and this account gets None.
+        # Send it anyway -- it is the only reproducibility lever available -- but
+        # never claim determinism from its presence. Measure it.
+        if llm_cfg.get("seed") is not None:
+            payload["seed"] = llm_cfg["seed"]
 
         try:
             response = post(payload)

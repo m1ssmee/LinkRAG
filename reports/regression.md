@@ -706,3 +706,66 @@ changes every recorded linkrag number.
   query variation, not the flag. Only `baseline` and `linkrag` repeat exactly.
 - Latencies were recorded but are **not reportable** under the measurement rules
   (single run, non-idle machine).
+
+## (mode × rerank) matrix — SMOKE TEST, n=4, NOT REPORTABLE (2026-09-10)
+
+`scripts/compare_retrieval.py --repeats 3`. Corpus `2f3b35f27e86caf8` (209 units),
+k=8, pool=20. Backend **openai**, model **gpt-5.4-2026-03-05**, temperature **0.0**,
+seed **20260910**. 24 LLM calls. Gold is still the stale 2-document set.
+
+**n=4 questions. This is a smoke test of the harness, not a result.** No number here
+belongs in the paper.
+
+| mode | rerank | recall@8 | precision@8 | distinct modalities | redundancy |
+|---|---|---:|---:|---:|---:|
+| baseline | none | 33.3% | 9.4% | 1.75 | 0.711 |
+| baseline | mmr | 25.0% | 6.2% | 2.00 | 0.655 |
+| baseline | complementarity | **12.5%** | 3.1% | 2.25 | 0.682 |
+| iterative | none | 47.9% ± 7.2% | 16.7% ± 3.6% | 2.50 | 0.709 |
+| iterative | mmr | 32.6% ± 12.0% | 10.4% ± 3.6% | 2.33 | 0.642 |
+| iterative | complementarity | 29.9% ± 2.4% | 11.5% ± 1.8% | 2.50 | 0.649 |
+| linkrag | none | 41.7% | 12.5% | 2.75 | 0.688 |
+| linkrag | mmr | 29.2% | 9.4% | 2.75 | 0.614 |
+| linkrag | complementarity | 37.5% | 12.5% | 2.75 | 0.635 |
+| **linkrag_iter** | none | 63.2% ± 4.8% | 22.9% ± 1.8% | 3.00 | 0.716 |
+| **linkrag_iter** | mmr | 54.2% ± 0.0% | 21.9% ± 0.0% | 3.00 | 0.568 |
+| **linkrag_iter** | **complementarity** | **70.8% ± 7.2%** | **27.1% ± 1.8%** | **3.00** | 0.599 |
+
+### The reranker needs a pool worth reranking
+
+Complementarity **helps only in the one cell whose candidate pool already spans all
+three modalities**, and hurts everywhere else:
+
+| mode | pool modalities | none → complementarity |
+|---|---:|---|
+| baseline | 1.75 | 33.3% → **12.5%** (−20.8pp) |
+| iterative | 2.50 | 47.9% → 29.9% (−18.0pp) |
+| linkrag | 2.75 | 41.7% → 37.5% (−4.2pp) |
+| linkrag_iter | 3.00 | 63.2% → **70.8%** (+7.6pp) |
+
+The objective does exactly what it was written to do — coverage rises and redundancy
+falls in every mode. But on a pool that is mostly text, "add an unrepresented modality"
+means evicting a gold text unit to admit a figure, and the gold for these four
+questions is predominantly text. **α and β are only worth paying when the pool contains
+cross-modal evidence to select; otherwise they buy diversity with recall.** That is a
+statement about the interaction, not about the reranker being wrong.
+
+The monotone trend across the four pools is the substantive observation here, and it is
+the thing to re-test on a larger question set.
+
+### seed and temperature=0 do NOT make the LLM modes reproducible
+
+Both LLM-touching modes produced **3 distinct outcomes in 3 runs** despite
+`temperature: 0.0` and `seed: 20260910` in the outgoing request body (asserted by
+`test_request_body_carries_temperature_and_seed`). The API accepts `seed` but returns
+`system_fingerprint: null` for this account, so there is no backend-stability signal to
+check against — and empirically it is not stable.
+
+Consequences, now enforced in the harness:
+
+- Every LLM-touching cell is run 3× and reported as **mean ± std**; a single-run number
+  for such a cell is **refused, not printed**.
+- `iterative + mmr` has a std of **12.0pp** on recall — larger than most of the
+  differences anyone would want to claim between modes.
+- `baseline` and `linkrag` remain deterministic by construction and are run once.
+

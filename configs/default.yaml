@@ -20,6 +20,7 @@ models:
     base_url: https://api.openai.com/v1
     api_key_env: OPENAI_API_KEY  # read from the environment; never commit the key
     temperature: 0.0             # deterministic: this is an eval harness (null = omit)
+    seed: 20260910               # best-effort reproducibility; NOT a guarantee
     max_tokens: 1024
     timeout_s: 120
 

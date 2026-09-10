@@ -243,3 +243,34 @@ def test_completer_reports_a_read_timeout_not_just_a_refused_connection(monkeypa
                                "base_url": "https://api.openai.com/v1"})
     with pytest.raises(RuntimeError, match="ReadTimeout"):
         complete("sys", "user")
+
+
+# ------------------------------------- LLM measurement rule: request-body checks
+
+def test_request_body_carries_temperature_and_seed(monkeypatch) -> None:
+    """The measurement rule requires deterministic settings to be *in the outgoing
+    request*, not merely present in a config file nobody threads through."""
+    sent = _capture(monkeypatch, [_Resp(200, OK)])
+    http_completer({"provider": "openai", "model": "m", "temperature": 0.0,
+                    "seed": 20260910, "base_url": "https://x/v1"})("s", "u")
+    body = sent[0]
+    assert body["temperature"] == 0.0, "temperature must be sent, not assumed"
+    assert body["seed"] == 20260910, "seed must be sent"
+    assert body["stream"] is False
+
+
+def test_seed_is_omitted_when_unset(monkeypatch) -> None:
+    sent = _capture(monkeypatch, [_Resp(200, OK)])
+    http_completer({"provider": "openai", "model": "m", "temperature": 0.0,
+                    "base_url": "https://x/v1"})("s", "u")
+    assert "seed" not in sent[0]
+
+
+def test_seed_survives_the_max_tokens_retry(monkeypatch) -> None:
+    """The retry rebuilds the payload; determinism settings must not be dropped."""
+    sent = _capture(monkeypatch, [REJECT, _Resp(200, OK)])
+    http_completer({"provider": "openai", "model": "gpt-5.4", "temperature": 0.0,
+                    "seed": 7, "max_tokens": 64,
+                    "base_url": "https://api.openai.com/v1"})("s", "u")
+    assert sent[1]["seed"] == 7 and sent[1]["temperature"] == 0.0
+    assert "max_completion_tokens" in sent[1]
