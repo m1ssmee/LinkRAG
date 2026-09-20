@@ -127,9 +127,12 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
 
         try:
             response = post(payload)
+            # Test the payload, not the shared `token_param`: with concurrent callers
+            # another thread may already have flipped it, and this request -- built
+            # before the flip -- would then raise instead of retrying.
             if (
                 response.status_code == 400
-                and token_param == "max_tokens"
+                and "max_tokens" in payload
                 and "max_completion_tokens" in response.text
             ):
                 token_param = "max_completion_tokens"

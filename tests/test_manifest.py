@@ -117,8 +117,12 @@ def test_shipped_gold_file_is_stamped() -> None:
     meta = next((r["_meta"] for r in rows if "_meta" in r), None)
     assert meta and meta.get("manifest_hash"), "gold must carry a corpus stamp"
     questions = [r for r in rows if "_meta" not in r]
-    assert len(questions) == 4
-    assert {q["qid"] for q in questions} == {"Q1", "Q2", "Q3", "Q4"}
+    # machine-verified since 2026-09-20: every row carries verified unit ids and the
+    # verification record, and Q1-Q4 are still present (possibly relabelled).
+    assert meta.get("verifier") == "linkrag.eval.verify_gold"
+    assert {"Q1", "Q2", "Q3", "Q4"} <= {q["qid"] for q in questions}
+    for q in questions:
+        assert q["gold_unit_ids"] and q["gold_units"] and q["verification"]["units_kept"] == len(q["gold_unit_ids"])
 
 
 # ------------------------------------------- links <-> corpus manifest binding

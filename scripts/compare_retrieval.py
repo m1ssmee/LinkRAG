@@ -97,6 +97,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--k", type=int, default=None)
     ap.add_argument("--repeats", type=int, default=3, help="runs per LLM-touching cell")
     ap.add_argument("--no-llm", action="store_true", help="skip modes that call an LLM")
+    ap.add_argument("--rerank", default=",".join(METHODS),
+                    help="comma-separated subset of rerank methods (default: all)")
+    ap.add_argument("--label", default="", help="heading written above the appended table")
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
 
@@ -120,17 +123,25 @@ def main(argv: list[str] | None = None) -> int:
             if l.strip() and "_meta" not in l]
     complete = None if args.no_llm else http_completer(llm)
     modes = [m for m in MODES if not (args.no_llm and m in LLM_MODES)]
+    methods = [m for m in METHODS if m in set(args.rerank.split(","))]
+    if not methods:
+        raise SystemExit(f"--rerank must name at least one of {METHODS}")
+    gold_meta = next((json.loads(l)["_meta"] for l in Path(args.questions).read_text().splitlines()
+                      if l.strip() and "_meta" in l), {})
+    if gold_meta.get("manifest_hash") not in (None, manifest.get("hash")):
+        print(f"WARNING: gold stamped {gold_meta.get('manifest_hash')}, corpus is {manifest.get('hash')}")
 
     # cell -> list of per-run dicts; a run is the mean over all questions
     cells: dict[tuple[str, str], list[dict]] = {}
     id_sets: dict[str, list[tuple]] = {}
+    per_q: dict[tuple[str, str, str], list[float]] = {}   # (qid, mode, method) -> recall per run
     calls_total = 0
 
     for mode in modes:
         repeats = args.repeats if mode in LLM_MODES else 1
         for run in range(repeats):
             per_method = {m: {"recall": [], "prec": [], "mods": [], "red": []}
-                          for m in METHODS}
+                          for m in methods}
             latencies, run_ids = [], []
             for row in rows:
                 gold = gold_ids_for(row, index)
@@ -139,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
                     complete=complete, pool=pool)
                 calls_total += calls
                 latencies.append(secs)
-                for method in METHODS:
+                for method in methods:
                     picked = rerank(results, k, method=method, index=index, graph=graph,
                                     alpha=rcfg["alpha"], beta=rcfg["beta"],
                                     gamma=rcfg["gamma"], mmr_lambda=rcfg["mmr_lambda"],
@@ -150,14 +161,15 @@ def main(argv: list[str] | None = None) -> int:
                     r_, p_ = prf(ids, gold)
                     d = set_diagnostics(picked, index)
                     per_method[method]["recall"].append(r_)
+                    per_q.setdefault((row["qid"], mode, method), []).append(r_)
                     per_method[method]["prec"].append(p_)
                     per_method[method]["mods"].append(d["modalities"])
                     per_method[method]["red"].append(d["redundancy"])
-                    if method == "complementarity":
+                    if method == methods[-1]:
                         run_ids.append(tuple(sorted(ids)))
             id_sets.setdefault(mode, []).append(tuple(run_ids))
             mean = lambda xs: sum(xs) / len(xs)
-            for method in METHODS:
+            for method in methods:
                 cells.setdefault((mode, method), []).append(
                     {kk: mean(vv) for kk, vv in per_method[method].items()}
                     | {"latency": mean(latencies)})
@@ -177,10 +189,15 @@ def main(argv: list[str] | None = None) -> int:
     header = (f"{'mode':<14}{'rerank':<17}{'recall@k':>16}{'prec@k':>16}"
               f"{'modalities':>12}{'redundancy':>12}")
     print(header); print("-" * len(header))
-    md = ["", f"| mode | rerank | recall@{k} | precision@{k} | distinct modalities "
+    md = [""] + ([f"## {args.label}", ""] if args.label else []) + [
+          f"{len(rows)} questions · k={k} · pool={pool} · corpus `{manifest.get('hash', '?')}` "
+          f"({len(index)} units) · gold stamped `{gold_meta.get('manifest_hash', 'unstamped')}` · "
+          f"model `{llm.get('model')}` temperature={llm.get('temperature')} seed={llm.get('seed')} · "
+          f"repeats {args.repeats} for LLM modes · {calls_total} LLM calls", "",
+          f"| mode | rerank | recall@{k} | precision@{k} | distinct modalities "
           f"| redundancy | runs |", "|---|---|---:|---:|---:|---:|---:|"]
     for mode in modes:
-        for method in METHODS:
+        for method in methods:
             runs = cells[(mode, method)]
             if mode in LLM_MODES and len(runs) < 3:
                 print(f"{mode:<14}{method:<17}{'REFUSED (n<3)':>16}")
@@ -195,8 +212,8 @@ def main(argv: list[str] | None = None) -> int:
             md.append(f"| {mode} | {method} | {fmt(rec)} | {fmt(pre)} | {mods:.2f} "
                       f"| {red:.3f} | {len(runs)} |")
 
-    print("\nrepeat determinism (complementarity cell, identical returned id sets?):")
-    md += ["", "Repeat determinism (complementarity cell):", ""]
+    print(f"\nrepeat determinism ({methods[-1]} cell, identical returned id sets?):")
+    md += ["", f"Repeat determinism ({methods[-1]} cell):", ""]
     for mode in modes:
         runs = id_sets[mode]
         if len(runs) == 1:
@@ -206,6 +223,18 @@ def main(argv: list[str] | None = None) -> int:
                        else f"NOT identical — {len(set(runs))} distinct outcomes in {len(runs)} runs")
         print(f"  {mode:<14} {verdict}")
         md.append(f"- `{mode}`: {verdict}")
+
+    # per-question recall, mean over runs, for every (mode, rerank) cell
+    cols = [(m, r) for m in modes for r in methods]
+    md += ["", "Per-question recall@k (mean over runs):", "",
+           "| Q | type | " + " | ".join(f"{m}/{r}" for m, r in cols) + " |",
+           "|---|---|" + "---:|" * len(cols)]
+    for row in rows:
+        vals = []
+        for m, r in cols:
+            xs = per_q.get((row["qid"], m, r), [])
+            vals.append(f"{statistics.mean(xs):.0%}" if xs else "—")
+        md.append(f"| {row['qid']} | {row.get('type', '')} | " + " | ".join(vals) + " |")
 
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)

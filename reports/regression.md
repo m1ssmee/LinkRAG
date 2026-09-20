@@ -769,3 +769,86 @@ Consequences, now enforced in the harness:
   differences anyone would want to claim between modes.
 - `baseline` and `linkrag` remain deterministic by construction and are run once.
 
+
+## 2026-09-20 — verified gold (24 questions, 71 units), four modes × rerank none/complementarity
+
+24 questions · k=8 · pool=20 · corpus `2f3b35f27e86caf8` (209 units) · gold stamped `2f3b35f27e86caf8` · model `gpt-5.4-2026-03-05` temperature=0.0 seed=20260910 · repeats 3 for LLM modes · 144 LLM calls
+
+| mode | rerank | recall@8 | precision@8 | distinct modalities | redundancy | runs |
+|---|---|---:|---:|---:|---:|---:|
+| baseline | none | 45.1% | 15.1% | 2.04 | 0.716 | 1 |
+| baseline | complementarity | 42.4% | 13.0% | 2.33 | 0.651 | 1 |
+| iterative | none | 58.3% ± 0.3% | 19.3% ± 0.0% | 2.40 | 0.725 | 3 |
+| iterative | complementarity | 58.9% ± 1.6% | 18.6% ± 0.3% | 2.51 | 0.670 | 3 |
+| linkrag | none | 39.4% | 14.1% | 2.79 | 0.689 | 1 |
+| linkrag | complementarity | 43.2% | 15.7% | 2.83 | 0.602 | 1 |
+| linkrag_iter | none | 45.8% ± 0.8% | 16.3% ± 0.3% | 2.78 | 0.694 | 3 |
+| linkrag_iter | complementarity | 45.1% ± 3.6% | 16.3% ± 1.2% | 2.88 | 0.605 | 3 |
+
+Repeat determinism (complementarity cell):
+
+- `baseline`: deterministic by construction (no LLM, single run)
+- `iterative`: NOT identical — 3 distinct outcomes in 3 runs
+- `linkrag`: deterministic by construction (no LLM, single run)
+- `linkrag_iter`: NOT identical — 3 distinct outcomes in 3 runs
+
+Per-question recall@k (mean over runs):
+
+| Q | type | baseline/none | baseline/complementarity | iterative/none | iterative/complementarity | linkrag/none | linkrag/complementarity | linkrag_iter/none | linkrag_iter/complementarity |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Q1 | single_modality | 0% | 0% | 22% | 22% | 0% | 0% | 11% | 11% |
+| Q2 | audio_only | 50% | 50% | 50% | 25% | 50% | 25% | 50% | 25% |
+| Q3 | paper_only | 17% | 0% | 67% | 50% | 17% | 17% | 67% | 67% |
+| Q4 | single_modality | 50% | 25% | 50% | 33% | 38% | 38% | 42% | 42% |
+| A1 | slides_only | 100% | 100% | 100% | 100% | 0% | 0% | 33% | 0% |
+| A2 | slides_only | 0% | 50% | 67% | 83% | 0% | 0% | 0% | 0% |
+| A4 | audio_only | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| A5 | audio_only | 0% | 0% | 100% | 100% | 0% | 0% | 0% | 0% |
+| A7 | paper_only | 0% | 0% | 0% | 17% | 0% | 0% | 0% | 0% |
+| A8 | single_modality | 100% | 50% | 100% | 50% | 100% | 100% | 100% | 100% |
+| B1 | paper_only | 50% | 100% | 100% | 100% | 50% | 50% | 100% | 100% |
+| B2 | cross_modal_split | 50% | 50% | 50% | 33% | 50% | 25% | 25% | 17% |
+| B3 | cross_modal_split | 100% | 50% | 100% | 100% | 50% | 50% | 67% | 67% |
+| B4 | cross_modal_split | 50% | 50% | 50% | 50% | 50% | 50% | 50% | 50% |
+| B5 | single_modality | 33% | 67% | 78% | 78% | 33% | 100% | 89% | 100% |
+| B7 | audio_only | 33% | 33% | 33% | 33% | 33% | 33% | 33% | 33% |
+| B8 | cross_modal_split | 100% | 100% | 50% | 100% | 100% | 50% | 67% | 50% |
+| C1 | single_modality | 33% | 33% | 78% | 100% | 33% | 67% | 67% | 78% |
+| C2 | audio_only | 25% | 0% | 0% | 25% | 25% | 0% | 0% | 0% |
+| C3 | audio_only | 0% | 0% | 0% | 0% | 0% | 0% | 0% | 0% |
+| C4 | single_modality | 33% | 33% | 56% | 56% | 33% | 33% | 44% | 44% |
+| C5 | cross_modal_deictic | 25% | 25% | 17% | 25% | 50% | 100% | 0% | 0% |
+| C6 | slides_only | 33% | 0% | 33% | 33% | 33% | 100% | 56% | 100% |
+| C7 | slides_only | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+
+### Reading the verified-gold run
+
+This is the first run on gold that was **not** written by hand, and it reverses the
+n=4 picture:
+
+- **Link-following alone loses recall** (39.4 % vs baseline 45.1 %). Cause, confirmed
+  by a diagnostic with `k_seed: 8` (not appended, scratch config): with `k_seed: 5`
+  the mode keeps only the top-5 seeds and fills the remaining three slots with
+  expanded units, so any gold unit the hybrid retriever ranked 6–8 is evicted
+  (A1 100 % → 0 %, A2, A5). With `k_seed: 8` and `normalise_seeds: false`,
+  `linkrag/none` is byte-identical to `baseline/none` — expansions never outrank a
+  seed — and `linkrag/complementarity` reaches 42.9 % at 2.88 modalities against the
+  baseline's 42.4 % at 2.33. **Link-following buys modality coverage, not recall, on
+  this set.**
+- **P1-style re-querying is the strongest single mechanism** (58.3 % ± 0.3), and
+  composing it with link-following (`linkrag_iter`, 45.8 %) is *worse* than
+  re-querying alone — the same seed-eviction effect applied to the iterative pool.
+- **The reranker is roughly neutral** (−2.7 pp baseline, +3.8 pp linkrag, +0.6 pp
+  iterative) while raising modality coverage in every mode, which matches the
+  pool-coverage interaction recorded on 2026-09-10.
+- **Only 5 of 24 questions are cross-modal after verification** (B2, B3, B4, B8, C5).
+  C5, the strongest deictic question, is the one place link-following clearly wins
+  (25 % → 50 %, 100 % with complementarity) — and it is one question.
+
+What this does and does not say: the mechanism's benefit is concentrated on
+genuinely cross-modal questions, and this corpus has almost none once a machine
+checks. The 2026-09-07 headline (75 % for `linkrag_iter`) rested on four hand-picked
+questions and page-level gold; it does not survive unit-level, verified gold. The
+next numbers that matter are on LectQA-Vid and MaViLS (priorities iii, iv), not here.
+The `k_seed < k_final` eviction is a design defect to fix before those runs, with a
+recorded ablation, not a silent retune.

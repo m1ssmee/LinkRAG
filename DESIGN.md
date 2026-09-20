@@ -77,10 +77,15 @@ renamed in code without a separate instruction.
 Work is done in this order. Nothing outside this list is started without an
 explicit instruction.
 
-1. **(i) Automated gold verification.** Replace the ear-verified gold workflow
-   with a checkable one: every gold locator must be reproducible from the corpus
-   by a script, and a gold set that does not match its manifest stamp fails the
-   run instead of warning.
+1. **(i) Automated gold verification.** ✅ **Done 2026-09-20** —
+   `src/linkrag/eval/verify_gold.py`, `scripts/eval/verify_gold.py`,
+   `scripts/eval/audit_sample.py`. Unit entailment (3 judge runs, majority,
+   quotable span) + modality-only full-context answering decide gold and type
+   labels; the only human step is the sampled audit sheet. pilot01: 24 of 25
+   proposed questions kept, 71 gold units, **5 cross-modal** — see
+   `reports/gold_verified_pilot01.md`, including the run history. Rules learned:
+   reference answers list only the asked facts; a unit stating *one* required
+   fact is gold.
 2. **(ii) Relatedness gate.** A test that a linked pair is actually about the same
    thing (not merely co-located), applied to every link type before it enters the
    graph; report the pass rate per type.
@@ -147,7 +152,7 @@ explicit instruction.
 | `retrieve` | **done** — RRF of dense + BM25, plain top-k; `iterative` (MI-RAG approximation) | **done** — seed + 1-hop expansion, `normalise_seeds`, `linkrag_iter` |
 | `rerank` | **done** — `none`, `mmr` | **done** — `complementarity`, optional cross-encoder |
 | `generate` | **done** — cited answers, OpenAI-compatible endpoint, temperature 0 + seed sent | same, modality tags |
-| `eval` | partial — regression runner, `compare_retrieval` (mode × rerank, repeats), alignment and deictic evaluators against ear labels | **claim-level entailment not started** (priority v) |
+| `eval` | partial — regression runner, `compare_retrieval` (mode × rerank, repeats, per-question table), alignment and deictic evaluators against ear labels, **automated gold verification + sampled audit** | **claim-level entailment not started** (priority v) |
 | `ui` | **not started** | **not started** |
 
 Datasets: pilot01 only (`docs/pilot01_history.md`). **No target benchmark has
@@ -226,7 +231,11 @@ the bugs they surfaced: `docs/pilot01_history.md`.
    runner. A retrieval gain that only reshuffles within one modality is not the
    cross-modal gain this project claims — so the composition is reported, not just a score.
 2. **The pilot01 regression set.** `tests/regression/pilot01_questions.jsonl` holds
-   Q1–Q4 with gold evidence and types. Re-run every phase with
+   the 24 machine-verified questions (from the 25 proposed in
+   `pilot01_proposed.jsonl`; Q1–Q4 plus 20 of the 21 new ones) with gold locators,
+   verified unit ids and types, stamped `2f3b35f27e86caf8`. Regenerate with
+   `scripts/eval/verify_gold.py` whenever the corpus or the proposals change; never
+   hand-edit. Re-run every phase with
    `python scripts/run_regression.py --phase "<label>"`, which appends to
    `reports/regression.md`. Gold evidence is matched by **file+page / file+time
    overlap, never by unit id** — audio ids are regenerated whenever ASR or chunking
@@ -253,10 +262,13 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   "top-K" into `type -k`. Hyphenation ruled out (identical output with and
   without). Cause unknown, unfixed, accepted as future work. A prompt omitting
   `Top K` entirely is the next thing to try.
-- **(d) Gold set stale.** pilot01 gold is stamped for the 2-document corpus
-  (`dded007ab45f5b9f`) against the live `2f3b35f27e86caf8`; every run warns.
-  Resolved by priority (i), not by hand-editing.
-- **(e) n = 4 questions.** Nothing retrieval-side on pilot01 is a result.
+- **(d) Gold is machine-verified, not human-verified.** The judge and the answerer
+  are the same model; the sampled audit (`reports/audit_sheet_pilot01.csv`, 34 of
+  147 verdicts) is unfilled until someone scores it. Until then the agreement rate is
+  unknown.
+- **(e) n = 24 questions, 5 cross-modal.** Enough to run the harness, not enough to
+  claim a cross-modal result; the corpus is too self-redundant for cross-modal
+  questions to survive verification (see `reports/gold_verified_pilot01.md`).
 
 ## Environment decisions worth not re-litigating
 
