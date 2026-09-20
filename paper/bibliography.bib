@@ -1,0 +1,116 @@
+% LinkRAG bibliography. Created 2026-09-20 with the target repositioning; there
+% was no earlier file. Keys: targets first, then components, then related work.
+% Entries marked TODO carry only what could be verified on 2026-09-20 -- complete
+% them before the paper is submitted, do not delete them.
+
+% ------------------------------------------------------------------ targets
+
+@article{shafiq2026intravideo,
+  title   = {Intra-Video Temporal-Aware {RAG}: A Self-Contained Framework for Video-Based Question Answering},
+  author  = {Shafiq, Sumaira and Ejaz, Naveed and Shah, Munam Ali and Kamal, Rashid and Sohail, Adnan and Aslam, Sheraz},
+  journal = {Computers, Materials \& Continua},
+  volume  = {88},
+  number  = {2},
+  pages   = {96},
+  year    = {2026},
+  doi     = {10.32604/cmc.2026.081534},
+  note    = {Target T1. Introduces the LectQA-Vid benchmark (100 CS lecture videos, 3,000 QA pairs). Numbers quoted in README: Table 4/6 Overall F1 23.52\%, sim 0.71; Table 5 Overall MCQ acc 56.30\%.}
+}
+
+@inproceedings{anderer2024mavils,
+  title     = {{MaViLS}, a Benchmark Dataset for Video-to-Slide Alignment, Assessing Baseline Accuracy with a Multimodal Alignment Algorithm Leveraging Speech, {OCR}, and Visual Features},
+  author    = {Anderer, Katharina and Reich, Andreas and W{\"o}lfel, Matthias},
+  booktitle = {Proc. Interspeech 2024},
+  pages     = {1375--1379},
+  year      = {2024},
+  doi       = {10.21437/Interspeech.2024-978},
+  eprint    = {2409.16765},
+  archivePrefix = {arXiv},
+  url       = {https://github.com/andererka/MaViLS},
+  note      = {Target T2. 20 lectures, >22 h, 12,830 segments. Table 1 Average: audio-only F1 0.53, text 0.76, image 0.64, SIFT 0.56; combined with lambda\_jump=0.1: 0.82.}
+}
+
+% --------------------------------------------------------------- components
+
+@misc{choi2025mirag,
+  title         = {Multimodal Iterative {RAG} for Knowledge Visual Question Answering},
+  author        = {Choi, Changin and Lee, Wonseok and Ko, Jungmin and Rhee, Wonjong},
+  year          = {2025},
+  eprint        = {2509.00798},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV},
+  note          = {MI-RAG. v1 title as given; later versions retitled ``Progressive Multimodal Search and Reasoning for Knowledge-Intensive Visual Question Answering'' (PMSR). Cited in the project as ICLR 2026. Component: our \texttt{retrieve/iterative.py} approximates its re-querying loop.}
+}
+
+% ------------------------------------------------------------- related work
+
+@inproceedings{wu2025mara,
+  title     = {{MARA}: A Multimodal Adaptive Retrieval-Augmented Framework for Document Question Answering},
+  author    = {Wu, Hui and Zhai, Haoquan and Li, Yuchen and Cai, Hengyi and Zhang, Peirong and Zhang, Yidan and Wang, Lei and Wang, Chunle and Hou, Yingyan and Wang, Shuaiqiang and Yin, Dawei},
+  booktitle = {Proceedings of the 33rd ACM International Conference on Multimedia (MM '25)},
+  pages     = {4329--4338},
+  year      = {2025},
+  doi       = {10.1145/3746027.3755390},
+  eprint    = {2604.16313},
+  archivePrefix = {arXiv},
+  note      = {Related work (formerly P3). Page-independent document QA; motivates the cross-page figure\_text link.}
+}
+
+@misc{farib2026evidencekg,
+  title         = {Evidence-Grounded Multimodal Knowledge Graph Construction for Multi-Lecture Educational Reasoning},
+  author        = {Al Farib, Sahil and Meem, Momota Ahsana and Islam, Sheikh Redwanul and Raihan, Md. Tanvir},
+  year          = {2026},
+  eprint        = {2608.03161},
+  archivePrefix = {arXiv},
+  note          = {Related work; the concept-graph style deferred to optional Phase 8.}
+}
+
+@inproceedings{lee2023lpm,
+  title     = {Lecture Presentations Multimodal Dataset: Towards Understanding Multimodality in Educational Videos},
+  author    = {Lee, Dong Won and Ahuja, Chaitanya and Liang, Paul Pu and Natu, Sanika and Morency, Louis-Philippe},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages     = {20087--20098},
+  year      = {2023},
+  eprint    = {2208.08080},
+  archivePrefix = {arXiv},
+  note      = {LPM. 180+ h, 9,000+ slides; figure-to-speech and speech-to-figure retrieval tasks.}
+}
+
+@misc{holmberg2025autolectures,
+  title         = {Generating Narrated Lecture Videos from Slides with Synchronized Highlights},
+  author        = {Holmberg, Alexander},
+  year          = {2025},
+  eprint        = {2505.02966},
+  archivePrefix = {arXiv},
+  note          = {Referred to in the project as AutoLectures. LLM-based narration-to-slide-region alignment, F1 > 92\% on 1,000 annotated samples.}
+}
+
+@article{zhao2025mdkag,
+  title   = {{MDKAG}: Retrieval-Augmented Educational {QA} Powered by a Multimodal Disciplinary Knowledge Graph},
+  author  = {Zhao, X. and Wang, G. and Lu, Y.},
+  journal = {Applied Sciences},
+  volume  = {15},
+  number  = {16},
+  pages   = {9095},
+  year    = {2025},
+  doi     = {10.3390/app15169095},
+  note    = {Related work. TODO: expand author first names (MDPI page returned 403 on 2026-09-20).}
+}
+
+@misc{multihaystack2026,
+  title         = {{MultiHaystack}: Benchmarking Multimodal Retrieval and Reasoning over 40K Images, Videos, and Documents},
+  year          = {2026},
+  eprint        = {2603.05697},
+  archivePrefix = {arXiv},
+  note          = {Related work. 46k+ candidates, 747 questions; E5-V 40.8\% R@1. TODO: add author list.}
+}
+
+@misc{scripttoslide,
+  title = {Script-to-Slide alignment},
+  note  = {TODO: identify the exact paper from the literature review (author, venue, year). Kept as a placeholder so the citation is not lost.}
+}
+
+@misc{constraineddominantsets,
+  title = {Constrained Dominant Sets},
+  note  = {TODO: identify which CDS paper the literature review cites (the generic reference is Zemene and Pelillo, ``Interactive Image Segmentation Using Constrained Dominant Sets'', ECCV 2016, doi:10.1007/978-3-319-46484-8\_17; confirm whether a lecture/slide application paper was meant). Kept as a placeholder so the citation is not lost.}
+}
