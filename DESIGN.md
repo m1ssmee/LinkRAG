@@ -97,8 +97,12 @@ explicit instruction.
    (whisper) and frame-OCR'd here. Their split and 1,000-pair eval subset are
    unpublished — results are on the videos processed, n stated. First run:
    `reports/lectqa_vid_first_run.md`.
-4. **(iv) MaViLS adapter and first run.** 🔶 adapter built (`scripts/adapters/mavils.py`),
-   their micro-F1 reproduced exactly, all 20 lectures: `reports/mavils_alignment.md`.
+4. **(iv) MaViLS adapter and first run.** ✅ **Run 2026-09-21** (`scripts/adapters/mavils.py`,
+   their micro-F1 reproduced exactly, all 20 lectures, transcript + PDF only):
+   **ours 0.45 vs their audio-only 0.53** (their all-features 0.82); above them on
+   6/20 lectures. The DP adds +0.06 over naive argmax on average but *hurts* on
+   the three page-OCR'd image decks — the similarity, not the DP, is the limit.
+   `reports/mavils_alignment.md`.
 5. **(v) Phase 6 — citations + entailment.** Claim-level faithfulness: each
    answer sentence must be entailed by a cited unit; id-level citation checks are
    known to pass wrong answers.
@@ -130,7 +134,11 @@ explicit instruction.
    (`linkrag_iter/complementarity`, n = 21, vs 55.8 % for iterative alone and 50.5 %
    for linkrag alone). Neither mechanism explains a +15 pp gain on questions whose
    answer sits in one source. Flagged; do not cite it until it has a cause.
-6. **Extended-dataset selection criterion** (priority vi): **low redundancy**
+6. **On MaViLS our alignment trails the target's audio-only DP** (0.45 vs 0.53,
+   20 lectures). The monotone prior degenerates when the text similarity is flat
+   (OCR'd image decks: DP 0.04–0.08 vs naive 0.23–0.28). Next design question, not a
+   retune: which signals to fuse for decks with little text.
+7. **Extended-dataset selection criterion** (priority vi): **low redundancy**
    (measure it with `scripts/dataset/redundancy.py` before ingesting; a candidate
    with transcript→deck above pilot01's number is rejected), **diagram-heavy decks**
    (figures that carry facts the text does not), and **a speaker who points**
