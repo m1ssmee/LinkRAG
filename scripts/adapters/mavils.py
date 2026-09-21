@@ -42,7 +42,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 from linkrag.core import EvidenceUnit, Location, load_config, setup_logging
 from linkrag.index import default_encoder
 from linkrag.ingest.pdf import ingest_pdf
-from linkrag.link.align import abstain, align_monotonic, align_naive, similarity_matrix
+from linkrag.link.align import abstain, align_monotonic, align_naive, fuse_similarity, similarity_matrix
 
 # ground-truth stem -> (slides PDF, their Table 1 name, Table 1 audio F1, Table 2 combined F1 @ lambda 0.1)
 LECTURES = {
@@ -699,9 +699,89 @@ def cmd_final(args, cfg, encoder) -> int:
     return 0
 
 
+def cmd_fused(args, cfg, encoder) -> int:
+    """Fused similarity study. Tune half only: fusion method and weight; test half once.
+    Decoder: our DP at the tuned sigma (results/external/mavils_tuned.json)."""
+    a = cfg["link"]["align"]
+    split = split_lectures()
+    tune, test = split["tune"], split["test"]
+    tuned = json.loads((EXTERNAL / "mavils_tuned.json").read_text())
+    sigma = float(tuned.get("sigma", a["skip_penalty"]))
+    figures_dir = Path(args.figures_dir)
+    ours, theirs = {}, {}
+    for stem in sorted(LECTURES):
+        ours[stem] = similarity_for(stem, window=0.0, slide_text="ocr", cfg=cfg, encoder=encoder, figures_dir=figures_dir)
+        theirs[stem] = their_similarity_for(stem, cfg=cfg, figures_dir=figures_dir)
+        assert ours[stem][0].shape == theirs[stem][0].shape, stem
+
+    def run(stem, method, weight=0.5):
+        S_o, owner, gt, pages, _ = ours[stem]
+        S_t = theirs[stem][0]
+        S = {"ours": S_o, "theirs": S_t}.get(method)
+        if S is None:
+            S = fuse_similarity(S_o, S_t, method, weight)
+        pred = decode(S, pages, owner, a, variant="dp", min_sim=None, flat=0.0, sigma=sigma)
+        return gt, pred
+
+    def mean_paired(stems_, method, weight=0.5):
+        f1s, prs, covs = [], [], []
+        for s_ in stems_:
+            gt, pred = run(s_, method, weight)
+            f1s.append(their_prf(gt, pred)[2])
+            pr, cov = answered_metrics(gt, pred)
+            prs.append(pr); covs.append(cov)
+        return float(np.mean(f1s)), f"{np.mean(f1s):.3f} ({np.mean(prs):.3f} / {np.mean(covs):.2f})"
+
+    weights = [0.0, 0.25, 0.5, 0.75, 1.0]
+    rows_w = [(w, *mean_paired(tune, "fused_weighted", w)) for w in weights]
+    best_w = max(rows_w, key=lambda r: r[1])[0]
+    tune_cells = {"ours": mean_paired(tune, "ours"), "theirs": mean_paired(tune, "theirs"),
+                  "fused_max": mean_paired(tune, "fused_max"), "fused_weighted": mean_paired(tune, "fused_weighted", best_w)}
+    best_method = max(tune_cells, key=lambda k: tune_cells[k][0])
+    tuned.update({"fusion_weight": best_w, "similarity": best_method,
+                  "fused_study": "2026-09-22: weight by tune their-F1 over {0,.25,.5,.75,1}; both matrices min-max scaled per lecture"})
+    (EXTERNAL / "mavils_tuned.json").write_text(json.dumps(tuned, indent=1) + "\n")
+
+    L = ["# MaViLS — fused similarity study", "",
+         f"Their protocol (sentence granularity, page OCR, their sklearn F1). Cells: **their F1 (precision-on-answered / coverage)**. "
+         f"Decoder: our DP, σ = {sigma} (tuned earlier), λ={a['jump_penalty']} β={a['back_penalty']} B={a['max_back']} μ={a.get('start_prior_mu', 0.0)}. "
+         "Matrices: *theirs* = distiluse-base-multilingual-cased cosine vs page OCR; *ours* = bge-m3 + BM25 + IDF hybrid vs page OCR. "
+         "Each matrix is min-max scaled over the lecture before fusion (`linkrag.link.align.fuse_similarity`). "
+         f"Split `results/external/mavils_split.json`; tune-half choices only; test reported once.", "",
+         "## Tune half — weighted fusion, weight on *theirs*", "", "| weight | tune |", "|---:|---:|"]
+    for w, f1, pr in rows_w:
+        L.append(f"| {w} | {pr}{' ←' if w == best_w else ''} |")
+    L += ["", "## Tune half — all similarities", "", "| align.similarity | tune |", "|---|---:|"]
+    for k, (f1, pr) in tune_cells.items():
+        L.append(f"| {k}{f' (w={best_w})' if k == 'fused_weighted' else ''} | {pr}{' ←' if k == best_method else ''} |")
+    L += ["", f"Chosen on tune: similarity = **{best_method}**" + (f", fusion_weight = {best_w}" if best_method == "fused_weighted" else "") + ".", "",
+          "## Test half — reported once", "",
+          f"| lecture | text layer | ours | theirs | fused_max | fused_weighted (w={best_w}) | their audio (paper) |",
+          "|---|---|---:|---:|---:|---:|---:|"]
+    agg = {k: [] for k in ("ours", "theirs", "fused_max", "fused_weighted")}
+    for s_ in test:
+        status = ours[s_][4]
+        cells = []
+        for k in agg:
+            gt, pred = run(s_, k, best_w)
+            agg[k].append(their_prf(gt, pred)[2])
+            cells.append(paired(gt, pred))
+        L.append(f"| {LECTURES[s_][1]} | {status['text_layer']} | " + " | ".join(cells) + f" | {LECTURES[s_][2]:.2f} |")
+    means = {k: mean_paired(test, k, best_w)[1] for k in agg}
+    L.append("| **mean** | | " + " | ".join(f"**{means[k]}**" for k in agg) + f" | {np.mean([LECTURES[s_][2] for s_ in test]):.2f} |")
+    all_means = {k: mean_paired(sorted(LECTURES), k, best_w)[1] for k in agg}
+    L += ["", "All 20 lectures (for the comparison against the paper's 0.53 and our 0.46; contains the tune half, so the fused columns are optimistic): "
+          + ", ".join(f"{k} {v}" for k, v in all_means.items()) + ".", ""]
+    out = Path(args.out)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    print(f"wrote {out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "study", "inspect", "final"])
+    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused"])
     ap.add_argument("--config", default="configs/default.yaml")
     ap.add_argument("--split", choices=["all", "tune", "test"], default="all")
     ap.add_argument("--window", type=float, default=0.0, help="0 = their sentence granularity (default); e.g. 30")
@@ -712,14 +792,14 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if args.out is None:
         args.out = {"run": "reports/mavils_alignment.md", "study": "reports/mavils_heldout_study.md",
-                    "inspect": None, "final": "reports/mavils_final.md"}[args.cmd]
+                    "inspect": None, "final": "reports/mavils_final.md", "fused": "reports/mavils_fused.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
         raise SystemExit(f"clone https://github.com/andererka/MaViLS to {REPO}")
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
-    return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final}[args.cmd](args, cfg, encoder)
+    return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":

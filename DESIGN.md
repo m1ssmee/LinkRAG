@@ -148,11 +148,16 @@ explicit instruction.
    - **Decomposition (their public code for their cells):** their matrix × their DP
      0.513 (paper: 0.53); their matrix × our DP **0.520**; our matrix × their DP
      0.425; our matrix × our DP 0.461. Swapping the matrix moves the mean +0.074,
-     swapping the decoder −0.022: **the gap lives in the similarity matrix** —
-     distiluse cosine on page OCR beats our bge-m3 + BM25 + IDF hybrid at sentence
-     granularity, and our DP is at least as good a decoder as theirs. The next design
-     question is the similarity (which terms to fuse for short segments and noisy
-     OCR), not the DP.
+     swapping the decoder −0.022: **the gap is in the similarity features; our
+     decoder ≥ theirs.** Distiluse cosine on page OCR beats our bge-m3 + BM25 + IDF
+     hybrid at sentence granularity.
+   - **Fused similarity** (`align.similarity`, default `ours`; `reports/mavils_fused.md`):
+     weight chosen on the tune half (w = 0.5 on theirs, matrices min-max scaled).
+     Test half, our DP at σ = 0.2: ours 0.461, theirs 0.515, fused_max 0.471,
+     **fused_weighted 0.520** vs the paper's 0.51 on that half. Fusion closes the gap
+     and edges their features by half a point; all 20 lectures 0.537 vs paper 0.53
+     (optimistic — contains the tune half). The remaining lever is the similarity
+     for short, OCR-noisy inputs; the DP is not the bottleneck.
    - σ sweep on the tune half: 0.2 chosen (tune 0.484 vs 0.471 at the pilot 0.02);
      test 0.461 vs 0.452 — a +0.009 that is inside lecture-to-lecture noise.
    - flatness scaling: inert at σ = 0.02 (identical paths; inspected).

@@ -184,6 +184,43 @@ def similarity_matrix(
     return w_dense * dense + w_bm25 * bm25 + w_keyword * keyword
 
 
+def distiluse_similarity(
+    audio_units: Sequence[EvidenceUnit], slide_units: Sequence[EvidenceUnit], *, device: str = "cpu",
+    model_name: str = "sentence-transformers/distiluse-base-multilingual-cased",
+) -> np.ndarray:
+    """MaViLS's audio-only similarity: distiluse cosine between each segment and the
+    slide text (their slide text is page OCR; the caller decides what the slide units
+    hold). Kept as a separate matrix so it can be fused with ours -- the MaViLS
+    decomposition (reports/mavils_final.md) showed the gap to their number is in the
+    similarity features, not the decoder."""
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer(model_name, device=device)
+    a = model.encode([u.content for u in audio_units], convert_to_numpy=True, normalize_embeddings=True)
+    b = model.encode([u.content for u in slide_units], convert_to_numpy=True, normalize_embeddings=True)
+    return (a @ b.T).astype(np.float64)
+
+
+def _minmax(S: np.ndarray) -> np.ndarray:
+    lo, hi = float(S.min()), float(S.max())
+    return (S - lo) / (hi - lo) if hi > lo else np.zeros_like(S)
+
+
+def fuse_similarity(ours: np.ndarray, theirs: np.ndarray, method: str = "fused_weighted",
+                    weight: float = 0.5) -> np.ndarray:
+    """Combine two similarity matrices of the same shape. Each is min-max scaled over
+    the whole matrix first (a hybrid in ~[0.1, 0.9] and a cosine in ~[0, 0.6] are not
+    on one scale). `fused_max` = cellwise max; `fused_weighted` = weight*theirs +
+    (1-weight)*ours. `weight` is a tuned quantity: set it on a tune half only."""
+    if ours.shape != theirs.shape:
+        raise ValueError(f"shape mismatch {ours.shape} vs {theirs.shape}")
+    a, b = _minmax(ours), _minmax(theirs)
+    if method == "fused_max":
+        return np.maximum(a, b)
+    if method == "fused_weighted":
+        return float(weight) * b + (1.0 - float(weight)) * a
+    raise ValueError(f"unknown fusion {method!r}: use 'fused_max' or 'fused_weighted'")
+
+
 def align_naive(similarity: np.ndarray) -> list[int]:
     """argmax per segment, independently. No sequence structure -- the P2-style
     ablation. Nothing stops it assigning slide 20 then slide 3 then slide 20."""
@@ -304,18 +341,31 @@ def align(
     max_back: int = 2,
     start_prior_mu: float = 0.0,
     flatness_scaling: float = 0.0,
+    similarity: str = "ours",
+    fusion_weight: float = 0.5,
+    device: str = "cpu",
 ) -> Alignment:
+    """`similarity`: ours (bge-m3 + BM25 + IDF hybrid, the default), theirs (MaViLS's
+    distiluse cosine), fused_max, fused_weighted -- see `fuse_similarity`."""
     if method not in ("monotonic", "naive"):
         raise ValueError(f"unknown alignment method {method!r}: use 'monotonic' or 'naive'")
+    if similarity not in ("ours", "theirs", "fused_max", "fused_weighted"):
+        raise ValueError(f"unknown similarity {similarity!r}")
     weights = weights or {}
-    with stage_timer("link.align", method=method,
+    with stage_timer("link.align", method=method, similarity=similarity,
                      n=len(audio_units), m=len(slide_units)) as t:
-        similarity = similarity_matrix(
+        ours = None if similarity == "theirs" else similarity_matrix(
             audio_units, slide_units, encoder=encoder,
             w_dense=weights.get("dense", 0.6),
             w_bm25=weights.get("bm25", 0.25),
             w_keyword=weights.get("keyword", 0.15),
         )
+        if similarity == "ours":
+            sim = ours
+        else:
+            theirs = distiluse_similarity(audio_units, slide_units, device=device)
+            sim = theirs if similarity == "theirs" else fuse_similarity(ours, theirs, similarity, fusion_weight)
+        similarity = sim  # the matrix from here on
         path = (align_naive(similarity) if method == "naive" else
                 align_monotonic(similarity, jump_penalty=jump_penalty,
                                 skip_penalty=skip_penalty, back_penalty=back_penalty,

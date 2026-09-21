@@ -27,5 +27,8 @@
   0.2,
   0.3
  ],
- "final_round": "2026-09-22: sigma by tune their-F1; build_groups on iff it raised tune their-F1 at the tuned sigma"
+ "final_round": "2026-09-22: sigma by tune their-F1; build_groups on iff it raised tune their-F1 at the tuned sigma",
+ "fusion_weight": 0.5,
+ "similarity": "fused_weighted",
+ "fused_study": "2026-09-22: weight by tune their-F1 over {0,.25,.5,.75,1}; both matrices min-max scaled per lecture"
 }

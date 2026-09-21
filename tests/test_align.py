@@ -292,3 +292,17 @@ def test_abstain_marks_low_max_rows_and_leaves_the_rest():
     S = np.array([[0.9, 0.1], [0.2, 0.25], [0.1, 0.8]])
     assert abstain(S, [0, 1, 1], 0.5) == [0, -1, 1]
     assert abstain(S, [0, 1, 1], None) == [0, 1, 1]
+
+
+def test_fuse_similarity_scales_then_combines():
+    from linkrag.link.align import fuse_similarity
+    ours = np.array([[0.1, 0.9], [0.5, 0.1]])       # hybrid scale
+    theirs = np.array([[0.0, 0.3], [0.6, 0.0]])     # cosine scale
+    mx = fuse_similarity(ours, theirs, "fused_max")
+    assert mx.max() == 1.0 and mx.min() == 0.0
+    w = fuse_similarity(ours, theirs, "fused_weighted", weight=1.0)
+    assert np.allclose(w, theirs / 0.6)              # weight 1 == theirs, min-max scaled
+    w0 = fuse_similarity(ours, theirs, "fused_weighted", weight=0.0)
+    assert np.allclose(w0, (ours - 0.1) / 0.8)
+    with pytest.raises(ValueError):
+        fuse_similarity(ours, theirs[:1], "fused_max")

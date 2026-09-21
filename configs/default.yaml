@@ -126,6 +126,14 @@ link:
     min_segment_sim: null      # per-segment abstention (-1) when max row similarity < this
     build_groups: false        # group Beamer-style build pages (each a superset of the last),
                                # align at group level, assign builds by incremental content
+    # Similarity features. MaViLS decomposition (reports/mavils_final.md): the gap to
+    # their audio-only number is in the similarity features, not the decoder.
+    #   ours           bge-m3 + BM25 + IDF-overlap hybrid (every recorded number)
+    #   theirs         distiluse-base-multilingual-cased cosine (MaViLS)
+    #   fused_max      cellwise max of the two, each min-max scaled
+    #   fused_weighted fusion_weight*theirs + (1-fusion_weight)*ours
+    similarity: ours
+    fusion_weight: 0.5         # tuned quantity; MaViLS tune-half value in results/external/mavils_tuned.json
     min_score: 0.0             # drop links scoring below this
     links_path: data/processed/links.jsonl
 
