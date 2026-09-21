@@ -82,8 +82,9 @@ def protocol_note() -> str:
         "One row per transcript sentence (`generate_output_dict_by_sentence`), per lecture, then the "
         "unweighted mean over lectures. `labels` comes from the unfiltered column, so -1 is a label: "
         "predicting -1 on a labelled sentence is a false positive for -1 and a miss for the true slide, "
-        "i.e. **abstention cannot raise their F1**; it can only be seen in precision-on-answered and "
-        "coverage, which we report alongside. Their audio-only similarity is distiluse cosine between "
+        "i.e. **abstention cannot raise their F1** -- it scores like a wrong slide that is itself a label, "
+        "and *worse* than a wrong slide the ground truth never uses (that one costs recall only). "
+        "Abstention can only be seen in precision-on-answered and coverage, which we report alongside. Their audio-only similarity is distiluse cosine between "
         "the sentence and **tesseract OCR of the rendered slide image** (`matching_algorithm.py`), "
         "decoded with their DP (penalty 0.1·|Δslide|, ×2 backwards, no skip penalty)."
     )
@@ -207,13 +208,139 @@ def similarity_for(stem: str, *, window: float, slide_text: str, cfg: dict, enco
     return S, np.array(owner), gt, pages, status
 
 
+
+
+# ----------------------------------------------------------------- their code, verbatim
+
+def their_dp():
+    """`calculate_dp_with_jumps` from MaViLS `helpers/utils.py`, executed from source so
+    the module's cv2/torch imports are not needed. Their code, unmodified."""
+    import ast
+    src = (REPO / "helpers" / "utils.py").read_text()
+    tree = ast.parse(src)
+    node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "calculate_dp_with_jumps")
+    ns: dict = {"np": np, "tqdm": lambda it, **kw: it}
+    exec(ast.get_source_segment(src, node), ns)
+    return ns["calculate_dp_with_jumps"]
+
+
+def their_similarity_for(stem: str, *, cfg: dict, figures_dir: Path):
+    """distiluse-base-multilingual-cased cosine between each sentence and the page OCR
+    text -- their audio-only similarity (matching_algorithm.py). Cached. Deviation:
+    tesseract `eng` only (their `eng+ell+equ+deu`; those traineddata are not installed)."""
+    path = CACHE / "S" / f"{stem}.sentence.theirs.npz"
+    df = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{stem}.xlsx")
+    gt = df["slide"].astype(int).to_numpy()
+    if path.exists():
+        z = np.load(path)
+        return z["S"], z["owner"], gt, z["pages"]
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer("sentence-transformers/distiluse-base-multilingual-cased", device=cfg["device"])
+    audio, owner = sentence_units(df, stem)
+    slides, _ = slide_units(stem, "ocr", figures_dir)
+    a = model.encode([u.content for u in audio], convert_to_numpy=True, normalize_embeddings=True)
+    b = model.encode([u.content for u in slides], convert_to_numpy=True, normalize_embeddings=True)
+    S = (a @ b.T).astype(np.float64)
+    pages = np.array([u.location.page for u in slides])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(path, S=S, owner=np.array(owner), pages=pages)
+    return S, np.array(owner), gt, pages
+
+
+def decode_theirs(S, pages, owner, jump_penalty: float = 0.1) -> np.ndarray:
+    path_pairs, _ = their_dp()(S, jump_penalty)
+    path = [j for _, j in path_pairs]
+    return np.array([pages[j] for j in path])[owner]
+
+
+# ----------------------------------------------------------------- build decks
+
+def _tokens(text: str) -> list[str]:
+    import re
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def build_groups(page_texts: list[str], min_tokens: int = 5) -> list[list[int]]:
+    """Consecutive pages whose token multiset is a superset of the previous page's
+    (with at least `min_tokens` tokens) form one build group. Returns index groups
+    covering every page; a non-build page is a group of one."""
+    from collections import Counter
+    groups: list[list[int]] = []
+    prev: Counter | None = None
+    for i, text in enumerate(page_texts):
+        cur = Counter(_tokens(text))
+        if prev is not None and sum(prev.values()) >= min_tokens and not (prev - cur):
+            groups[-1].append(i)
+        else:
+            groups.append([i])
+        prev = cur
+    return groups
+
+
+def group_similarity(S: np.ndarray, groups: list[list[int]]) -> np.ndarray:
+    """One column per group: the max over its builds (the fullest build dominates
+    anyway; max keeps a sentence that matches an early build visible)."""
+    return np.stack([S[:, g].max(axis=1) for g in groups], axis=1)
+
+
+def assign_within_group(rows: list[int], group: list[int], page_texts: list[str],
+                        sentence_texts: list[str], idf: dict[str, float]) -> list[int]:
+    """Builds inside a group differ by what each one ADDS. Score each sentence against
+    each build's incremental text (IDF-weighted token overlap over the delta), then
+    decode monotonically (a build is never un-revealed) with no penalties."""
+    if len(group) == 1:
+        return [group[0]] * len(rows)
+    from collections import Counter
+    deltas, prev = [], Counter()
+    for j in group:
+        cur = Counter(_tokens(page_texts[j]))
+        deltas.append(set(cur - prev) or set(cur))       # first build: its whole text
+        prev = cur
+    mass = [max(sum(idf.get(t, 1.0) for t in d), 1e-9) for d in deltas]
+    sub = np.zeros((len(rows), len(group)))
+    for r, i in enumerate(rows):
+        toks = set(_tokens(sentence_texts[i]))
+        for b, d in enumerate(deltas):
+            sub[r, b] = sum(idf.get(t, 1.0) for t in toks & d) / mass[b]
+    local = align_monotonic(sub, jump_penalty=0.0, skip_penalty=0.0, back_penalty=1.0, max_back=0)
+    return [group[b] for b in local]
+
+
+def decode_with_builds(S, pages, owner, a: dict, *, page_texts: list[str], sentence_texts: list[str],
+                       min_sim: float | None, flat: float, sigma: float | None = None) -> tuple[np.ndarray, dict]:
+    """Group-level DP over build groups, then within-group assignment by incremental
+    content. Returns predictions per sentence and build statistics."""
+    from linkrag.link.align import _idf  # same IDF the similarity uses
+    from linkrag.index import tokenize
+    groups = build_groups(page_texts)
+    idf = _idf([tokenize(t) for t in page_texts])
+    G = group_similarity(S, groups)
+    sig = a["skip_penalty"] if sigma is None else sigma
+    gpath = align_monotonic(G, jump_penalty=a["jump_penalty"], skip_penalty=sig, back_penalty=a["back_penalty"],
+                            max_back=a["max_back"], start_prior_mu=a.get("start_prior_mu", 0.0), flatness_scaling=flat)
+    path = [-1] * S.shape[0]
+    seg_texts = sentence_texts  # window=0: one row per sentence
+    for g_idx, group in enumerate(groups):
+        rows = [i for i, p in enumerate(gpath) if p == g_idx]
+        if rows:
+            for i, j in zip(rows, assign_within_group(rows, group, page_texts, seg_texts, idf)):
+                path[i] = j
+    path = abstain(S, path, min_sim)
+    pred = np.array([pages[j] if j >= 0 else -1 for j in path])[owner]
+    stats = {"groups": len(groups), "build_groups": sum(len(g) > 1 for g in groups),
+             "pages_in_builds": sum(len(g) for g in groups if len(g) > 1)}
+    return pred, stats
+
+
 # ----------------------------------------------------------------- variants
 
-def decode(S, pages, owner, a: dict, *, variant: str, min_sim: float | None, flat: float) -> np.ndarray:
+def decode(S, pages, owner, a: dict, *, variant: str, min_sim: float | None, flat: float,
+           sigma: float | None = None) -> np.ndarray:
     if variant == "naive":
         path = align_naive(S)
     else:
-        path = align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
+        path = align_monotonic(S, jump_penalty=a["jump_penalty"],
+                               skip_penalty=a["skip_penalty"] if sigma is None else sigma,
                                back_penalty=a["back_penalty"], max_back=a["max_back"],
                                start_prior_mu=a.get("start_prior_mu", 0.0),
                                flatness_scaling=flat if variant.endswith("flat") else 0.0)
@@ -251,6 +378,7 @@ def cmd_run(args, cfg, encoder) -> int:
         for v in ("naive", "dp"):
             pred = decode(S, pages, owner, a, variant=v, min_sim=None, flat=0.0)
             r[f"{v}_f1"] = their_prf(gt, pred)[2]
+            r[f"{v}_paired"] = paired(gt, pred)
         rows.append(r)
         print(f"{r['name']:<20} n={r['n']:4d} slides={r['slides']:3d} layer={r['text_layer']:<7} "
               f"dp {r['dp_f1']:.2f} naive {r['naive_f1']:.2f} their audio {r['their_audio']:.2f}")
@@ -267,11 +395,12 @@ def cmd_run(args, cfg, encoder) -> int:
          "**Column correspondence.** Their *audio-only* ⇔ our `dp` column **when run with `--slide-text ocr` at "
          "sentence granularity** (same input protocol; our similarity and DP). `naive` is the same matrix without "
          "sequence structure. Their *all-features* uses video frames we do not consume.", "",
+         "Cells: **their F1 (precision-on-answered / coverage)**.", "",
          "| lecture | n | slides | text layer | **dp** | naive | their audio | their all | Δ dp − their audio |",
          "|---|---:|---:|---|---:|---:|---:|---:|---:|"]
     for r in rows:
         layer = r["text_layer"] + (f" ({r['ocr_pages']} OCR)" if r["ocr_pages"] and args.slide_text == "layer" else "")
-        L.append(f"| {r['name']} | {r['n']} | {r['slides']} | {layer} | **{r['dp_f1']:.2f}** | {r['naive_f1']:.2f} | "
+        L.append(f"| {r['name']} | {r['n']} | {r['slides']} | {layer} | **{r['dp_paired']}** | {r['naive_paired']} | "
                  f"{r['their_audio']:.2f} | {r['their_all']:.2f} | {r['dp_f1'] - r['their_audio']:+.2f} |")
     L.append(f"| **mean** | {sum(r['n'] for r in rows)} | | | **{mean('dp_f1'):.2f}** | {mean('naive_f1'):.2f} | "
              f"{mean('their_audio'):.2f} | {mean('their_all'):.2f} | {mean('dp_f1') - mean('their_audio'):+.2f} |")
@@ -424,9 +553,155 @@ def cmd_inspect(args, cfg, encoder) -> int:
     return 0
 
 
+def paired(gt: np.ndarray, pred: np.ndarray) -> str:
+    """The two numbers every alignment table carries: their F1, and precision-on-answered / coverage."""
+    f1 = their_prf(gt, pred)[2]
+    pr, cov = answered_metrics(gt, pred)
+    return f"{f1:.2f} ({pr:.2f} / {cov:.2f})"
+
+
+def cmd_final(args, cfg, encoder) -> int:
+    """Final round: sigma sweep (tune -> test), matrix x decoder decomposition, build-deck
+    grouping (tune -> test). Tune-half changes only; the test half is reported once."""
+    a = cfg["link"]["align"]
+    split = split_lectures()
+    tune, test = split["tune"], split["test"]
+    figures_dir = Path(args.figures_dir)
+    stems = sorted(LECTURES)
+    data, texts, theirs = {}, {}, {}
+    for stem in stems:
+        data[stem] = similarity_for(stem, window=0.0, slide_text="ocr", cfg=cfg, encoder=encoder, figures_dir=figures_dir)
+        slides, status = slide_units(stem, "ocr", figures_dir)
+        df = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{stem}.xlsx")
+        texts[stem] = ([u.content for u in slides], df["text"].tolist(), status)
+        theirs[stem] = their_similarity_for(stem, cfg=cfg, figures_dir=figures_dir)
+        print(f"loaded {LECTURES[stem][1]}")
+
+    def mean_f1(stems_, fn):
+        return float(np.mean([their_prf(data[s][2], fn(s))[2] for s in stems_]))
+
+    def mean_paired(stems_, fn):
+        f1s, prs, covs = [], [], []
+        for s_ in stems_:
+            gt = data[s_][2]
+            pred = fn(s_)
+            f1s.append(their_prf(gt, pred)[2])
+            pr, cov = answered_metrics(gt, pred)
+            prs.append(pr); covs.append(cov)
+        return f"{np.mean(f1s):.3f} ({np.mean(prs):.3f} / {np.mean(covs):.2f})"
+
+    def dp(stem, sigma=None, builds=False, min_sim=None):
+        S, owner, gt, pages, _ = data[stem]
+        if builds:
+            pred, _st = decode_with_builds(S, pages, owner, a, page_texts=texts[stem][0], sentence_texts=texts[stem][1],
+                                           min_sim=min_sim, flat=0.0, sigma=sigma)
+            return pred
+        return decode(S, pages, owner, a, variant="dp+abstain" if min_sim is not None else "dp",
+                      min_sim=min_sim, flat=0.0, sigma=sigma)
+
+    naive = lambda stem: decode(data[stem][0], data[stem][3], data[stem][1], a, variant="naive", min_sim=None, flat=0.0)
+
+    L = ["# MaViLS — final round", "",
+         f"Their protocol throughout (sentence granularity, page OCR, their sklearn F1; see `mavils_alignment.md`). "
+         f"Every cell shows **their F1 (precision-on-answered / coverage)**. Split `results/external/mavils_split.json` "
+         f"(seed {split['seed']}); tune = {', '.join(LECTURES[s][1] for s in tune)}; test = {', '.join(LECTURES[s][1] for s in test)}. "
+         "Tune-half changes only; the test half is reported once, at the end.", ""]
+
+    # ---------------- 1. sigma sweep
+    grid = [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3]
+    sig_rows = [(sg, mean_f1(tune, lambda s_: dp(s_, sigma=sg)), mean_paired(tune, lambda s_: dp(s_, sigma=sg))) for sg in grid]
+    best_sigma = max(sig_rows, key=lambda r: r[1])[0]
+    L += ["## 1. Skip-penalty (σ) sweep — tune half", "",
+          f"λ={a['jump_penalty']} β={a['back_penalty']} B={a['max_back']} μ={a.get('start_prior_mu', 0.0)} fixed; σ varied. "
+          f"Criterion: mean their-F1 on the tune half. Pilot value σ = {a['skip_penalty']}.", "",
+          "| σ | tune |", "|---:|---:|"]
+    for sg, f1, pr in sig_rows:
+        L.append(f"| {sg} | {pr}{' ←' if sg == best_sigma else ''} |")
+    L += ["", f"Chosen on tune: σ = {best_sigma} (pilot σ = {a['skip_penalty']}, tune {mean_paired(tune, lambda s_: dp(s_))}).", ""]
+
+    # ---------------- 2. decomposition
+    L += ["## 2. Decomposition — similarity matrix × decoder, all 20 lectures", "",
+          "Their cells run **their public code**: `calculate_dp_with_jumps` (helpers/utils.py, verbatim, λ_jump = 0.1) over "
+          "distiluse-base-multilingual-cased cosine between each sentence and the page OCR (matching_algorithm.py). "
+          "Deviation: tesseract `eng` only (their `eng+ell+equ+deu` traineddata are not installed here); rendering 150 dpi vs their 2.0× (144 dpi). "
+          f"Our decoder uses the pilot σ = {a['skip_penalty']} here (not the tuned value), so this table has no tuned quantity in it.", "",
+          "| similarity \\ decoder | their DP | our DP |", "|---|---:|---:|"]
+    cells = {}
+    for sim_name, getS in (("theirs (distiluse · page OCR)", lambda s_: theirs[s_]), ("ours (bge-m3 + BM25 + IDF · page OCR)", lambda s_: (data[s_][0], data[s_][1], data[s_][2], data[s_][3]))):
+        row = []
+        for dec_name in ("theirs", "ours"):
+            def fn(s_, getS=getS, dec_name=dec_name):
+                S, owner, gt, pages = getS(s_)
+                if dec_name == "theirs":
+                    return decode_theirs(S, pages, owner)
+                return np.array([pages[j] for j in align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
+                                                                   back_penalty=a["back_penalty"], max_back=a["max_back"],
+                                                                   start_prior_mu=a.get("start_prior_mu", 0.0))])[owner]
+            cells[(sim_name, dec_name)] = (mean_f1(stems, fn), mean_paired(stems, fn), mean_paired(tune, fn), mean_paired(test, fn))
+            row.append(cells[(sim_name, dec_name)][1])
+        L.append(f"| {sim_name} | {row[0]} | {row[1]} |")
+    tt, to, ot, oo = (cells[("theirs (distiluse · page OCR)", "theirs")][0], cells[("theirs (distiluse · page OCR)", "ours")][0],
+                      cells[("ours (bge-m3 + BM25 + IDF · page OCR)", "theirs")][0], cells[("ours (bge-m3 + BM25 + IDF · page OCR)", "ours")][0])
+    sim_effect = ((tt - ot) + (to - oo)) / 2
+    dec_effect = ((tt - to) + (ot - oo)) / 2
+    where = "the similarity matrix" if abs(sim_effect) > abs(dec_effect) else "the decoder"
+    L += ["", f"Replication check: their similarity + their decoder = **{tt:.3f}** against the paper's 0.53 audio-only average "
+          f"(difference = OCR language pack + rendering + transcript-file drift, not algorithm). Swapping only the matrix moves the mean by "
+          f"{sim_effect:+.3f}, swapping only the decoder by {dec_effect:+.3f}: **the gap lives in {where}** "
+          f"({'their distiluse-on-OCR matrix is the better input; our DP is at least as good a decoder' if where == 'the similarity matrix' else 'their DP decodes better on both matrices'}).", ""]
+
+    # ---------------- 3. build decks
+    build_flags = {s_: build_groups(texts[s_][0]) for s_ in stems}
+    def flag(s_):
+        g = build_flags[s_]
+        nb = sum(len(x) > 1 for x in g)
+        return f"{nb} groups / {sum(len(x) for x in g if len(x) > 1)} pages" if nb else "—"
+    on_tune = mean_paired(tune, lambda s_: dp(s_, sigma=best_sigma, builds=True))
+    off_tune = mean_paired(tune, lambda s_: dp(s_, sigma=best_sigma))
+    use_builds = mean_f1(tune, lambda s_: dp(s_, sigma=best_sigma, builds=True)) > mean_f1(tune, lambda s_: dp(s_, sigma=best_sigma))
+    L += ["## 3. Build-deck handling — tune half", "",
+          "Detection: consecutive pages whose token multiset is a superset of the previous page's form a build group "
+          "(`build_groups`, page OCR text, ≥ 5 tokens). Alignment runs the DP over groups (column = max over the group's builds); "
+          "within a group each sentence is scored against each build's *incremental* text (IDF overlap over the delta) and decoded "
+          "monotonically. Config `align.build_groups` (off by default; evaluated here on the tune half at the tuned σ).", "",
+          f"| variant (σ = {best_sigma}) | tune |", "|---|---:|", f"| dp, build_groups off | {off_tune} |", f"| dp, build_groups on | {on_tune} |", "",
+          f"Decision on tune: build_groups = **{'on' if use_builds else 'off'}**.", "",
+          "| tune lecture | build decks | dp off | dp on |", "|---|---|---:|---:|"]
+    for s_ in tune:
+        gt = data[s_][2]
+        L.append(f"| {LECTURES[s_][1]} | {flag(s_)} | {paired(gt, dp(s_, sigma=best_sigma))} | {paired(gt, dp(s_, sigma=best_sigma, builds=True))} |")
+    L.append("")
+
+    # ---------------- test half, once
+    tuned = json.loads((EXTERNAL / "mavils_tuned.json").read_text()) if (EXTERNAL / "mavils_tuned.json").exists() else {}
+    tuned.update({"sigma": best_sigma, "build_groups": bool(use_builds), "sigma_grid": grid,
+                  "final_round": "2026-09-22: sigma by tune their-F1; build_groups on iff it raised tune their-F1 at the tuned sigma"})
+    (EXTERNAL / "mavils_tuned.json").write_text(json.dumps(tuned, indent=1) + "\n")
+    L += ["## 4. Test half — reported once", "",
+          f"| lecture | text layer | build decks | naive | dp (pilot σ) | dp (σ = {best_sigma}) | dp + builds (σ = {best_sigma}) | their audio |",
+          "|---|---|---|---:|---:|---:|---:|---:|"]
+    agg = {k: [] for k in ("naive", "dp0", "dps", "dpb")}
+    for s_ in test:
+        gt = data[s_][2]
+        preds = {"naive": naive(s_), "dp0": dp(s_), "dps": dp(s_, sigma=best_sigma), "dpb": dp(s_, sigma=best_sigma, builds=True)}
+        for k, v in preds.items():
+            agg[k].append(v)
+        L.append(f"| {LECTURES[s_][1]} | {texts[s_][2]['text_layer']} | {flag(s_)} | " +
+                 " | ".join(paired(gt, preds[k]) for k in ("naive", "dp0", "dps", "dpb")) + f" | {LECTURES[s_][2]:.2f} |")
+    means = {k: mean_paired(test, lambda s_, k=k: {"naive": naive, "dp0": dp, "dps": lambda x: dp(x, sigma=best_sigma),
+                                                   "dpb": lambda x: dp(x, sigma=best_sigma, builds=True)}[k](s_)) for k in agg}
+    L.append(f"| **mean** | | | **{means['naive']}** | **{means['dp0']}** | **{means['dps']}** | **{means['dpb']}** | {np.mean([LECTURES[s_][2] for s_ in test]):.2f} |")
+    L.append("")
+    out = Path(args.out)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    print(f"wrote {out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "study", "inspect"])
+    ap.add_argument("cmd", choices=["run", "study", "inspect", "final"])
     ap.add_argument("--config", default="configs/default.yaml")
     ap.add_argument("--split", choices=["all", "tune", "test"], default="all")
     ap.add_argument("--window", type=float, default=0.0, help="0 = their sentence granularity (default); e.g. 30")
@@ -437,14 +712,14 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if args.out is None:
         args.out = {"run": "reports/mavils_alignment.md", "study": "reports/mavils_heldout_study.md",
-                    "inspect": None}[args.cmd]
+                    "inspect": None, "final": "reports/mavils_final.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
         raise SystemExit(f"clone https://github.com/andererka/MaViLS to {REPO}")
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
-    return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect}[args.cmd](args, cfg, encoder)
+    return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":

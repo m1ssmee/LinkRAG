@@ -102,7 +102,11 @@ def main(argv: list[str] | None = None) -> int:
           f"qa {len(qa)} · start_prior_mu={mu}")
     for subset_name, subset in (("TALK (all)", talk), ("TALK (non-ambiguous)", firm)):
         print(f"\n=== {subset_name}, n={len(subset)} ===")
-        print(f"  {'method':<26}{'exact':>10}{'±1':>10}{'back':>7}{'slides':>9}")
+        # The two paired numbers every alignment table carries (DESIGN.md, 2026-09-22):
+        # MaViLS-style micro-F1 over labelled segments, and precision-on-answered /
+        # coverage. Without abstention all three coincide with exact accuracy; they are
+        # printed so pilot01 and MaViLS tables read the same way.
+        print(f"  {'method':<26}{'exact':>10}{'±1':>10}{'back':>7}{'slides':>9}{'F1 (prec/cov)':>22}")
         for name, path in paths.items():
             e_hits, e_tot, misses = score(path, subset, index_of, pages, 0)
             t_hits, t_tot, _ = score(path, subset, index_of, pages, 1)
@@ -110,8 +114,10 @@ def main(argv: list[str] | None = None) -> int:
             seq = [path[i] for i in sorted(idxs)]
             back = sum(1 for a, b in zip(seq, seq[1:]) if b < a)
             covered = len({int(pages[j]) for j in seq})
+            f1 = e_hits / max(e_tot, 1)   # no abstention: micro-F1 == precision == recall == exact
             print(f"  {name:<26}{e_hits}/{e_tot} = {100*e_hits/max(e_tot,1):5.1f}%"
-                  f"{100*t_hits/max(t_tot,1):9.1f}%{back:7}{covered:>5}/{args.showable}")
+                  f"{100*t_hits/max(t_tot,1):9.1f}%{back:7}{covered:>5}/{args.showable}"
+                  f"{f1:>10.2f} ({f1:.2f} / 1.00)")
         if subset_name.startswith("TALK (all)"):
             _, _, dp_misses = score(paths["monotonic DP (ours)"], subset, index_of, pages, 0)
             print(f"  DP misses ({len(dp_misses)}): " +

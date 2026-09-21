@@ -124,6 +124,8 @@ link:
     # results/external/mavils_tuned.json and are applied only to its test half.
     flatness_scaling: 0.0      # sigma_i = sigma*(1-f + f*contrast_i/mean contrast); 0 = constant
     min_segment_sim: null      # per-segment abstention (-1) when max row similarity < this
+    build_groups: false        # group Beamer-style build pages (each a superset of the last),
+                               # align at group level, assign builds by incremental content
     min_score: 0.0             # drop links scoring below this
     links_path: data/processed/links.jsonl
 

@@ -137,20 +137,31 @@ explicit instruction.
 6. **The DP improves alignment only when the similarity matrix carries signal; on
    text-poor decks it underperforms naive argmax; abstention and flatness-scaling
    are the designed responses, evaluated on a held-out split.** MaViLS, 20
-   lectures, their protocol (`reports/mavils_alignment.md`): DP +0.16 over naive on
-   average (0.46 vs 0.30), but below naive on the deck with no text layer at all
-   (Image processing 0.19 vs 0.23) and only level on the partial-layer decks. The responses —
-   `align.min_segment_sim` (per-segment abstention → −1) and `align.flatness_scaling`
-   (row-contrast-scaled skip penalty) — are set on the 10-lecture tune half only
-   (`results/external/mavils_split.json`, `mavils_tuned.json`) and reported on the
-   other 10 (`reports/mavils_heldout_study.md`). Both are OFF in `configs/default.yaml`;
-   no parameter changed on the full set or on pilot01. Note their F1 counts an
-   abstention as a wrong slide, so abstention is judged on precision-on-answered and
-   coverage, not on their F1. Outcome: like-for-like (sentence granularity, page OCR,
-   their scorer) **0.46 vs their audio-only 0.53**; flatness scaling is inert at
-   σ = 0.02 (identical paths, inspected); abstention trades coverage for a few points
-   of precision. The Decarbonization gap was an input effect — a build deck whose
-   text layer makes builds indistinguishable — not a DP effect.
+   lectures, their protocol (sentence granularity, page OCR, their sklearn F1 —
+   `reports/mavils_alignment.md`). Every alignment table now carries the two paired
+   numbers: their F1, and precision-on-answered / coverage.
+   **Outcomes** (`reports/mavils_heldout_study.md`, `reports/mavils_final.md`;
+   tune/test split `results/external/mavils_split.json`, chosen values
+   `mavils_tuned.json`, all knobs OFF in `configs/default.yaml`):
+   - like-for-like **0.46 vs their audio-only 0.53**; DP +0.16 over naive argmax on
+     the same matrix, below naive only on the deck with no text layer.
+   - **Decomposition (their public code for their cells):** their matrix × their DP
+     0.513 (paper: 0.53); their matrix × our DP **0.520**; our matrix × their DP
+     0.425; our matrix × our DP 0.461. Swapping the matrix moves the mean +0.074,
+     swapping the decoder −0.022: **the gap lives in the similarity matrix** —
+     distiluse cosine on page OCR beats our bge-m3 + BM25 + IDF hybrid at sentence
+     granularity, and our DP is at least as good a decoder as theirs. The next design
+     question is the similarity (which terms to fuse for short segments and noisy
+     OCR), not the DP.
+   - σ sweep on the tune half: 0.2 chosen (tune 0.484 vs 0.471 at the pilot 0.02);
+     test 0.461 vs 0.452 — a +0.009 that is inside lecture-to-lecture noise.
+   - flatness scaling: inert at σ = 0.02 (identical paths; inspected).
+   - abstention (min_sim 0.5055): +0–4 points precision-on-answered for 3–24 points
+     of coverage; their F1 falls by construction (−1 is a label in their scorer).
+   - build-deck grouping (`align.build_groups`): detects 7 groups / 22 pages on
+     Decarbonization, but on the tune half it lowers F1 (0.478 vs 0.484) → off; test
+     0.462 vs 0.461. The Decarbonization gap itself was an input effect (text layer
+     vs page OCR: 0.21 → 0.44, 0.55 at σ = 0.2), not a DP effect.
 7. **Extended-dataset selection criterion** (priority vi): **low redundancy**
    (measure it with `scripts/dataset/redundancy.py` before ingesting; a candidate
    with transcript→deck above pilot01's number is rejected), **diagram-heavy decks**
