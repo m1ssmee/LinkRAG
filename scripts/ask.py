@@ -69,6 +69,8 @@ def main(argv: list[str] | None = None) -> int:
             hops=lcfg["hops"], link_types=lcfg["link_types"],
             min_link_score=lcfg["min_link_score"], decay=lcfg["decay"],
             candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"],
+            normalise_seeds=lcfg.get("normalise_seeds", False),
+            expansion=cfg["retrieve"].get("expansion", "additive"),
         )
     else:
         results = [

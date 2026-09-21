@@ -143,6 +143,14 @@ retrieve:
   top_k: 8                       # units handed to the LLM
   candidates: 50                 # pulled from each ranker before fusion
   rrf_k: 60                      # reciprocal rank fusion constant (Cormack 2009)
+  # Design change 2026-09-21 (verified-gold result, reports/regression.md):
+  #   additive -- retrieve k_final seeds, ADD their 1-hop link neighbours to the
+  #               candidate pool, and let the selection step (reranker, or score when
+  #               rerank=none) pick k_final. Expansion never evicts a seed on its own.
+  #   evict    -- the Phase-4 behaviour: k_seed (< k_final) seeds, expansions fill the
+  #               remaining slots unconditionally. Evicted gold ranked 6-8 on the
+  #               verified set (A1 100% -> 0%). Kept only as the recorded ablation.
+  expansion: additive            # additive | evict
 
   # --- link-following retrieval (Phase 4, novel component 2) ---
   linkrag:
@@ -153,9 +161,11 @@ retrieve:
     min_link_score: 0.0
     decay: 0.5                   # expanded score = seed_score * link_score * decay
     # Rank-normalise seed scores to (0,1]. Raw RRF is ~0.03 against link weights of
-    # ~0.6-1.0, so expansion can only fill the tail; normalising lets an expanded
-    # unit outrank a weak seed. Off by default: it changes every recorded number.
-    normalise_seeds: false
+    # ~0.6-1.0, so seed x link x decay is two orders below any seed. Under additive
+    # expansion "select by score" is meaningless without this, so it is on as part
+    # of the same design change; false reproduces every number recorded before
+    # 2026-09-07 (with expansion: evict).
+    normalise_seeds: true
 
   # --- complementarity-aware reranking (Phase 5, novel component 3) ---
   rerank:
@@ -175,3 +185,17 @@ retrieve:
 eval:
   metrics: [answer_accuracy, evidence_precision, evidence_recall, cross_modal_coverage, citation_faithfulness]
   report_both_modes: true
+  # Judge for gold verification, answer grading and the redundancy metric. Must be a
+  # DIFFERENT model from models.llm (the answerer): self-grading is lenient. Preferred
+  # default is a local model (e.g. provider: ollama, model: llama3.1:8b, with
+  # models.llm on qwen2.5:7b); this machine (8 GB, no Ollama runtime) cannot host one,
+  # so the judge is a different hosted family instead. Same OpenAI-compatible shape.
+  judge:
+    provider: openai
+    model: gpt-4.1-mini-2025-04-14   # gpt-4.1 has a 30k TPM cap on this account
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.0
+    seed: 20260921
+    max_tokens: 1024
+    timeout_s: 120

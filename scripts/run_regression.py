@@ -42,7 +42,11 @@ def retrieve_for_mode(mode, question, index, *, encoder, graph, cfg):
             k_seed=lcfg["k_seed"], k_final=lcfg["k_final"], hops=lcfg["hops"],
             link_types=lcfg["link_types"], min_link_score=lcfg["min_link_score"],
             decay=lcfg["decay"], candidates=cfg["retrieve"]["candidates"],
-            rrf_k=cfg["retrieve"]["rrf_k"])
+            rrf_k=cfg["retrieve"]["rrf_k"],
+            normalise_seeds=lcfg.get("normalise_seeds", False),
+            expansion=cfg["retrieve"].get("expansion", "additive"))
+        # additive returns the whole pool; this runner has no reranker, so "by score"
+        results = results[:lcfg["k_final"]]
         expanded, seeded = expansion_report(results, graph)
         return [r.unit for r in results], expanded, seeded
 

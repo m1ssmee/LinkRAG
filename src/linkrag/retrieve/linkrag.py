@@ -85,8 +85,19 @@ def retrieve_linkrag(
     rrf_k: int = RRF_K,
     normalise_seeds: bool = False,
     seed_results: Sequence[tuple[EvidenceUnit, float]] | None = None,
+    expansion: str = "additive",
 ) -> list[RetrievedUnit]:
     """Seed with the hybrid retriever, expand along links, keep the best k_final.
+
+    `expansion` (design change 2026-09-21, see DESIGN.md):
+      additive -- retrieve `k_final` seeds, add their link neighbours to the pool and
+                  return the WHOLE pool sorted by score; the caller's selection step
+                  (reranker, or a plain `[:k]` when rerank=none) picks k. Expansion
+                  can add evidence but never removes a seed by itself.
+      evict    -- the Phase-4 behaviour: `k_seed` seeds, `k_final` returned, so
+                  expansions occupy k_final - k_seed slots unconditionally. On the
+                  verified pilot01 gold this evicted gold units the retriever had
+                  ranked 6-8. Kept as the recorded ablation, not the default.
 
     `normalise_seeds` rank-normalises seed scores to (0, 1]: rank r of n becomes
     (n-r+1)/n. Raw RRF scores are ~0.03 while link weights are ~0.6-1.0, so
@@ -103,12 +114,15 @@ def retrieve_linkrag(
     """
     if mode not in ("baseline", "linkrag"):
         raise ValueError(f"unknown mode {mode!r}: use 'baseline' or 'linkrag'")
+    if expansion not in ("additive", "evict"):
+        raise ValueError(f"unknown expansion {expansion!r}: use 'additive' or 'evict'")
 
     by_id = {u.id: u for u in index.units}
     wanted = set(link_types) if link_types else None
 
-    with stage_timer("retrieve.linkrag", mode=mode, k_seed=k_seed, k_final=k_final) as t:
-        seed_k = k_final if mode == "baseline" else k_seed
+    with stage_timer("retrieve.linkrag", mode=mode, k_seed=k_seed, k_final=k_final,
+                     expansion=expansion) as t:
+        seed_k = k_final if (mode == "baseline" or expansion == "additive") else k_seed
         if seed_results is None:
             seeds = retrieve_scored(question, index, encoder=encoder, top_k=seed_k,
                                     candidates=candidates, rrf_k=rrf_k)
@@ -156,7 +170,9 @@ def retrieve_linkrag(
 
         t["expanded"] = sum(1 for r in chosen.values() if r.origin == "expanded")
 
-    ranked = sorted(chosen.values(), key=lambda r: (-r.score, r.id))[:k_final]
+    ranked = sorted(chosen.values(), key=lambda r: (-r.score, r.id))
+    if expansion == "evict" or mode == "baseline":
+        ranked = ranked[:k_final]
     return ranked
 
 

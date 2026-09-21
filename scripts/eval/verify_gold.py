@@ -76,25 +76,30 @@ def main(argv: list[str] | None = None) -> int:
         print(f"WARNING: proposal written for corpus {meta['corpus_manifest']}, index is {mhash}")
 
     llm = cfg["models"]["llm"]
-    complete = cached_completer(http_completer(llm), Path(args.cache) / mhash)
+    jcfg = cfg.get("eval", {}).get("judge") or llm
+    if jcfg.get("model") == llm.get("model"):
+        print("WARNING: eval.judge is the same model as models.llm -- self-grading is lenient")
+    complete = cached_completer(http_completer(llm), Path(args.cache) / mhash / str(llm.get("model")))
+    judge = cached_completer(http_completer(jcfg), Path(args.cache) / mhash / str(jcfg.get("model")))
     deck_files = {Path(u.source_file).name for u in index.units if u.metadata.get("slide_deck")}
     print(f"{len(rows)} questions · corpus {mhash} ({len(index)} units) · deck files {sorted(deck_files)}")
-    print(f"judge {llm.get('model')} @ temperature={llm.get('temperature')} seed={llm.get('seed')} · {args.runs} runs\n")
+    print(f"answerer {llm.get('model')} · judge {jcfg.get('model')} @ temperature={jcfg.get('temperature')} "
+          f"seed={jcfg.get('seed')} · {args.runs} runs\n")
 
-    verdicts = verify_gold(rows, list(index.units), complete, deck_files=deck_files,
+    verdicts = verify_gold(rows, list(index.units), complete, judge=judge, deck_files=deck_files,
                            runs=args.runs, workers=args.workers, progress=print)
 
     reports = Path("reports")
     md = write_report(verdicts, reports / f"gold_verified_{args.corpus}.md", corpus=args.corpus,
-                      manifest_hash=mhash, model=str(llm.get("model")), runs=args.runs,
-                      n_units=len(index))
+                      manifest_hash=mhash, model=str(jcfg.get("model")), runs=args.runs,
+                      n_units=len(index), answerer=str(llm.get("model")))
     js = dump_json(verdicts, reports / f"gold_verified_{args.corpus}.json")
     gold_rows = verified_gold_rows(verdicts, list(index.units))
-    gold = write_gold(gold_rows, args.out, manifest_hash=mhash, model=str(llm.get("model")),
-                      runs=args.runs, source=args.proposed)
+    gold = write_gold(gold_rows, args.out, manifest_hash=mhash, model=str(jcfg.get("model")),
+                      runs=args.runs, source=args.proposed, answerer=str(llm.get("model")))
 
     kept = sum(v.verified_type is not None for v in verdicts)
-    calls = sum(complete.calls.values())
+    calls = sum(complete.calls.values()) + sum(judge.calls.values())
     print(f"\nkept {kept}/{len(verdicts)} questions · "
           f"{sum(len(r['gold_unit_ids']) for r in gold_rows)} gold units · {calls} LLM calls (incl. cached)")
     print(f"wrote {md}\nwrote {js}\nwrote {gold}  (stamped {mhash})")

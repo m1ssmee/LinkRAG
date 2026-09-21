@@ -135,8 +135,11 @@ def retrieve_linkrag_iter(
     """
     from linkrag.retrieve.linkrag import retrieve_linkrag
 
+    # additive expansion seeds from k_final units (nothing is evicted to make room
+    # for neighbours); evict keeps the Phase-4 k_seed.
+    n_seeds = k_final if linkrag_kwargs.get("expansion", "additive") == "additive" else k_seed
     it = retrieve_iterative(question, index, encoder=encoder, complete=complete,
-                            rounds=rounds, k_per_round=k_seed, k_final=k_seed,
+                            rounds=rounds, k_per_round=n_seeds, k_final=n_seeds,
                             candidates=candidates, rrf_k=rrf_k)
     seeds = [(r.unit, r.score) for r in it.units]
     results = retrieve_linkrag(question, index, graph, encoder=encoder, mode="linkrag",

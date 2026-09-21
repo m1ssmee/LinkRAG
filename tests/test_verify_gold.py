@@ -80,7 +80,7 @@ def test_end_to_end_with_scripted_judge():
         return json.dumps({"facts": [{"fact": "57x", "supported": ok, "span": "57x cheaper" if ok else ""}],
                            "verdict": "yes" if ok else "no"})
 
-    out = verify_gold([row], units, judge, deck_files={"deck.pdf"}, runs=3, workers=2)
+    out = verify_gold([row], units, judge, judge=judge, deck_files={"deck.pdf"}, runs=3, workers=2)
     v = out[0]
     assert v.verified_type == "slides_only" and v.status.startswith("relabelled")
     assert [u.kept for u in v.units] == [True, False]

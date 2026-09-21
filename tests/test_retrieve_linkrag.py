@@ -141,10 +141,45 @@ def test_stale_link_to_an_unindexed_unit_is_ignored(corpus, stub_encoder) -> Non
     assert "ghost" not in ids, "a link into a unit the index lacks must not be returned"
 
 
-def test_k_final_caps_the_set(corpus, graph) -> None:
+def test_k_final_caps_the_set_under_evict(corpus, graph) -> None:
     index, encode, _ = corpus
     assert len(retrieve_linkrag(QUESTION, index, graph, encoder=encode,
-                                k_seed=3, k_final=4)) == 4
+                                k_seed=3, k_final=4, expansion="evict")) == 4
+
+
+# ------------------------------------------------ additive vs evict (2026-09-21)
+
+def test_additive_expansion_never_drops_a_seed(corpus, graph) -> None:
+    """The verified-gold defect: evict with k_seed < k_final threw away seeds the
+    retriever ranked k_seed+1..k_final. Additive keeps every one of the k_final seeds
+    and only ADDS neighbours; the caller's selection step decides what survives."""
+    index, encode, _ = corpus
+    top4 = [u.id for u, _ in retrieve_scored(QUESTION, index, encoder=encode, top_k=4)]
+    evict = [r.id for r in retrieve_linkrag(QUESTION, index, graph, encoder=encode,
+                                            k_seed=2, k_final=4, expansion="evict")]
+    additive = retrieve_linkrag(QUESTION, index, graph, encoder=encode,
+                                k_seed=2, k_final=4, expansion="additive")
+    assert not set(top4) <= set(evict), "evict must actually lose a top-4 seed here"
+    seeds = [r.id for r in additive if r.origin == "seed"]
+    assert seeds == top4
+    assert any(r.origin == "expanded" for r in additive), "neighbours are added, not dropped"
+    assert len(additive) > 4, "additive returns the pool; the caller cuts to k"
+
+
+def test_additive_by_score_without_normalisation_is_baseline(corpus, graph) -> None:
+    """Measurement rule 1, by construction: unnormalised expansions (~seed*link*decay
+    of an RRF score) can never outrank a seed, so score-selection reproduces top-k."""
+    index, encode, _ = corpus
+    base = [u.id for u, _ in retrieve_scored(QUESTION, index, encoder=encode, top_k=4)]
+    add = [r.id for r in retrieve_linkrag(QUESTION, index, graph, encoder=encode, k_final=4,
+                                          expansion="additive", normalise_seeds=False)][:4]
+    assert add == base
+
+
+def test_unknown_expansion_raises(corpus, graph) -> None:
+    index, encode, _ = corpus
+    with pytest.raises(ValueError):
+        retrieve_linkrag(QUESTION, index, graph, encoder=encode, expansion="maybe")
 
 
 def test_results_are_sorted_and_deduped(corpus, graph) -> None:

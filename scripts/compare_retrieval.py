@@ -35,6 +35,18 @@ from linkrag.retrieve.rerank import METHODS, rerank, set_diagnostics
 MODES = ("baseline", "iterative", "linkrag", "linkrag_iter")
 LLM_MODES = {"iterative", "linkrag_iter"}
 
+# Verified-gold type buckets (DESIGN.md, 2026-09-21): the per-type table is the one
+# that matters. `deictic` is reported both inside cross_modal and on its own row.
+BUCKETS = {
+    "single_modality": {"single_modality", "slides_only", "audio_only", "paper_only"},
+    "cross_modal": {"cross_modal_split", "cross_modal_deictic", "deictic"},
+    "deictic": {"cross_modal_deictic", "deictic"},
+}
+
+
+def buckets_of(qtype: str) -> list[str]:
+    return [b for b, members in BUCKETS.items() if qtype in members]
+
 
 def gold_ids_for(row: dict, index: Index) -> set[str]:
     if row.get("gold_unit_ids"):
@@ -57,6 +69,7 @@ def retrieve_pool(mode, question, index, graph, *, encoder, cfg, complete, pool)
     lcfg, icfg = cfg["retrieve"]["linkrag"], cfg["retrieve"]["iterative"]
     common = dict(candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"])
     norm = lcfg.get("normalise_seeds", False)
+    expansion = cfg["retrieve"].get("expansion", "additive")
     t0 = time.perf_counter()
 
     if mode == "baseline":
@@ -70,7 +83,8 @@ def retrieve_pool(mode, question, index, graph, *, encoder, cfg, complete, pool)
                                k_seed=lcfg["k_seed"], k_final=pool, hops=lcfg["hops"],
                                link_types=lcfg["link_types"],
                                min_link_score=lcfg["min_link_score"],
-                               decay=lcfg["decay"], normalise_seeds=norm, **common)
+                               decay=lcfg["decay"], normalise_seeds=norm,
+                               expansion=expansion, **common)
         return out, 0, time.perf_counter() - t0
 
     if mode == "iterative":
@@ -84,7 +98,7 @@ def retrieve_pool(mode, question, index, graph, *, encoder, cfg, complete, pool)
         rounds=icfg["rounds"], k_seed=lcfg["k_seed"], k_final=pool,
         hops=lcfg["hops"], link_types=lcfg["link_types"],
         min_link_score=lcfg["min_link_score"], decay=lcfg["decay"],
-        normalise_seeds=norm, **common)
+        normalise_seeds=norm, expansion=expansion, **common)
     return out, it.llm_calls, time.perf_counter() - t0
 
 
@@ -135,6 +149,8 @@ def main(argv: list[str] | None = None) -> int:
     cells: dict[tuple[str, str], list[dict]] = {}
     id_sets: dict[str, list[tuple]] = {}
     per_q: dict[tuple[str, str, str], list[float]] = {}   # (qid, mode, method) -> recall per run
+    per_q_full: dict[tuple[str, str, str], list[dict]] = {}   # -> per-run {recall, prec, mods}
+    calls_q: dict[tuple[str, str], list[int]] = {}             # (qid, mode) -> llm calls per run
     calls_total = 0
 
     for mode in modes:
@@ -149,6 +165,7 @@ def main(argv: list[str] | None = None) -> int:
                     mode, row["question"], index, graph, encoder=encoder, cfg=cfg,
                     complete=complete, pool=pool)
                 calls_total += calls
+                calls_q.setdefault((row["qid"], mode), []).append(calls)
                 latencies.append(secs)
                 for method in methods:
                     picked = rerank(results, k, method=method, index=index, graph=graph,
@@ -162,6 +179,8 @@ def main(argv: list[str] | None = None) -> int:
                     d = set_diagnostics(picked, index)
                     per_method[method]["recall"].append(r_)
                     per_q.setdefault((row["qid"], mode, method), []).append(r_)
+                    per_q_full.setdefault((row["qid"], mode, method), []).append(
+                        {"recall": r_, "prec": p_, "mods": d["modalities"]})
                     per_method[method]["prec"].append(p_)
                     per_method[method]["mods"].append(d["modalities"])
                     per_method[method]["red"].append(d["redundancy"])
@@ -193,7 +212,9 @@ def main(argv: list[str] | None = None) -> int:
           f"{len(rows)} questions · k={k} · pool={pool} · corpus `{manifest.get('hash', '?')}` "
           f"({len(index)} units) · gold stamped `{gold_meta.get('manifest_hash', 'unstamped')}` · "
           f"model `{llm.get('model')}` temperature={llm.get('temperature')} seed={llm.get('seed')} · "
-          f"repeats {args.repeats} for LLM modes · {calls_total} LLM calls", "",
+          f"repeats {args.repeats} for LLM modes · {calls_total} LLM calls · "
+          f"expansion `{cfg['retrieve'].get('expansion', 'additive')}` · "
+          f"normalise_seeds `{lcfg.get('normalise_seeds', False)}`", "",
           f"| mode | rerank | recall@{k} | precision@{k} | distinct modalities "
           f"| redundancy | runs |", "|---|---|---:|---:|---:|---:|---:|"]
     for mode in modes:
@@ -223,6 +244,48 @@ def main(argv: list[str] | None = None) -> int:
                        else f"NOT identical — {len(set(runs))} distinct outcomes in {len(runs)} runs")
         print(f"  {mode:<14} {verdict}")
         md.append(f"- `{mode}`: {verdict}")
+
+    # per-type breakdown: the table that matters (DESIGN.md 2026-09-21)
+    def cell_by_type(bucket, mode, method):
+        qids = [r["qid"] for r in rows if bucket in buckets_of(r.get("type", ""))]
+        if not qids:
+            return None
+        runs_n = max(len(per_q_full.get((q, mode, method), [])) for q in qids)
+        per_run = []
+        for i in range(runs_n):
+            vals = [per_q_full[(q, mode, method)][i] for q in qids if len(per_q_full.get((q, mode, method), [])) > i]
+            per_run.append({k_: statistics.mean(v[k_] for v in vals) for k_ in ("recall", "prec", "mods")})
+        llm = statistics.mean(statistics.mean(calls_q[(q, mode)]) for q in qids)
+        return len(qids), per_run, llm
+
+    def fmt_runs(per_run, key, pct=True):
+        xs = [r[key] for r in per_run]
+        if len(xs) == 1:
+            return f"{xs[0]:.1%}" if pct else f"{xs[0]:.2f}"
+        m, sd = statistics.mean(xs), statistics.stdev(xs)
+        return f"{m:.1%} ± {sd:.1%}" if pct else f"{m:.2f}"
+
+    md += ["", "### By verified question type", "",
+           "| type | n | mode | rerank | recall@k | precision@k | modalities | LLM calls / q |",
+           "|---|---:|---|---|---:|---:|---:|---:|"]
+    print("\nby verified question type:")
+    for bucket in BUCKETS:
+        for mode in modes:
+            for method in methods:
+                got = cell_by_type(bucket, mode, method)
+                if got is None:
+                    continue
+                n, per_run, llm = got
+                if mode in LLM_MODES and len(per_run) < 3:
+                    md.append(f"| {bucket} | {n} | {mode} | {method} | REFUSED (n<3) | | | |")
+                    continue
+                line = (f"| {bucket} | {n} | {mode} | {method} | {fmt_runs(per_run, 'recall')} | "
+                        f"{fmt_runs(per_run, 'prec')} | {fmt_runs(per_run, 'mods', pct=False)} | {llm:.1f} |")
+                md.append(line)
+                print("  " + line.strip("| ").replace(" | ", "  "))
+    md += ["", f"Bucket sizes: " + ", ".join(
+        f"{b} {sum(1 for r in rows if b in buckets_of(r.get('type', '')))}" for b in BUCKETS)
+        + f" (deictic ⊂ cross_modal; single + cross = {len(rows)} questions)."]
 
     # per-question recall, mean over runs, for every (mode, rerank) cell
     cols = [(m, r) for m in modes for r in methods]

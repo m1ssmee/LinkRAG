@@ -101,6 +101,37 @@ explicit instruction.
 6. **(vi) Extended cross-file dataset.** MaViLS / NPTEL lectures with decks + notes,
    the setting neither target covers, built only after (iii) and (iv) have numbers.
 
+## Findings (binding for dataset and design decisions)
+
+1. **Link-following benefits are concentrated on questions where modalities are
+   complementary.** On machine-verified pilot01 gold, the only clear win for
+   link-following is C5 — the one deictic question whose referent is visual-only.
+   Where a fact is restated in another modality, plain retrieval already reaches it
+   and expansion can only add coverage, not recall (`reports/regression.md`,
+   2026-09-20/21).
+2. **pilot01 is highly redundant.** Only 4–5 of 16 proposed cross-modal questions
+   survive verification under either judge; the paper restates the deck and the
+   transcript narrates the slides. Quantified in `reports/redundancy_pilot01.md`
+   (`scripts/dataset/redundancy.py`).
+3. **Extended-dataset selection criterion** (priority vi): **low redundancy**
+   (measure it with `scripts/dataset/redundancy.py` before ingesting; a candidate
+   with transcript→deck above pilot01's number is rejected), **diagram-heavy decks**
+   (figures that carry facts the text does not), and **a speaker who points**
+   (pointing windows exist; see `data/labels/pilot01/pilot01_pointing_windows.csv`
+   for the labelling format).
+
+### Design changes recorded against the verified-gold result (2026-09-21)
+
+Recorded as design changes, not retunes: each has a config switch that reproduces
+the previous behaviour, and each was applied once, before re-measuring.
+
+| change | switch | why |
+|---|---|---|
+| **Additive expansion.** Retrieve `k_final` seeds, add 1-hop neighbours to the pool, let the reranker (or score, for `rerank=none`) select `k_final`. Expansion never evicts a seed on its own. | `retrieve.expansion: additive` (old: `evict`) | `evict` with `k_seed 5 < k_final 8` threw away seeds ranked 6–8 unconditionally; A1 went 100 % → 0 %. |
+| **Seed normalisation on** | `retrieve.linkrag.normalise_seeds: true` (old: `false`) | Under additive expansion "select by score" is degenerate on raw RRF scores (~0.03 vs `seed×link×decay`). Consequence, inspected per measurement rule 1: `linkrag/none` is identical to `baseline/none` by construction — neighbours enter the final set only through the reranker. |
+| **Separate judge** | `eval.judge` (model ≠ `models.llm`) | Self-grading is lenient. Judge/answerer agreement measured: κ = 0.85 on unit verdicts, 20/25 type labels (`reports/gold_verified_pilot01.md`). The intended default is a local model; this machine (8 GB, no Ollama) uses a different hosted family instead. |
+| **Per-type reporting** | `compare_retrieval.py` always emits it | The all-questions mean hides that 19 of 24 questions are single-source. From now on the by-type table is the one that matters. |
+
 ## Our three novel components
 
 1. **Evidence Linking Layer** (`src/linkrag/link/`) — typed, scored links at
@@ -152,7 +183,7 @@ explicit instruction.
 | `retrieve` | **done** — RRF of dense + BM25, plain top-k; `iterative` (MI-RAG approximation) | **done** — seed + 1-hop expansion, `normalise_seeds`, `linkrag_iter` |
 | `rerank` | **done** — `none`, `mmr` | **done** — `complementarity`, optional cross-encoder |
 | `generate` | **done** — cited answers, OpenAI-compatible endpoint, temperature 0 + seed sent | same, modality tags |
-| `eval` | partial — regression runner, `compare_retrieval` (mode × rerank, repeats, per-question table), alignment and deictic evaluators against ear labels, **automated gold verification + sampled audit** | **claim-level entailment not started** (priority v) |
+| `eval` | partial — regression runner, `compare_retrieval` (mode × rerank, repeats, per-type and per-question tables), alignment and deictic evaluators against ear labels, automated gold verification + sampled audit, separate judge (`eval.judge`), **modality redundancy metric** (`scripts/dataset/redundancy.py`) | **claim-level entailment not started** (priority v) |
 | `ui` | **not started** | **not started** |
 
 Datasets: pilot01 only (`docs/pilot01_history.md`). **No target benchmark has
@@ -262,13 +293,12 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   "top-K" into `type -k`. Hyphenation ruled out (identical output with and
   without). Cause unknown, unfixed, accepted as future work. A prompt omitting
   `Top K` entirely is the next thing to try.
-- **(d) Gold is machine-verified, not human-verified.** The judge and the answerer
-  are the same model; the sampled audit (`reports/audit_sheet_pilot01.csv`, 34 of
-  147 verdicts) is unfilled until someone scores it. Until then the agreement rate is
-  unknown.
-- **(e) n = 24 questions, 5 cross-modal.** Enough to run the harness, not enough to
-  claim a cross-modal result; the corpus is too self-redundant for cross-modal
-  questions to survive verification (see `reports/gold_verified_pilot01.md`).
+- **(d) Gold is machine-verified, not human-verified.** Judge (gpt-4.1-mini) and
+  answerer (gpt-5.4) are different models and agree at κ = 0.85 on unit verdicts;
+  the sampled audit (`reports/audit_sheet_pilot01.csv`) is unfilled until someone
+  scores it, so human agreement is unknown.
+- **(e) n = 25 questions, 4 cross-modal.** Enough to run the harness, not enough to
+  claim a cross-modal result; see Findings and `reports/redundancy_pilot01.md`.
 
 ## Environment decisions worth not re-litigating
 

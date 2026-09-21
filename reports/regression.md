@@ -852,3 +852,214 @@ questions and page-level gold; it does not survive unit-level, verified gold. Th
 next numbers that matter are on LectQA-Vid and MaViLS (priorities iii, iv), not here.
 The `k_seed < k_final` eviction is a design defect to fix before those runs, with a
 recorded ablation, not a silent retune.
+
+## 2026-09-21 — additive expansion, verified gold (judge gpt-4.1-mini), four modes × rerank none/complementarity
+
+25 questions · k=8 · pool=20 · corpus `2f3b35f27e86caf8` (209 units) · gold stamped `2f3b35f27e86caf8` · model `gpt-5.4-2026-03-05` temperature=0.0 seed=20260910 · repeats 3 for LLM modes · 150 LLM calls · expansion `additive` · normalise_seeds `True`
+
+| mode | rerank | recall@8 | precision@8 | distinct modalities | redundancy | runs |
+|---|---|---:|---:|---:|---:|---:|
+| baseline | none | 49.1% | 15.0% | 2.04 | 0.714 | 1 |
+| baseline | complementarity | 44.6% | 12.5% | 2.32 | 0.648 | 1 |
+| iterative | none | 54.2% ± 1.7% | 17.5% ± 0.5% | 2.29 | 0.732 | 3 |
+| iterative | complementarity | 53.3% ± 1.8% | 16.2% ± 0.6% | 2.51 | 0.670 | 3 |
+| linkrag | none | 49.1% | 15.0% | 2.04 | 0.714 | 1 |
+| linkrag | complementarity | 52.1% | 16.5% | 2.92 | 0.642 | 1 |
+| linkrag_iter | none | 66.3% ± 3.4% | 21.2% ± 1.3% | 2.47 | 0.724 | 3 |
+| linkrag_iter | complementarity | 67.3% ± 2.1% | 20.7% ± 0.8% | 3.00 | 0.640 | 3 |
+
+Repeat determinism (complementarity cell):
+
+- `baseline`: deterministic by construction (no LLM, single run)
+- `iterative`: NOT identical — 3 distinct outcomes in 3 runs
+- `linkrag`: deterministic by construction (no LLM, single run)
+- `linkrag_iter`: NOT identical — 3 distinct outcomes in 3 runs
+
+### By verified question type
+
+| type | n | mode | rerank | recall@k | precision@k | modalities | LLM calls / q |
+|---|---:|---|---|---:|---:|---:|---:|
+| single_modality | 21 | baseline | none | 49.7% | 14.3% | 2.05 | 0.0 |
+| single_modality | 21 | baseline | complementarity | 43.9% | 11.3% | 2.38 | 0.0 |
+| single_modality | 21 | iterative | none | 55.8% ± 2.0% | 17.3% ± 0.6% | 2.32 | 1.0 |
+| single_modality | 21 | iterative | complementarity | 54.4% ± 2.0% | 15.5% ± 0.6% | 2.46 | 1.0 |
+| single_modality | 21 | linkrag | none | 49.7% | 14.3% | 2.05 | 0.0 |
+| single_modality | 21 | linkrag | complementarity | 50.5% | 14.9% | 2.90 | 0.0 |
+| single_modality | 21 | linkrag_iter | none | 69.0% ± 4.0% | 21.0% ± 1.5% | 2.46 | 1.0 |
+| single_modality | 21 | linkrag_iter | complementarity | 71.3% ± 2.5% | 21.0% ± 0.9% | 3.00 | 1.0 |
+| cross_modal | 4 | baseline | none | 45.8% | 18.8% | 2.00 | 0.0 |
+| cross_modal | 4 | baseline | complementarity | 47.9% | 18.8% | 2.00 | 0.0 |
+| cross_modal | 4 | iterative | none | 45.8% ± 0.0% | 18.8% ± 0.0% | 2.17 | 1.0 |
+| cross_modal | 4 | iterative | complementarity | 47.9% ± 3.6% | 19.8% ± 1.8% | 2.75 | 1.0 |
+| cross_modal | 4 | linkrag | none | 45.8% | 18.8% | 2.00 | 0.0 |
+| cross_modal | 4 | linkrag | complementarity | 60.4% | 25.0% | 3.00 | 0.0 |
+| cross_modal | 4 | linkrag_iter | none | 52.1% ± 0.0% | 21.9% ± 0.0% | 2.50 | 1.0 |
+| cross_modal | 4 | linkrag_iter | complementarity | 45.8% ± 0.0% | 18.8% ± 0.0% | 3.00 | 1.0 |
+| deictic | 1 | baseline | none | 25.0% | 12.5% | 2.00 | 0.0 |
+| deictic | 1 | baseline | complementarity | 25.0% | 12.5% | 2.00 | 0.0 |
+| deictic | 1 | iterative | none | 0.0% ± 0.0% | 0.0% ± 0.0% | 2.33 | 1.0 |
+| deictic | 1 | iterative | complementarity | 33.3% ± 14.4% | 16.7% ± 7.2% | 3.00 | 1.0 |
+| deictic | 1 | linkrag | none | 25.0% | 12.5% | 2.00 | 0.0 |
+| deictic | 1 | linkrag | complementarity | 25.0% | 12.5% | 3.00 | 0.0 |
+| deictic | 1 | linkrag_iter | none | 25.0% ± 0.0% | 12.5% ± 0.0% | 3.00 | 1.0 |
+| deictic | 1 | linkrag_iter | complementarity | 25.0% ± 0.0% | 12.5% ± 0.0% | 3.00 | 1.0 |
+
+Bucket sizes: single_modality 21, cross_modal 4, deictic 1 (deictic ⊂ cross_modal; single + cross = 25 questions).
+
+Per-question recall@k (mean over runs):
+
+| Q | type | baseline/none | baseline/complementarity | iterative/none | iterative/complementarity | linkrag/none | linkrag/complementarity | linkrag_iter/none | linkrag_iter/complementarity |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Q1 | single_modality | 0% | 0% | 11% | 11% | 0% | 0% | 22% | 22% |
+| Q2 | audio_only | 50% | 50% | 50% | 25% | 50% | 50% | 67% | 67% |
+| Q3 | paper_only | 17% | 0% | 67% | 50% | 17% | 0% | 67% | 67% |
+| Q4 | single_modality | 44% | 22% | 44% | 22% | 44% | 44% | 56% | 37% |
+| A1 | slides_only | 100% | 100% | 100% | 100% | 100% | 0% | 100% | 100% |
+| A2 | slides_only | 0% | 50% | 33% | 33% | 0% | 100% | 100% | 100% |
+| A4 | audio_only | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| A5 | audio_only | 0% | 0% | 0% | 0% | 0% | 0% | 100% | 100% |
+| A7 | paper_only | 0% | 0% | 0% | 0% | 0% | 0% | 0% | 0% |
+| A8 | single_modality | 100% | 50% | 100% | 50% | 100% | 100% | 100% | 100% |
+| B1 | paper_only | 50% | 100% | 100% | 100% | 50% | 50% | 100% | 100% |
+| B2 | cross_modal_split | 33% | 67% | 33% | 33% | 33% | 67% | 33% | 33% |
+| B3 | paper_only | 100% | 50% | 100% | 100% | 100% | 100% | 100% | 100% |
+| B4 | cross_modal_split | 50% | 50% | 50% | 50% | 50% | 50% | 50% | 50% |
+| B5 | single_modality | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| B6 | cross_modal_split | 75% | 50% | 100% | 75% | 75% | 100% | 100% | 75% |
+| B7 | audio_only | 33% | 33% | 33% | 33% | 33% | 33% | 33% | 33% |
+| B8 | audio_only | 100% | 100% | 50% | 100% | 100% | 100% | 67% | 100% |
+| C1 | single_modality | 33% | 33% | 100% | 100% | 33% | 67% | 100% | 100% |
+| C2 | single_modality | 33% | 0% | 0% | 33% | 33% | 33% | 0% | 33% |
+| C3 | audio_only | 0% | 0% | 0% | 0% | 0% | 0% | 0% | 0% |
+| C4 | single_modality | 33% | 33% | 33% | 33% | 33% | 33% | 89% | 89% |
+| C5 | cross_modal_deictic | 25% | 25% | 0% | 33% | 25% | 25% | 25% | 25% |
+| C6 | slides_only | 50% | 0% | 50% | 50% | 50% | 50% | 50% | 50% |
+| C7 | single_modality | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+
+## 2026-09-21 — ABLATION: expansion=evict, normalise_seeds=false (Phase-4 behaviour) on the same verified gold
+
+25 questions · k=8 · pool=20 · corpus `2f3b35f27e86caf8` (209 units) · gold stamped `2f3b35f27e86caf8` · model `gpt-5.4-2026-03-05` temperature=0.0 seed=20260910 · repeats 3 for LLM modes · 150 LLM calls · expansion `evict` · normalise_seeds `False`
+
+| mode | rerank | recall@8 | precision@8 | distinct modalities | redundancy | runs |
+|---|---|---:|---:|---:|---:|---:|
+| baseline | none | 49.1% | 15.0% | 2.04 | 0.714 | 1 |
+| baseline | complementarity | 44.6% | 12.5% | 2.32 | 0.648 | 1 |
+| iterative | none | 57.6% ± 1.9% | 18.2% ± 0.3% | 2.32 | 0.728 | 3 |
+| iterative | complementarity | 55.6% ± 4.0% | 16.5% ± 0.9% | 2.53 | 0.668 | 3 |
+| linkrag | none | 44.7% | 14.6% | 2.76 | 0.688 | 1 |
+| linkrag | complementarity | 45.7% | 15.1% | 2.84 | 0.604 | 1 |
+| linkrag_iter | none | 55.4% ± 2.4% | 18.0% ± 0.5% | 2.87 | 0.684 | 3 |
+| linkrag_iter | complementarity | 49.4% ± 2.2% | 15.7% ± 1.0% | 2.88 | 0.619 | 3 |
+
+Repeat determinism (complementarity cell):
+
+- `baseline`: deterministic by construction (no LLM, single run)
+- `iterative`: NOT identical — 3 distinct outcomes in 3 runs
+- `linkrag`: deterministic by construction (no LLM, single run)
+- `linkrag_iter`: NOT identical — 3 distinct outcomes in 3 runs
+
+### By verified question type
+
+| type | n | mode | rerank | recall@k | precision@k | modalities | LLM calls / q |
+|---|---:|---|---|---:|---:|---:|---:|
+| single_modality | 21 | baseline | none | 49.7% | 14.3% | 2.05 | 0.0 |
+| single_modality | 21 | baseline | complementarity | 43.9% | 11.3% | 2.38 | 0.0 |
+| single_modality | 21 | iterative | none | 59.8% ± 2.3% | 18.1% ± 0.3% | 2.35 | 1.0 |
+| single_modality | 21 | iterative | complementarity | 57.0% ± 4.1% | 15.9% ± 0.7% | 2.49 | 1.0 |
+| single_modality | 21 | linkrag | none | 42.1% | 12.6% | 2.76 | 0.0 |
+| single_modality | 21 | linkrag | complementarity | 40.9% | 12.0% | 2.81 | 0.0 |
+| single_modality | 21 | linkrag_iter | none | 56.9% ± 4.2% | 17.7% ± 1.2% | 2.86 | 1.0 |
+| single_modality | 21 | linkrag_iter | complementarity | 50.1% ± 0.9% | 15.1% ± 0.3% | 2.86 | 1.0 |
+| cross_modal | 4 | baseline | none | 45.8% | 18.8% | 2.00 | 0.0 |
+| cross_modal | 4 | baseline | complementarity | 47.9% | 18.8% | 2.00 | 0.0 |
+| cross_modal | 4 | iterative | none | 45.8% ± 0.0% | 18.8% ± 0.0% | 2.17 | 1.0 |
+| cross_modal | 4 | iterative | complementarity | 47.9% ± 3.6% | 19.8% ± 1.8% | 2.75 | 1.0 |
+| cross_modal | 4 | linkrag | none | 58.3% | 25.0% | 2.75 | 0.0 |
+| cross_modal | 4 | linkrag | complementarity | 70.8% | 31.2% | 3.00 | 0.0 |
+| cross_modal | 4 | linkrag_iter | none | 47.9% ± 7.2% | 19.8% ± 3.6% | 2.92 | 1.0 |
+| cross_modal | 4 | linkrag_iter | complementarity | 45.8% ± 10.8% | 18.8% ± 5.4% | 3.00 | 1.0 |
+| deictic | 1 | baseline | none | 25.0% | 12.5% | 2.00 | 0.0 |
+| deictic | 1 | baseline | complementarity | 25.0% | 12.5% | 2.00 | 0.0 |
+| deictic | 1 | iterative | none | 0.0% ± 0.0% | 0.0% ± 0.0% | 2.33 | 1.0 |
+| deictic | 1 | iterative | complementarity | 33.3% ± 14.4% | 16.7% ± 7.2% | 3.00 | 1.0 |
+| deictic | 1 | linkrag | none | 50.0% | 25.0% | 3.00 | 0.0 |
+| deictic | 1 | linkrag | complementarity | 100.0% | 50.0% | 3.00 | 0.0 |
+| deictic | 1 | linkrag_iter | none | 33.3% ± 28.9% | 16.7% ± 14.4% | 2.67 | 1.0 |
+| deictic | 1 | linkrag_iter | complementarity | 50.0% ± 43.3% | 25.0% ± 21.7% | 3.00 | 1.0 |
+
+Bucket sizes: single_modality 21, cross_modal 4, deictic 1 (deictic ⊂ cross_modal; single + cross = 25 questions).
+
+Per-question recall@k (mean over runs):
+
+| Q | type | baseline/none | baseline/complementarity | iterative/none | iterative/complementarity | linkrag/none | linkrag/complementarity | linkrag_iter/none | linkrag_iter/complementarity |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Q1 | single_modality | 0% | 0% | 0% | 0% | 0% | 0% | 33% | 22% |
+| Q2 | audio_only | 50% | 50% | 50% | 25% | 50% | 25% | 50% | 25% |
+| Q3 | paper_only | 17% | 0% | 67% | 50% | 17% | 17% | 67% | 67% |
+| Q4 | single_modality | 44% | 22% | 44% | 22% | 33% | 33% | 44% | 33% |
+| A1 | slides_only | 100% | 100% | 100% | 100% | 0% | 0% | 0% | 0% |
+| A2 | slides_only | 0% | 50% | 50% | 50% | 0% | 0% | 0% | 0% |
+| A4 | audio_only | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| A5 | audio_only | 0% | 0% | 33% | 33% | 0% | 0% | 100% | 100% |
+| A7 | paper_only | 0% | 0% | 0% | 17% | 0% | 0% | 0% | 0% |
+| A8 | single_modality | 100% | 50% | 100% | 50% | 100% | 100% | 100% | 100% |
+| B1 | paper_only | 50% | 100% | 100% | 100% | 50% | 50% | 100% | 50% |
+| B2 | cross_modal_split | 33% | 67% | 33% | 33% | 33% | 33% | 33% | 33% |
+| B3 | paper_only | 100% | 50% | 100% | 100% | 50% | 50% | 100% | 100% |
+| B4 | cross_modal_split | 50% | 50% | 50% | 50% | 50% | 50% | 50% | 50% |
+| B5 | single_modality | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| B6 | cross_modal_split | 75% | 50% | 100% | 75% | 100% | 100% | 75% | 50% |
+| B7 | audio_only | 33% | 33% | 33% | 33% | 33% | 33% | 33% | 33% |
+| B8 | audio_only | 100% | 100% | 83% | 100% | 100% | 50% | 33% | 0% |
+| C1 | single_modality | 33% | 33% | 100% | 100% | 33% | 67% | 78% | 78% |
+| C2 | single_modality | 33% | 0% | 11% | 33% | 33% | 0% | 0% | 0% |
+| C3 | audio_only | 0% | 0% | 0% | 0% | 0% | 0% | 0% | 0% |
+| C4 | single_modality | 33% | 33% | 33% | 33% | 33% | 33% | 56% | 44% |
+| C5 | cross_modal_deictic | 25% | 25% | 0% | 33% | 50% | 100% | 33% | 50% |
+| C6 | slides_only | 50% | 0% | 50% | 50% | 50% | 100% | 100% | 100% |
+| C7 | single_modality | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+
+### Before / after the additive-expansion design change (same 25-question verified gold, judge gpt-4.1-mini)
+
+`before` = `expansion: evict`, `normalise_seeds: false` (the Phase-4 behaviour, run as the
+recorded ablation above). `after` = `expansion: additive`, `normalise_seeds: true`
+(new default). Baseline and iterative do not read either switch; their rows show the
+run-to-run band of the LLM-touching mode.
+
+| cell | before (evict) | after (additive) | Δ recall |
+|---|---:|---:|---:|
+| baseline / none | 49.1 % | 49.1 % | — |
+| baseline / complementarity | 44.6 % | 44.6 % | — |
+| iterative / none | 57.6 ± 1.9 % | 54.2 ± 1.7 % | (LLM variance) |
+| iterative / complementarity | 55.6 ± 4.0 % | 53.3 ± 1.8 % | (LLM variance) |
+| linkrag / none | 44.7 % | 49.1 % | **+4.4 pp** — now identical to baseline, by construction |
+| linkrag / complementarity | 45.7 % | **52.1 %** | **+6.4 pp** |
+| linkrag_iter / none | 55.4 ± 2.4 % | **66.3 ± 3.4 %** | **+10.9 pp** |
+| linkrag_iter / complementarity | 49.4 ± 2.2 % | **67.3 ± 2.1 %** | **+17.9 pp** |
+
+Reading:
+
+- **The eviction defect was the whole of the 2026-09-20 loss.** With additive expansion
+  link-following no longer trails baseline in any cell, and the composed mode is
+  again the best cell (67.3 % vs iterative's 53–58 %), at 3.00 modalities.
+- `linkrag/none` equals `baseline/none` exactly. Inspected (measurement rule 1): with
+  additive expansion and score selection, an expanded unit scores at most
+  `1.0 × link × 0.5 ≈ 0.34–0.5`, below every top-8 seed, so neighbours reach the final
+  set **only through the reranker**. That is the design: expansion proposes, the
+  set objective disposes.
+- **By type** (table above): on the 4 cross-modal questions `linkrag/complementarity`
+  reaches 60.4 % vs 45.8 % for baseline and iterative alike, with all three
+  modalities present; on the 21 single-source questions link-following is neutral
+  (49.7 → 50.5 %) and re-querying does the work (55.8 %). The composition wins on
+  single-source questions (71.3 %) because re-querying supplies seeds and the
+  reranker then admits their linked neighbours. n = 4 and n = 1 (deictic) — direction,
+  not result.
+- `iterative` moved 57.6 → 54.2 % between two runs with no change it reads: that is
+  the size of the LLM band on this set, and any linkrag-vs-iterative gap smaller than
+  ~4 pp is inside it.
+
+Redundancy of the corpus these numbers come from (`reports/redundancy_pilot01.md`):
+deck→transcript **94.2 %**, transcript→deck 61.1 %, deck→paper 46.2 %,
+transcript→paper 38.9 %. The speaker narrates essentially the whole deck. This is
+why so few cross-modal questions survive verification, and it is the number a
+candidate lecture must beat (be lower than) to enter the extended dataset.

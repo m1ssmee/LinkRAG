@@ -12,7 +12,9 @@ selects a default base_url.
 
 from __future__ import annotations
 
+import random
 import re
+import time
 from pathlib import Path
 from typing import Any, Callable
 
@@ -137,6 +139,16 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
             ):
                 token_param = "max_completion_tokens"
                 payload[token_param] = payload.pop("max_tokens")
+                response = post(payload)
+            # 429 / 5xx: back off and retry. Hosted judges have per-minute token
+            # limits and the verifier runs eight workers; without this one throttled
+            # call killed a 1,000-call batch.
+            for attempt in range(llm_cfg.get("max_retries", 12)):
+                if response.status_code not in (429, 500, 502, 503, 504):
+                    break
+                retry_after = response.headers.get("Retry-After")
+                wait = float(retry_after) if retry_after else min(2 ** attempt, 60)
+                time.sleep(wait + random.uniform(0, 1.0))
                 response = post(payload)
         except requests.RequestException as exc:
             # RequestException, not ConnectionError: a read timeout is just as fatal

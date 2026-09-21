@@ -22,8 +22,10 @@ requires every fact in the reference, so an elaboration ("…, the dashed line i
 Figure 6") turns a correct answer into a FAIL. Run 1 on pilot01 lost 5 questions
 to exactly that before the references were trimmed.
 
-The answerer and the judge are the same configured model. That is a known bias
-(self-grading tends lenient); the sampled human audit is what bounds it.
+Two models: the **answerer** (`models.llm`) writes the modality-only answers; the
+**judge** (`eval.judge`, a different model) does every yes/no call -- unit entailment
+and answer grading. Same-model self-grading is lenient; the sampled human audit bounds
+whatever bias remains.
 """
 
 from __future__ import annotations
@@ -264,7 +266,8 @@ def grade(question: str, expected: str, candidate: str, complete: Completer,
 
 
 def source_run(source: str, question: str, expected: str, context: str,
-               complete: Completer, runs: int) -> SourceRun:
+               complete: Completer, runs: int, judge: Completer | None = None) -> SourceRun:
+    judge = judge or complete
     if not context.strip():
         return SourceRun(source, "NOT ANSWERABLE (empty source)", False, ["FAIL"] * runs,
                          "source has no content", [])
@@ -274,7 +277,7 @@ def source_run(source: str, question: str, expected: str, context: str,
              "all": "transcript + deck + paper"}[source]
     answer = complete(ANSWER_SYSTEM, ANSWER_PROMPT.format(label=label, context=context,
                                                            question=question)).strip()
-    passed, votes, reason, missing = grade(question, expected, answer, complete, runs)
+    passed, votes, reason, missing = grade(question, expected, answer, judge, runs)
     return SourceRun(source, answer, passed, votes, reason, missing)
 
 
@@ -301,15 +304,15 @@ def relabel(original_type: str, runs: dict[str, SourceRun]) -> tuple[str | None,
 
 def verify_question(row: dict[str, Any], units: Sequence[EvidenceUnit],
                     contexts: dict[str, str], complete: Completer, *, runs: int,
-                    workers: int) -> QuestionVerdict:
+                    workers: int, judge: Completer) -> QuestionVerdict:
     question, expected = row["question"], row["expected_answer"]
     candidates = [u for u in units
                   if any(matches_locator(u, loc) for loc in row["gold_units"])]
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        unit_futures = [ex.submit(entail_unit, question, expected, u, complete, runs)
+        unit_futures = [ex.submit(entail_unit, question, expected, u, judge, runs)
                         for u in candidates]
         run_futures = {s: ex.submit(source_run, s, question, expected, contexts[s],
-                                    complete, runs) for s in (*SOURCES, "all")}
+                                    complete, runs, judge) for s in (*SOURCES, "all")}
         unit_verdicts = [f.result() for f in unit_futures]
         source_runs = {s: f.result() for s, f in run_futures.items()}
 
@@ -325,13 +328,16 @@ def verify_question(row: dict[str, Any], units: Sequence[EvidenceUnit],
 
 
 def verify_gold(rows: Sequence[dict[str, Any]], units: Sequence[EvidenceUnit],
-                complete: Completer, *, deck_files: set[str], runs: int = 3,
-                workers: int = 6, progress: Callable[[str], None] | None = None,
-                ) -> list[QuestionVerdict]:
+                complete: Completer, *, judge: Completer, deck_files: set[str],
+                runs: int = 3, workers: int = 6,
+                progress: Callable[[str], None] | None = None) -> list[QuestionVerdict]:
+    """`complete` answers (models.llm); `judge` grades and checks entailment
+    (eval.judge). Pass the same callable for both only in a test."""
     contexts = full_contexts(units, deck_files)
     out = []
     for row in rows:
-        v = verify_question(row, units, contexts, complete, runs=runs, workers=workers)
+        v = verify_question(row, units, contexts, complete, runs=runs, workers=workers,
+                            judge=judge)
         if progress:
             kept = sum(u.kept for u in v.units)
             progress(f"{v.qid:<4} {v.original_type:<20} -> {v.verified_type or 'DROPPED':<20} "
@@ -380,13 +386,14 @@ def verified_gold_rows(verdicts: Sequence[QuestionVerdict], units: Sequence[Evid
 
 
 def write_gold(rows: Sequence[dict[str, Any]], path: str | Path, *, manifest_hash: str,
-               model: str, runs: int, source: str) -> Path:
+               model: str, runs: int, source: str, answerer: str = "") -> Path:
     from datetime import datetime, timezone
     path = Path(path)
     meta = {"_meta": {
         "manifest_hash": manifest_hash,
         "verified_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "verifier": "linkrag.eval.verify_gold", "judge_model": model, "judge_runs": runs,
+        "verifier": "linkrag.eval.verify_gold", "judge_model": model,
+        "answerer_model": answerer, "judge_runs": runs,
         "proposed_from": source,
         "note": "Gold is machine-verified: unit entailment (majority of judge runs, "
                 "quotable span required) and modality-only full-context answering. "
@@ -402,7 +409,8 @@ def _short(s: str, n: int = 160) -> str:
 
 
 def write_report(verdicts: Sequence[QuestionVerdict], path: str | Path, *, corpus: str,
-                 manifest_hash: str, model: str, runs: int, n_units: int) -> Path:
+                 manifest_hash: str, model: str, runs: int, n_units: int,
+                 answerer: str = "") -> Path:
     path = Path(path)
     kept = [v for v in verdicts if v.verified_type is not None]
     relabelled = [v for v in kept if v.status.startswith("relabelled")]
@@ -410,14 +418,14 @@ def write_report(verdicts: Sequence[QuestionVerdict], path: str | Path, *, corpu
     units_all = [u for v in verdicts for u in v.units]
     L = [f"# Gold verification — {corpus}", "",
          f"Corpus manifest `{manifest_hash}` ({n_units} units) · judge `{model}` · "
-         f"temperature 0 · {runs} runs per check, majority vote · "
-         f"generated by `linkrag.eval.verify_gold`", "",
+         f"answerer `{answerer or model}` · temperature 0 · {runs} runs per check, "
+         f"majority vote · generated by `linkrag.eval.verify_gold`", "",
          "**Checks.** (a) per-unit entailment with a quotable span; (b) the question "
          "answered from each single source in full (transcript / deck text + figure OCR / "
          "paper) and from all three, graded against the reference answer. Cross-modal and "
          "deictic labels survive only if every single-source run fails and the all-source "
-         "run passes. The answerer and the judge are the same model — see the sampled "
-         "human audit for the bound on that bias.", "",
+         "run passes. The judge is a different model from the answerer; the sampled human "
+         "audit bounds whatever bias remains.", "",
          "## Summary", "",
          f"- questions proposed: **{len(verdicts)}** · kept: **{len(kept)}** "
          f"(relabelled: {len(relabelled)}) · dropped: **{len(dropped)}**",
