@@ -113,7 +113,20 @@ explicit instruction.
    survive verification under either judge; the paper restates the deck and the
    transcript narrates the slides. Quantified in `reports/redundancy_pilot01.md`
    (`scripts/dataset/redundancy.py`).
-3. **Extended-dataset selection criterion** (priority vi): **low redundancy**
+3. **Link-following is neutral on single-modality questions and gains on
+   cross-modal ones** (2026-09-21, additive expansion, verified gold): single-source
+   n = 21, `linkrag/complementarity` 50.5 % vs baseline 49.7 %; cross-modal n = 4,
+   60.4 % vs 45.8 %. **n = 4 — direction only.**
+4. **`linkrag_iter` underperforms `linkrag` on cross-modal questions** (45.8 % vs
+   60.4 % on the same four). Hypothesis: iterative re-querying *re-textualises* the
+   candidate pool — the follow-up query is text and pulls text units, so the
+   seeds link-following expands from are less cross-modal than the single-shot
+   seeds. **Test when the extended set exists**; not testable at n = 4.
+5. **Unexplained: the composed mode's 71.3 % on single-modality questions**
+   (`linkrag_iter/complementarity`, n = 21, vs 55.8 % for iterative alone and 50.5 %
+   for linkrag alone). Neither mechanism explains a +15 pp gain on questions whose
+   answer sits in one source. Flagged; do not cite it until it has a cause.
+6. **Extended-dataset selection criterion** (priority vi): **low redundancy**
    (measure it with `scripts/dataset/redundancy.py` before ingesting; a candidate
    with transcript→deck above pilot01's number is rejected), **diagram-heavy decks**
    (figures that carry facts the text does not), and **a speaker who points**
@@ -130,7 +143,10 @@ the previous behaviour, and each was applied once, before re-measuring.
 | **Additive expansion.** Retrieve `k_final` seeds, add 1-hop neighbours to the pool, let the reranker (or score, for `rerank=none`) select `k_final`. Expansion never evicts a seed on its own. | `retrieve.expansion: additive` (old: `evict`) | `evict` with `k_seed 5 < k_final 8` threw away seeds ranked 6–8 unconditionally; A1 went 100 % → 0 %. |
 | **Seed normalisation on** | `retrieve.linkrag.normalise_seeds: true` (old: `false`) | Under additive expansion "select by score" is degenerate on raw RRF scores (~0.03 vs `seed×link×decay`). Consequence, inspected per measurement rule 1: `linkrag/none` is identical to `baseline/none` by construction — neighbours enter the final set only through the reranker. |
 | **Separate judge** | `eval.judge` (model ≠ `models.llm`) | Self-grading is lenient. Judge/answerer agreement measured: κ = 0.85 on unit verdicts, 20/25 type labels (`reports/gold_verified_pilot01.md`). The intended default is a local model; this machine (8 GB, no Ollama) uses a different hosted family instead. |
-| **Per-type reporting** | `compare_retrieval.py` always emits it | The all-questions mean hides that 19 of 24 questions are single-source. From now on the by-type table is the one that matters. |
+| **Per-type reporting** | `compare_retrieval.py` always emits it | The all-questions mean hides that 21 of 25 questions are single-source. From now on the by-type table is the one that matters. |
+| **Cost accounting** | `linkrag.costs`, `reports/llm_ledger.jsonl` | Every LLM-touching run prints per-run and cumulative spend; exact tokens from `usage`, cache replays free, backfilled rows flagged *estimated*. |
+| **Colab backend for Phase 8** | `models.llm.backend: colab_openai_compatible` | Reported Phase 8 numbers come from an open model served from Colab (Ollama/vLLM) on the same code path; OpenAI stays the working backend. Setup in `scripts/README.md`. |
+| **Dataset intake** | `scripts/dataset/candidate.py`, `dataset.intake` | A candidate lecture is measured before it is ingested for real; deck→transcript ≥ 0.65 rejects. Procedure in `scripts/dataset/README.md`. |
 
 ## Our three novel components
 

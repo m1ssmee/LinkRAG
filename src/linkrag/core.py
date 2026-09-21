@@ -74,7 +74,25 @@ class Link:
 
 
 def load_config(path: str | Path = "configs/default.yaml") -> dict[str, Any]:
-    return yaml.safe_load(Path(path).read_text())
+    """YAML config with the active LLM backend resolved into `models.llm`.
+
+    `models.llm` is the working backend (OpenAI). `models.llm_backends.<name>`
+    holds alternatives -- the Colab-served open model for Phase 8 -- selected by
+    `models.llm.backend: <name>` or the env var LINKRAG_LLM_BACKEND. Selecting one
+    overlays its keys onto `models.llm`, so every script keeps one code path.
+    """
+    import os
+
+    cfg = yaml.safe_load(Path(path).read_text())
+    llm = cfg.get("models", {}).get("llm") or {}
+    name = os.environ.get("LINKRAG_LLM_BACKEND") or llm.get("backend")
+    if name and name != "default":
+        backends = cfg.get("models", {}).get("llm_backends") or {}
+        if name not in backends:
+            raise KeyError(f"models.llm_backends has no entry {name!r} "
+                           f"(have: {sorted(backends)})")
+        cfg["models"]["llm"] = {**llm, **backends[name], "backend": name}
+    return cfg
 
 
 # ---------------------------------------------------------------- timing

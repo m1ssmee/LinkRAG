@@ -28,6 +28,8 @@ Completer = Callable[[str, str], str]
 PROVIDER_BASE_URLS = {
     "ollama": "http://localhost:11434/v1",
     "openai": "https://api.openai.com/v1",
+    # "openai_compatible" (vLLM, Ollama behind a tunnel, ...) has no default: the
+    # Colab backend sets models.llm_backends.<name>.base_url explicitly.
 }
 
 SYSTEM = """You answer questions using ONLY the numbered evidence given to you.
@@ -90,6 +92,8 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
         headers["Authorization"] = f"Bearer {key}"
 
     limit = llm_cfg.get("max_tokens", 1024)
+    usage = {"calls": 0, "cached_calls": 0, "prompt_tokens": 0, "completion_tokens": 0,
+             "estimated_tokens": 0}
     # Older models take `max_tokens`; newer ones reject it and require
     # `max_completion_tokens`. Model *names* are not a usable signal for which --
     # the families change faster than any prefix list survives -- so discover it
@@ -160,8 +164,19 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
 
         if response.status_code != 200:
             raise RuntimeError(f"LLM returned {response.status_code}: {response.text[:300]}")
-        return response.json()["choices"][0]["message"]["content"]
+        body = response.json()
+        u = body.get("usage") or {}
+        last = {"prompt_tokens": int(u.get("prompt_tokens", 0)),
+                "completion_tokens": int(u.get("completion_tokens", 0))}
+        complete.last_usage = last  # type: ignore[attr-defined]
+        usage["calls"] += 1
+        usage["prompt_tokens"] += last["prompt_tokens"]
+        usage["completion_tokens"] += last["completion_tokens"]
+        return body["choices"][0]["message"]["content"]
 
+    complete.usage = usage        # type: ignore[attr-defined]
+    complete.last_usage = {}      # type: ignore[attr-defined]
+    complete.model = model        # type: ignore[attr-defined]
     return complete
 
 

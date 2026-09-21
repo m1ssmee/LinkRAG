@@ -13,23 +13,15 @@ Roles are inferred from the index: audio units are the transcript, units flagged
 from __future__ import annotations
 
 import argparse
-import importlib.util
 from collections import defaultdict
 from pathlib import Path
 
 from linkrag.core import load_config, setup_logging
+from linkrag.costs import cached_completer, record_run
 from linkrag.eval.redundancy import DEFAULT_PAIRS, dump_json, redundancy, role_of, write_report
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, load_manifest
-
-
-def _cached_completer():
-    spec = importlib.util.spec_from_file_location(
-        "verify_gold_cli", Path(__file__).resolve().parent.parent / "eval" / "verify_gold.py")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[union-attr]
-    return mod.cached_completer
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -45,6 +37,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--limit", type=int, default=None, help="sentences per pair (smoke test)")
     ap.add_argument("--cache", default="data/processed/verify_cache")
+    ap.add_argument("--reports-dir", default="reports",
+                    help="where the .md/.json go (scratch dir for a cost backfill replay)")
     args = ap.parse_args(argv)
 
     setup_logging()
@@ -64,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
     encoder = default_encoder(index.embedding_model, cfg["device"], index.normalize)
     encoder([""])
     jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
-    judge = _cached_completer()(http_completer(jcfg), Path(args.cache) / mhash / str(jcfg.get("model")))
+    judge = cached_completer(http_completer(jcfg), Path(args.cache) / mhash / str(jcfg.get("model")))
     pairs = [tuple(p.split("->")) for p in args.pairs.split(",")]
 
     files: dict[str, list[str]] = defaultdict(list)
@@ -78,11 +72,16 @@ def main(argv: list[str] | None = None) -> int:
 
     verdicts = redundancy(units, encoder, judge, pairs=pairs, k=args.k, runs=args.runs,
                           workers=args.workers, limit=args.limit, progress=print)
-    out_md = Path("reports") / f"redundancy_{args.corpus}.md"
+    out_md = Path(args.reports_dir) / f"redundancy_{args.corpus}.md"
     write_report(verdicts, out_md, corpus=args.corpus, manifest_hash=mhash,
                  judge_model=str(jcfg.get("model")), k=args.k, runs=args.runs, files=dict(files))
     dump_json(verdicts, out_md.with_suffix(".json"))
-    print(f"\n{sum(judge.calls.values())} judge calls (incl. cached)\nwrote {out_md}")
+    footer = record_run("scripts/dataset/redundancy.py", f"{args.corpus} redundancy",
+                        [(str(jcfg.get("model")), judge.usage)], cfg["models"].get("pricing"))
+    with out_md.open("a") as fh:
+        fh.write("\n".join(footer) + "\n")
+    print("\n".join(footer))
+    print(f"wrote {out_md}")
     return 0
 
 

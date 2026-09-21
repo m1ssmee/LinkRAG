@@ -1,0 +1,56 @@
+"""Token/cost accounting: cache stores usage, hits without it are flagged estimates,
+prices match by longest prefix, the ledger accumulates."""
+
+from __future__ import annotations
+
+import json
+
+from linkrag.costs import cached_completer, cumulative, price_for, record_run, usage_cost
+
+
+def test_cache_records_exact_usage_and_flags_estimates(tmp_path):
+    def inner(system, user):
+        inner.last_usage = {"prompt_tokens": 100, "completion_tokens": 10}
+        return "reply"
+    c = cached_completer(inner, tmp_path)
+    assert c("s", "u") == "reply" and c.usage["prompt_tokens"] == 100
+    assert c("s", "u") == "reply"                       # 2nd identical call = new key .1 -> miss
+    c2 = cached_completer(inner, tmp_path)              # fresh process: hits with stored usage
+    c2("s", "u"); c2("s", "u")
+    assert c2.usage == {"calls": 2, "cached_calls": 2, "prompt_tokens": 200,
+                        "completion_tokens": 20, "cached_prompt_tokens": 200,
+                        "cached_completion_tokens": 20, "estimated_tokens": 0}
+    assert usage_cost(c2.usage, {"input_per_m": 1e6, "output_per_m": 1e6}) == 0.0
+    assert usage_cost(c2.usage, {"input_per_m": 1e6, "output_per_m": 1e6}, charge_cached=True) == 220.0
+    # a legacy cache file with no usage sidecar is estimated and flagged
+    (tmp_path / "legacy").mkdir()
+    import hashlib
+    key = hashlib.sha256(("s" + "\x00" + "u" * 40).encode()).hexdigest()
+    (tmp_path / "legacy" / f"{key}.0.txt").write_text("x" * 80)
+    c3 = cached_completer(inner, tmp_path / "legacy")
+    c3("s", "u" * 40)
+    assert c3.usage["estimated_tokens"] == c3.usage["prompt_tokens"] + c3.usage["completion_tokens"] > 0
+
+
+def test_price_longest_prefix_and_unknown():
+    pricing = {"gpt-5.4": {"input_per_m": 2.5, "output_per_m": 15.0},
+               "gpt-5.4-mini": {"input_per_m": 0.75, "output_per_m": 4.5}}
+    assert price_for("gpt-5.4-mini-2026", pricing)["input_per_m"] == 0.75
+    assert price_for("gpt-5.4-2026-03-05", pricing)["input_per_m"] == 2.5
+    assert price_for("unknown-model-x", pricing) is None
+    assert usage_cost({"prompt_tokens": 1_000_000, "completion_tokens": 0},
+                      price_for("gpt-5.4-2026", pricing)) == 2.5
+    assert usage_cost({"prompt_tokens": 5}, None) is None
+
+
+def test_ledger_accumulates_and_footer_mentions_unpriced(tmp_path):
+    ledger = tmp_path / "ledger.jsonl"
+    pricing = {"m": {"input_per_m": 1.0, "output_per_m": 2.0}}
+    u = {"calls": 3, "cached_calls": 0, "prompt_tokens": 1_000_000, "completion_tokens": 500_000,
+         "estimated_tokens": 0}
+    lines = record_run("x.py", "run1", [("m-1", u), ("other", u)], pricing, ledger=ledger)
+    assert any("$2.0000" in l for l in lines) and any("price unknown" in l for l in lines)
+    record_run("x.py", "run2", [("m-1", u)], pricing, ledger=ledger)
+    cum = cumulative(ledger)
+    assert cum["rows"] == 3 and cum["cost_usd"] == 4.0 and cum["unpriced_rows"] == 1
+    assert len(ledger.read_text().splitlines()) == 3

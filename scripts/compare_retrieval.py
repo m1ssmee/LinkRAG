@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 
 from linkrag.core import load_config, setup_logging
+from linkrag.costs import record_run
 from linkrag.eval import matches_locator
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, default_encoder
@@ -298,6 +299,12 @@ def main(argv: list[str] | None = None) -> int:
             xs = per_q.get((row["qid"], m, r), [])
             vals.append(f"{statistics.mean(xs):.0%}" if xs else "—")
         md.append(f"| {row['qid']} | {row.get('type', '')} | " + " | ".join(vals) + " |")
+
+    if complete is not None:
+        footer = record_run("scripts/compare_retrieval.py", args.label or "compare_retrieval",
+                            [(str(llm.get("model")), complete.usage)], cfg["models"].get("pricing"))
+        md += footer
+        print("\n".join(footer))
 
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)

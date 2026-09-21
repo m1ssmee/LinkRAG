@@ -23,6 +23,38 @@ models:
     seed: 20260910               # best-effort reproducibility; NOT a guarantee
     max_tokens: 1024
     timeout_s: 120
+    # Active backend: "default" = the block above (OpenAI, the working backend).
+    # Set to a key of llm_backends below, or export LINKRAG_LLM_BACKEND=<key>.
+    backend: default
+
+  # Alternative answerer backends, same OpenAI-compatible code path. Selecting one
+  # overlays its keys onto models.llm (see core.load_config).
+  llm_backends:
+    # An open model served from a Colab GPU (Ollama or vLLM) behind a tunnel.
+    # THIS is the backend for Phase 8 reported numbers; see scripts/README.md for
+    # the setup and the checks to run before trusting a session.
+    colab_openai_compatible:
+      provider: openai_compatible
+      model: qwen2.5:7b-instruct   # Ollama tag, or the HF id vLLM was started with
+      base_url: https://REPLACE-ME.trycloudflare.com/v1
+      api_key_env: COLAB_LLM_KEY   # vLLM --api-key value; any non-empty string for Ollama
+      temperature: 0.0
+      seed: 20260910
+      max_tokens: 1024
+      timeout_s: 300               # cold GPU + long context; the tunnel adds latency
+
+  # USD per 1M tokens, longest model-prefix match (linkrag.costs.price_for).
+  # Source: developers.openai.com/api/docs/pricing, read 2026-09-21. A model with
+  # no row is reported as "price unknown", never silently as $0.
+  pricing:
+    gpt-5.4-mini: {input_per_m: 0.75, output_per_m: 4.50}
+    gpt-5.4:      {input_per_m: 2.50, output_per_m: 15.00}
+    gpt-5-mini:   {input_per_m: 0.25, output_per_m: 2.00}
+    gpt-5:        {input_per_m: 1.25, output_per_m: 10.00}
+    gpt-4.1-mini: {input_per_m: 0.40, output_per_m: 1.60}
+    gpt-4.1:      {input_per_m: 2.00, output_per_m: 8.00}
+    qwen2.5:      {input_per_m: 0.0, output_per_m: 0.0}   # self-hosted on Colab: no per-token price
+    llama3.1:     {input_per_m: 0.0, output_per_m: 0.0}
 
 ingest:
   chunk_tokens: 300              # text chunk target
@@ -181,6 +213,15 @@ retrieve:
   iterative:
     rounds: 2                    # total retrievals, including the first
     k_per_round: 8
+
+dataset:
+  # Extended-dataset intake (scripts/dataset/candidate.py). A candidate lecture is
+  # kept only if the speaker does NOT simply narrate the deck. pilot01 measured
+  # deck->transcript 0.942; the bar is well below it.
+  intake:
+    max_deck_to_transcript: 0.65
+    redundancy_k: 8
+    redundancy_runs: 3
 
 eval:
   metrics: [answer_accuracy, evidence_precision, evidence_recall, cross_modal_coverage, citation_faithfulness]

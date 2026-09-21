@@ -16,8 +16,9 @@ from datetime import datetime
 from pathlib import Path
 
 from linkrag.core import load_config, setup_logging
+from linkrag.costs import record_run
 from linkrag.eval import describe_locator, format_modality_distribution, gold_coverage, gold_hits
-from linkrag.generate.answer import answer, cited_ids
+from linkrag.generate.answer import answer, cited_ids, http_completer
 from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, check_gold_manifest, load_manifest
 from linkrag.link.align import load_links
@@ -91,6 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     warning = check_gold_manifest(gold_meta.get("manifest_hash"), manifest)
     if warning:
         print(f"WARNING: {warning}")
+    complete = None if args.no_llm else http_completer(cfg["models"]["llm"])
     results = []
     for row in rows:
         units, expanded, seeded = retrieve_for_mode(
@@ -102,7 +104,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"WARNING: {msg}")
             expansion_warnings.append(msg)
         found, missed = gold_hits(units, row["gold_units"])
-        text = "" if args.no_llm else answer(row["question"], units, cfg, mode=args.mode)
+        text = "" if args.no_llm else answer(row["question"], units, cfg, mode=args.mode,
+                                             complete=complete)
 
         blob = text.lower()
         want = row["gold_terms"]["slide"] + row["gold_terms"]["audio"]
@@ -162,6 +165,12 @@ def main(argv: list[str] | None = None) -> int:
         for r in results:
             lines += [f"<details><summary>{r['qid']} answer ({r['cited']} citations)</summary>",
                       "", r["answer"], "", "</details>", ""]
+    if complete is not None:
+        footer = record_run("scripts/run_regression.py", args.phase,
+                            [(str(cfg["models"]["llm"].get("model")), complete.usage)],
+                            cfg["models"].get("pricing"))
+        lines += footer + [""]
+        print("\n".join(footer))
     with out.open("a") as fh:
         fh.write("\n".join(lines) + "\n")
 

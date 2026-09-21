@@ -11,7 +11,8 @@ from pathlib import Path
 
 from linkrag.core import load_config, setup_logging, stage_timer
 from linkrag.eval import format_modality_distribution
-from linkrag.generate.answer import answer, cited_ids
+from linkrag.costs import record_run
+from linkrag.generate.answer import answer, cited_ids, http_completer
 from linkrag.index import Index, default_encoder
 from linkrag.link.align import load_links
 from linkrag.manifest import MANIFEST_NAME, load_manifest
@@ -101,13 +102,17 @@ def main(argv: list[str] | None = None) -> int:
             print(f"           {' '.join(r.unit.content.split())[:88]}")
         print()
 
-    text = answer(args.question, units, cfg, mode=args.mode)
+    complete = http_completer(cfg["models"]["llm"])
+    text = answer(args.question, units, cfg, mode=args.mode, complete=complete)
     print(text)
 
     valid = {u.id for u in units}
     cited = cited_ids(text)
     unknown = [c for c in cited if c not in valid]
     print(f"\ncited {len(cited)} of {len(units)} units" + (f"; NOT IN EVIDENCE: {unknown}" if unknown else ""))
+    print("\n".join(record_run("scripts/ask.py", args.question[:60],
+                              [(str(cfg["models"]["llm"].get("model")), complete.usage)],
+                              cfg["models"].get("pricing"))))
     return 0
 
 

@@ -12,39 +12,15 @@ interrupted run resumes without re-paying, while the `runs` repeats stay distinc
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
-import threading
-from collections import Counter
 from pathlib import Path
 
 from linkrag.core import load_config, setup_logging
+from linkrag.costs import cached_completer, record_run
 from linkrag.eval.verify_gold import dump_json, verified_gold_rows, verify_gold, write_gold, write_report
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index
 from linkrag.manifest import MANIFEST_NAME, load_manifest
-
-
-def cached_completer(inner, cache_dir: Path):
-    """Disk cache keyed by (system, user, n-th identical call). Thread-safe."""
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    seen: Counter = Counter()
-    lock = threading.Lock()
-
-    def complete(system: str, user: str) -> str:
-        base = hashlib.sha256((system + "\x00" + user).encode()).hexdigest()
-        with lock:
-            n = seen[base]
-            seen[base] += 1
-        path = cache_dir / f"{base}.{n}.txt"
-        if path.exists():
-            return path.read_text()
-        text = inner(system, user)
-        path.write_text(text)
-        return text
-
-    complete.calls = seen  # type: ignore[attr-defined]
-    return complete
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -57,6 +33,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--cache", default="data/processed/verify_cache")
+    ap.add_argument("--reports-dir", default="reports",
+                    help="where the .md/.json go (scratch dir for a cost backfill replay)")
     ap.add_argument("--only", default=None, help="comma-separated qids (debugging)")
     args = ap.parse_args(argv)
 
@@ -89,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
     verdicts = verify_gold(rows, list(index.units), complete, judge=judge, deck_files=deck_files,
                            runs=args.runs, workers=args.workers, progress=print)
 
-    reports = Path("reports")
+    reports = Path(args.reports_dir)
     md = write_report(verdicts, reports / f"gold_verified_{args.corpus}.md", corpus=args.corpus,
                       manifest_hash=mhash, model=str(jcfg.get("model")), runs=args.runs,
                       n_units=len(index), answerer=str(llm.get("model")))
@@ -99,9 +77,14 @@ def main(argv: list[str] | None = None) -> int:
                       runs=args.runs, source=args.proposed, answerer=str(llm.get("model")))
 
     kept = sum(v.verified_type is not None for v in verdicts)
-    calls = sum(complete.calls.values()) + sum(judge.calls.values())
+    footer = record_run("scripts/eval/verify_gold.py", f"{args.corpus} gold verification",
+                        [(str(llm.get("model")), complete.usage), (str(jcfg.get("model")), judge.usage)],
+                        cfg["models"].get("pricing"))
+    with open(md, "a") as fh:
+        fh.write("\n".join(footer) + "\n")
+    print("\n".join(footer))
     print(f"\nkept {kept}/{len(verdicts)} questions · "
-          f"{sum(len(r['gold_unit_ids']) for r in gold_rows)} gold units · {calls} LLM calls (incl. cached)")
+          f"{sum(len(r['gold_unit_ids']) for r in gold_rows)} gold units")
     print(f"wrote {md}\nwrote {js}\nwrote {gold}  (stamped {mhash})")
     return 0
 
