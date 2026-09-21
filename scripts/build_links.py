@@ -19,7 +19,7 @@ import numpy as np
 from linkrag.core import load_config, setup_logging, stage_timer
 from linkrag.manifest import MANIFEST_NAME, load_manifest
 from linkrag.index import Index, default_encoder
-from linkrag.link.align import align, build_links, save_links
+from linkrag.link.align import align, align_monotonic, align_naive, build_links, save_links
 from linkrag.link.deictic import (
     deictic_pairs,
     expand_cues,
@@ -95,7 +95,26 @@ def main(argv: list[str] | None = None) -> int:
         similarity=acfg.get("similarity", "ours"), fusion_weight=acfg.get("fusion_weight", 0.5),
         device=cfg["device"],
     )
-    links = build_links(audio, slides, result, min_score=acfg["min_score"])
+    decode = (align_naive if method == "naive" else
+              lambda S: align_monotonic(S, jump_penalty=acfg["jump_penalty"], skip_penalty=acfg["skip_penalty"],
+                                        back_penalty=acfg["back_penalty"], max_back=acfg["max_back"],
+                                        start_prior_mu=acfg.get("start_prior_mu", 0.0),
+                                        flatness_scaling=acfg.get("flatness_scaling", 0.0)))
+    links = build_links(audio, slides, result, min_score=acfg["min_score"],
+                        min_segment_sim=acfg.get("min_segment_sim"),
+                        relatedness_z=acfg.get("relatedness_z"), decode=decode,
+                        penalties=dict(jump_penalty=acfg["jump_penalty"], skip_penalty=acfg["skip_penalty"],
+                                       back_penalty=acfg["back_penalty"]))
+    gate = build_links.gate
+    unrelated_pairs: list[dict] = []
+    if gate is not None:
+        print(f"audio_slide relatedness gate: score {gate['score']:.3f} vs shuffled "
+              f"{gate['null_mean']:.3f} ± {gate['null_std']:.3f} -> z = {gate['z']:.1f} "
+              f"({'related' if gate['related'] else 'UNRELATED: no audio_slide links emitted'})")
+        if not gate["related"]:
+            unrelated_pairs.append({"audio": Path(audio[0].source_file).name,
+                                    "deck": Path(slides[0].source_file).name, "link_type": "audio_slide",
+                                    **{k: round(v, 4) for k, v in gate.items() if isinstance(v, float)}})
     audio_slide = list(links)
 
     lcfg = cfg["link"]
@@ -107,15 +126,18 @@ def main(argv: list[str] | None = None) -> int:
         weights=fcfg["weights"], page_decay=fcfg["page_decay"],
         layout_max_gap_pt=fcfg["layout_max_gap_pt"],
         reference_page_window=fcfg["reference_page_window"],
+        relatedness_z=acfg.get("relatedness_z"),
     )
+    unrelated_pairs += getattr(link_figures_to_text, "unrelated_pairs", [])
     scfg = lcfg["same_slide"]
     links += link_same_slide(figures, texts, mode=args.link_mode,
                              enabled=scfg["enabled"], score=scfg["score"])
 
     dcfg = lcfg["deictic"]
-    deictic_links = resolve_deictic(
+    slide_map = slide_map_from_links(audio_slide, slides)
+    deictic_links = [] if (args.link_mode == "linkrag" and not slide_map) else resolve_deictic(
         audio, figures, encoder=encoder,
-        slide_of_audio=slide_map_from_links(audio_slide, slides),
+        slide_of_audio=slide_map,
         mode=args.link_mode,
         cues=expand_cues(lcfg["deictic_cues"], dcfg["object_nouns"],
                          dcfg["directions"], dcfg["determiners"]),
@@ -134,7 +156,8 @@ def main(argv: list[str] | None = None) -> int:
     links_path = Path(args.links or acfg["links_path"])
     if method != acfg["method"] and args.links is None:
         links_path = links_path.with_name(links_path.stem + f"_{method}" + links_path.suffix)
-    save_links(links, links_path, manifest_hash=manifest_hash)
+    save_links(links, links_path, manifest_hash=manifest_hash,
+               meta={"unrelated_pairs": unrelated_pairs} if unrelated_pairs else None)
 
     npz = Path(args.npz or links_path.with_suffix(".npz"))
     np.savez(npz, similarity=result.similarity, path=np.asarray(result.path),

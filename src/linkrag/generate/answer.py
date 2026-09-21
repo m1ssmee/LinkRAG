@@ -132,7 +132,17 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
             payload["seed"] = llm_cfg["seed"]
 
         try:
-            response = post(payload)
+            # A read timeout is transient too: retry it a few times (1s, 2s, 4s) before
+            # giving up, so one slow reply does not kill a 1,000-call batch.
+            timeout_retries = int(llm_cfg.get("timeout_retries", 3))
+            for attempt in range(timeout_retries + 1):
+                try:
+                    response = post(payload)
+                    break
+                except requests.Timeout:
+                    if attempt == timeout_retries:
+                        raise
+                    time.sleep(2 ** attempt + random.uniform(0, 0.5))
             # Test the payload, not the shared `token_param`: with concurrent callers
             # another thread may already have flipped it, and this request -- built
             # before the flip -- would then raise instead of retrying.

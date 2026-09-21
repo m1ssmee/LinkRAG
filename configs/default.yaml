@@ -124,6 +124,13 @@ link:
     # results/external/mavils_tuned.json and are applied only to its test half.
     flatness_scaling: 0.0      # sigma_i = sigma*(1-f + f*contrast_i/mean contrast); 0 = constant
     min_segment_sim: null      # per-segment abstention (-1) when max row similarity < this
+    # File-pair relatedness gate (2026-09-23). The DP path score (mean S along the
+    # path) must beat the mean of 5 shuffled-slide-order alignments by this many
+    # shuffled std devs, else NO audio_slide links are emitted and the pair is recorded
+    # as unrelated in links.jsonl _meta. Same z gates cross-document semantic
+    # figure_text links (word-shuffle null). null disables. False-rejection rate at
+    # 2.0 measured on MaViLS: reports/relatedness_gate.md
+    relatedness_z: 2.0
     build_groups: false        # group Beamer-style build pages (each a superset of the last),
                                # align at group level, assign builds by incremental content
     # Similarity features. MaViLS decomposition (reports/mavils_final.md): the gap to

@@ -239,10 +239,19 @@ def test_completer_reports_a_read_timeout_not_just_a_refused_connection(monkeypa
         raise requests.ReadTimeout("read timed out")
 
     monkeypatch.setattr(requests, "post", timeout)
+    calls = {"n": 0}
+    original = timeout
+
+    def counting(*a, **k):
+        calls["n"] += 1
+        return original(*a, **k)
+
+    monkeypatch.setattr(requests, "post", counting)
     complete = http_completer({"provider": "openai", "model": "m",
-                               "base_url": "https://api.openai.com/v1"})
+                               "base_url": "https://api.openai.com/v1", "timeout_retries": 1})
     with pytest.raises(RuntimeError, match="ReadTimeout"):
         complete("sys", "user")
+    assert calls["n"] == 2, "one retry, then give up -- a persistent timeout must still surface"
 
 
 # ------------------------------------- LLM measurement rule: request-body checks

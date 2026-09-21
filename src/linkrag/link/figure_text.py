@@ -31,6 +31,8 @@ one code path so the ablation isolates the cross-page reach and nothing else.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import math
 import re
 from typing import Sequence
@@ -199,6 +201,46 @@ def figure_text_scores(
     return scores, reasons
 
 
+def document_pair_gate(figures: Sequence[EvidenceUnit], texts: Sequence[EvidenceUnit], *,
+                       encoder: Encoder, shuffles: int = 5, z: float = 2.0,
+                       seed: int = 20260923) -> dict:
+    """Are document A's figures about document B's text at all?
+
+    Statistic: mean over A's figures of the best cosine to any of B's text units.
+    Null: B's words shuffled across its units (same vocabulary, no coherent content),
+    re-embedded, `shuffles` times. Related iff the true statistic exceeds the null
+    mean by `z` null standard deviations -- the same shape of test as the
+    audio-slide gate (`align.relatedness_gate`), with a word shuffle standing in for
+    the slide-order shuffle because there is no sequence to permute."""
+    import random
+    fig_text = [embeddable_text(f) for f in figures]
+    f_vec = np.asarray(encoder(fig_text), dtype="float32")
+    f_vec /= np.maximum(np.linalg.norm(f_vec, axis=1, keepdims=True), 1e-9)
+
+    def stat(text_list: list[str]) -> float:
+        t_vec = np.asarray(encoder(text_list), dtype="float32")
+        t_vec /= np.maximum(np.linalg.norm(t_vec, axis=1, keepdims=True), 1e-9)
+        return float((f_vec @ t_vec.T).max(axis=1).mean())
+
+    originals = [t.content for t in texts]
+    true = stat(originals)
+    words = [w for t in originals for w in t.split()]
+    lengths = [len(t.split()) for t in originals]
+    rng = random.Random(seed)
+    nulls = []
+    for _ in range(shuffles):
+        rng.shuffle(words)
+        out, pos = [], 0
+        for n in lengths:
+            out.append(" ".join(words[pos:pos + n]) or "(empty)")
+            pos += n
+        nulls.append(stat(out))
+    mean, std = float(np.mean(nulls)), float(np.std(nulls))
+    zscore = (true - mean) / std if std > 1e-12 else (float("inf") if true > mean else 0.0)
+    return {"score": true, "null_mean": mean, "null_std": std, "z": zscore, "threshold_z": z,
+            "related": bool(zscore >= z)}
+
+
 def link_figures_to_text(
     figures: Sequence[EvidenceUnit],
     texts: Sequence[EvidenceUnit],
@@ -211,11 +253,19 @@ def link_figures_to_text(
     page_decay: float = 2.0,
     layout_max_gap_pt: float = 220.0,
     reference_page_window: int = 1,
+    relatedness_z: float | None = 2.0,
+    relatedness_shuffles: int = 5,
 ) -> list[Link]:
     """figure_text Links.
 
     baseline: same-page candidates only (a page-independent pipeline's best case).
     linkrag:  whole-document candidates, page distance as a soft prior.
+
+    Cross-document links that rest on semantics alone (no explicit `reference`) are
+    emitted only if the two documents pass `document_pair_gate` at `relatedness_z`
+    (None disables the gate). Within-document links and explicit references are
+    unaffected. Rejected pairs are recorded in
+    `link_figures_to_text.unrelated_pairs` for the links-file metadata.
     """
     weights = weights or {}
     with stage_timer("link.figure", mode=mode, figures=len(figures), texts=len(texts)) as t:
@@ -230,6 +280,27 @@ def link_figures_to_text(
             layout_max_gap_pt=layout_max_gap_pt,
             reference_page_window=reference_page_window,
         )
+        # document-pair relatedness for cross-document semantic links
+        doc_of = lambda u: Path(u.source_file).name
+        pair_ok: dict[tuple[str, str], bool] = {}
+        unrelated: list[dict] = []
+        if mode == "linkrag" and relatedness_z is not None:
+            fig_docs = sorted({doc_of(f) for f in figures})
+            txt_docs = sorted({doc_of(x) for x in texts})
+            for fd in fig_docs:
+                for td in txt_docs:
+                    if fd == td:
+                        continue
+                    g = document_pair_gate([f for f in figures if doc_of(f) == fd],
+                                           [x for x in texts if doc_of(x) == td], encoder=encoder,
+                                           shuffles=relatedness_shuffles, z=relatedness_z)
+                    pair_ok[(fd, td)] = g["related"]
+                    if not g["related"]:
+                        unrelated.append({"figures_from": fd, "text_from": td, "link_type": "figure_text",
+                                          **{k: round(v, 4) for k, v in g.items() if isinstance(v, float)}})
+        link_figures_to_text.unrelated_pairs = unrelated  # type: ignore[attr-defined]
+        t["unrelated_pairs"] = len(unrelated)
+
         links: list[Link] = []
         cross_page = 0
         for i, fig in enumerate(figures):
@@ -247,6 +318,10 @@ def link_figures_to_text(
                 score = float(scores[i, int(j)])
                 if score < threshold:
                     break  # order is descending, so nothing later can qualify
+                pair = (doc_of(fig), doc_of(txt))
+                if (pair[0] != pair[1] and pair_ok.get(pair) is False
+                        and "reference" not in reasons[i][int(j)]):
+                    continue  # cross-document, semantics only, documents judged unrelated
                 links.append(Link(fig.id, txt.id, "figure_text", score,
                                   metadata=dict(reasons[i][int(j)])))
                 kept += 1

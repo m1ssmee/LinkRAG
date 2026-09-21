@@ -84,7 +84,7 @@ import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Callable, Sequence
 
 import numpy as np
 from rank_bm25 import BM25Okapi
@@ -317,6 +317,59 @@ def align_monotonic(
     return path
 
 
+# ----------------------------------------------------------------- relatedness gate
+
+def path_score(similarity: np.ndarray, path: Sequence[int]) -> float:
+    """DP path score normalised by segment count: mean S[i, path[i]]."""
+    if not len(path):
+        return 0.0
+    return float(np.mean([similarity[i, j] for i, j in enumerate(path)]))
+
+
+def path_objective(similarity: np.ndarray, path: Sequence[int], *, jump_penalty: float,
+                   skip_penalty: float, back_penalty: float) -> float:
+    """What the DP maximises, per segment: path similarity minus the transition
+    penalties it paid. Unlike the bare path score this drops when a path has to
+    jump around to follow the evidence -- which is exactly what happens on a
+    shuffled slide order -- so it is the statistic the relatedness gate uses."""
+    if not len(path):
+        return 0.0
+    sim = sum(float(similarity[i, j]) for i, j in enumerate(path))
+    pen = 0.0
+    for x, y in zip(path, path[1:]):
+        if y > x + 1:
+            pen += jump_penalty * (y - x) + skip_penalty * (y - x - 1)
+        elif y < x:
+            pen += back_penalty * (x - y)
+    return (sim - pen) / len(path)
+
+
+def relatedness_gate(similarity: np.ndarray, decode: Callable[[np.ndarray], list[int]], *,
+                     jump_penalty: float = 0.05, skip_penalty: float = 0.02, back_penalty: float = 0.15,
+                     shuffles: int = 5, z: float = 2.0, seed: int = 20260923) -> dict[str, Any]:
+    """Is this audio track about this deck at all?
+
+    Null model: shuffle the slide order (columns) `shuffles` times and decode each
+    shuffled matrix with the same DP. Statistic: the penalised DP objective per
+    segment (`path_objective`). A related pair has a monotone path that follows the
+    evidence cheaply; on a shuffled order the path must either pay jump penalties or
+    give up similarity. The pair passes when the true objective exceeds the shuffled
+    mean by `z` shuffled standard deviations. With 5 shuffles the std is a rough
+    estimate -- z = 2.0 is deliberately conservative; its false-rejection rate on
+    related pairs is measured on MaViLS (reports/relatedness_gate.md). The bare path
+    score was tried first and rejected 11/20 related MaViLS pairs: with weak
+    penalties the DP finds near-argmax paths on any column order."""
+    rng = np.random.default_rng(seed)
+    obj = lambda S: path_objective(S, decode(S), jump_penalty=jump_penalty, skip_penalty=skip_penalty,
+                                   back_penalty=back_penalty)
+    true = obj(similarity)
+    nulls = [obj(similarity[:, rng.permutation(similarity.shape[1])]) for _ in range(shuffles)]
+    mean, std = float(np.mean(nulls)), float(np.std(nulls))
+    zscore = (true - mean) / std if std > 1e-12 else (float("inf") if true > mean else 0.0)
+    return {"score": true, "null_mean": mean, "null_std": std, "null_scores": nulls,
+            "z": zscore, "threshold_z": z, "related": bool(zscore >= z)}
+
+
 def abstain(similarity: np.ndarray, path: Sequence[int], min_segment_sim: float | None) -> list[int]:
     """Per-segment abstention: a segment whose best similarity to ANY slide is below
     `min_segment_sim` gets -1 (no slide) instead of the path's slide. None = off.
@@ -383,10 +436,34 @@ def build_links(
     alignment: Alignment,
     *,
     min_score: float = 0.0,
+    min_segment_sim: float | None = None,
+    relatedness_z: float | None = None,
+    relatedness_shuffles: int = 5,
+    decode: Callable[[np.ndarray], list[int]] | None = None,
+    penalties: dict[str, float] | None = None,
 ) -> list[Link]:
-    """One audio_slide Link per aligned segment, above `min_score`."""
+    """One audio_slide Link per aligned segment, above `min_score`.
+
+    Two gates compose, coarse to fine. `relatedness_z` (with `decode`, the same DP
+    the alignment used): the file-pair gate -- if the track is not about the deck at
+    all, emit NOTHING and record why in `build_links.gate`. `min_segment_sim`: the
+    per-segment abstention -- a segment with no recognisable slide gets no link. The
+    gate runs first, so abstention never has to rescue an unrelated pair, and a
+    related pair still loses only its flat segments."""
+    build_links.gate = None  # type: ignore[attr-defined]
+    if relatedness_z is not None:
+        if decode is None:
+            raise ValueError("relatedness_z needs `decode` (the DP used for the alignment)")
+        gate = relatedness_gate(alignment.similarity, decode, shuffles=relatedness_shuffles, z=relatedness_z,
+                                **(penalties or {}))
+        build_links.gate = gate  # type: ignore[attr-defined]
+        if not gate["related"]:
+            return []
+    path = abstain(alignment.similarity, alignment.path, min_segment_sim)
     links = []
-    for i, j in enumerate(alignment.path):
+    for i, j in enumerate(path):
+        if j < 0:
+            continue  # abstained
         score = float(alignment.similarity[i, j])
         if score < min_score:
             continue
@@ -396,7 +473,8 @@ def build_links(
 
 
 def save_links(
-    links: Sequence[Link], path: str | Path, manifest_hash: str | None = None
+    links: Sequence[Link], path: str | Path, manifest_hash: str | None = None,
+    meta: dict[str, Any] | None = None,
 ) -> Path:
     """JSONL, one Link per line -- append-friendly and diffable, unlike a pickle.
 
@@ -409,7 +487,7 @@ def save_links(
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as fh:
-        fh.write(json.dumps({"_meta": {"manifest_hash": manifest_hash}}) + "\n")
+        fh.write(json.dumps({"_meta": {"manifest_hash": manifest_hash, **(meta or {})}}) + "\n")
         for link in links:
             record = {
                 "src_id": link.src_id, "dst_id": link.dst_id,
@@ -455,4 +533,5 @@ def load_links(path: str | Path, expect_manifest: str | None = None, *,
                 kept.append(l)
         links = kept
     load_links.last_dropped = dropped  # type: ignore[attr-defined]
+    load_links.last_meta = meta        # type: ignore[attr-defined]
     return links

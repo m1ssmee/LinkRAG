@@ -188,7 +188,8 @@ the previous behaviour, and each was applied once, before re-measuring.
 | **Cost accounting** | `linkrag.costs`, `reports/llm_ledger.jsonl` | Every LLM-touching run prints per-run and cumulative spend; exact tokens from `usage`, cache replays free, backfilled rows flagged *estimated*. |
 | **Colab backend for Phase 8** | `models.llm.backend: colab_openai_compatible` | Reported Phase 8 numbers come from an open model served from Colab (Ollama/vLLM) on the same code path; OpenAI stays the working backend. Setup in `scripts/README.md`. |
 | **Dataset intake** | `scripts/dataset/candidate.py`, `dataset.intake` | A candidate lecture is measured before it is ingested for real; deck→transcript ≥ 0.65 rejects. Procedure in `scripts/dataset/README.md`. |
-| **Relatedness gate** | `link.relatedness.enabled`, `load_links(gated=...)` | Structural links are judged for shared content before they enter the graph; the per-type pass rate is the signal-strength number. Found the deictic file/page bug. |
+| **Relatedness gate (links)** | `link.relatedness.enabled`, `load_links(gated=...)` | Structural links are judged for shared content before they enter the graph; the per-type pass rate is the signal-strength number. Found the deictic file/page bug. |
+| **Relatedness gate (file pairs)** | `align.relatedness_z` (2.0) | Before any cross-file link is emitted, the penalised DP objective must beat 5 shuffled-slide-order alignments by z std devs; cross-document semantic figure_text uses a word-shuffle null. Negative control (pilot01 audio × unrelated deck): 0 cross-file links; false-rejection on 20 related MaViLS pairs: 15 % at 30 s windows, 40 % at sentence level (`reports/relatedness_gate.md`). Unrelated pairs fall back to plain hybrid retrieval. |
 
 ## Our three novel components
 
