@@ -134,10 +134,22 @@ explicit instruction.
    (`linkrag_iter/complementarity`, n = 21, vs 55.8 % for iterative alone and 50.5 %
    for linkrag alone). Neither mechanism explains a +15 pp gain on questions whose
    answer sits in one source. Flagged; do not cite it until it has a cause.
-6. **On MaViLS our alignment trails the target's audio-only DP** (0.45 vs 0.53,
-   20 lectures). The monotone prior degenerates when the text similarity is flat
-   (OCR'd image decks: DP 0.04–0.08 vs naive 0.23–0.28). Next design question, not a
-   retune: which signals to fuse for decks with little text.
+6. **The DP improves alignment only when the similarity matrix carries signal; on
+   text-poor decks it underperforms naive argmax; abstention and flatness-scaling
+   are the designed responses, evaluated on a held-out split.** MaViLS, 20
+   lectures, their protocol (`reports/mavils_alignment.md`): DP +0.06 over naive on
+   average, but below naive on the page-OCR'd image decks. The responses —
+   `align.min_segment_sim` (per-segment abstention → −1) and `align.flatness_scaling`
+   (row-contrast-scaled skip penalty) — are set on the 10-lecture tune half only
+   (`results/external/mavils_split.json`, `mavils_tuned.json`) and reported on the
+   other 10 (`reports/mavils_heldout_study.md`). Both are OFF in `configs/default.yaml`;
+   no parameter changed on the full set or on pilot01. Note their F1 counts an
+   abstention as a wrong slide, so abstention is judged on precision-on-answered and
+   coverage, not on their F1. Outcome: like-for-like (sentence granularity, page OCR,
+   their scorer) **0.46 vs their audio-only 0.53**; flatness scaling is inert at
+   σ = 0.02 (identical paths, inspected); abstention trades coverage for a few points
+   of precision. The Decarbonization gap was an input effect — a build deck whose
+   text layer makes builds indistinguishable — not a DP effect.
 7. **Extended-dataset selection criterion** (priority vi): **low redundancy**
    (measure it with `scripts/dataset/redundancy.py` before ingesting; a candidate
    with transcript→deck above pilot01's number is rejected), **diagram-heavy decks**

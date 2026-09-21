@@ -1,0 +1,28 @@
+{
+ "seed": 20260922,
+ "tune": [
+  "cities_and_decarbonization",
+  "cognitive_robotics_MIT",
+  "computer_vision_2_2",
+  "creating_breakthrough_products_MIT",
+  "cryptocurrency_MIT",
+  "image_processing",
+  "physics",
+  "psychology",
+  "sensory_systems",
+  "team_dynamics_game_design_MIT"
+ ],
+ "test": [
+  "ML_for_health_MIT",
+  "climate_and_cities",
+  "climate_science_policy_MIT2",
+  "deeplearning",
+  "numerics",
+  "phonetics",
+  "reinforcement_learning",
+  "short_range",
+  "solar_resource",
+  "theory_of_computation"
+ ],
+ "note": "fixed once on 2026-09-22; the tune half is the only half any parameter is set on"
+}

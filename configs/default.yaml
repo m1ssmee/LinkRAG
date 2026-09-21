@@ -119,6 +119,11 @@ link:
     max_back: 2                # B: 0 == strictly monotonic
     start_prior_mu: 0.02       # mu: extra pull of segment 1 toward slide 1;
                                # 0.0 reproduces every pre-existing measurement
+    # MaViLS held-out study (2026-09-22). Both OFF here: no parameter changes on
+    # the full set or on pilot01. Values chosen on the MaViLS tune half live in
+    # results/external/mavils_tuned.json and are applied only to its test half.
+    flatness_scaling: 0.0      # sigma_i = sigma*(1-f + f*contrast_i/mean contrast); 0 = constant
+    min_segment_sim: null      # per-segment abstention (-1) when max row similarity < this
     min_score: 0.0             # drop links scoring below this
     links_path: data/processed/links.jsonl
 

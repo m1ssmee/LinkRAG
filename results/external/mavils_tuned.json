@@ -1,0 +1,19 @@
+{
+ "min_segment_sim": 0.5055,
+ "flatness_scaling": 0.0,
+ "window": 0.0,
+ "slide_text": "ocr",
+ "tune_grid_sim": [
+  null,
+  0.455,
+  0.4816,
+  0.5055,
+  0.5239
+ ],
+ "tune_grid_flat": [
+  0.0,
+  0.5,
+  1.0
+ ],
+ "criteria": "flatness: max tune their-F1; min_sim: max tune answered-precision with coverage >= 0.8"
+}

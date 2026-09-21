@@ -263,3 +263,32 @@ def test_start_prior_defaults_to_zero_reproducing_earlier_numbers() -> None:
     rng = np.random.default_rng(9)
     S = rng.random((15, 8))
     assert align_monotonic(S) == align_monotonic(S, start_prior_mu=0.0)
+
+
+# ------------------------------------------------ flatness scaling / abstention (2026-09-22)
+
+def test_flatness_zero_reproduces_constant_sigma():
+    rng = np.random.default_rng(3)
+    S = rng.random((12, 6))
+    from linkrag.link.align import align_monotonic
+    assert align_monotonic(S, flatness_scaling=0.0) == align_monotonic(S)
+
+
+def test_flat_rows_get_a_smaller_skip_penalty():
+    """Peaked row 0 (slide 0), two flat rows, peaked row 3 (slide 4). Every monotone
+    path skips slides 1-3 somewhere; with f=1 a flat row's sigma is ~0, so the skip is
+    taken there, whereas constant sigma spreads the walk one slide per row."""
+    from linkrag.link.align import align_monotonic
+    S = np.full((4, 5), 0.1)
+    S[0, 0] = 0.9
+    S[3, 4] = 0.9
+    assert align_monotonic(S, jump_penalty=0.0, skip_penalty=0.1, max_back=0) == [0, 1, 3, 4]
+    assert align_monotonic(S, jump_penalty=0.0, skip_penalty=0.1, max_back=0,
+                           flatness_scaling=1.0) == [0, 4, 4, 4]
+
+
+def test_abstain_marks_low_max_rows_and_leaves_the_rest():
+    from linkrag.link.align import abstain
+    S = np.array([[0.9, 0.1], [0.2, 0.25], [0.1, 0.8]])
+    assert abstain(S, [0, 1, 1], 0.5) == [0, -1, 1]
+    assert abstain(S, [0, 1, 1], None) == [0, 1, 1]

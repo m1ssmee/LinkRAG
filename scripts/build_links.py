@@ -91,6 +91,7 @@ def main(argv: list[str] | None = None) -> int:
         weights=acfg["weights"], jump_penalty=acfg["jump_penalty"],
         skip_penalty=acfg["skip_penalty"], back_penalty=acfg["back_penalty"],
         max_back=acfg["max_back"], start_prior_mu=acfg.get("start_prior_mu", 0.0),
+        flatness_scaling=acfg.get("flatness_scaling", 0.0),
     )
     links = build_links(audio, slides, result, min_score=acfg["min_score"])
     audio_slide = list(links)

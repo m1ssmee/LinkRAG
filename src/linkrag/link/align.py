@@ -198,6 +198,7 @@ def align_monotonic(
     back_penalty: float = 0.15,
     max_back: int = 2,
     start_prior_mu: float = 0.0,
+    flatness_scaling: float = 0.0,
 ) -> list[int]:
     """Viterbi-style DP over the recurrence in the module docstring. O(n*m).
 
@@ -206,18 +207,34 @@ def align_monotonic(
     at sigma=0.02 that pull is weak: on pilot01 the opening segment (title slide,
     certain) was assigned p3. mu defaults to 0.0, which is exactly the behaviour every
     number recorded before this parameter existed.
+
+    `flatness_scaling` (MaViLS study, 2026-09-22) makes the skip penalty row-aware:
+    sigma_i = sigma * (1 - f + f * c_i / mean(c)), with c_i = max_i - mean_i the row's
+    contrast. f = 0 is the constant sigma every earlier number used; f = 1 scales it
+    fully, so a flat row (no evidence for any slide) charges almost nothing for
+    moving on and a peaked row keeps the full penalty. The head/tail charges use the
+    first/last row's sigma.
     """
     n, m = similarity.shape
     if n == 0 or m == 0:
         return []
-    lam, sig, beta = float(jump_penalty), float(skip_penalty), float(back_penalty)
+    lam, sig0, beta = float(jump_penalty), float(skip_penalty), float(back_penalty)
     max_back = max(0, int(max_back))
+    f = float(flatness_scaling)
+    if f > 0:
+        contrast = similarity.max(axis=1) - similarity.mean(axis=1)
+        scale = contrast / max(float(contrast.mean()), 1e-9)
+        sig_rows = sig0 * (1.0 - f + f * scale)
+    else:
+        sig_rows = np.full(n, sig0)
 
     # D[j] = best score for the current segment ending on slide j.
+    sig = float(sig_rows[0])
     prev = similarity[0] - (sig + float(start_prior_mu)) * np.arange(m)
     backptr = np.full((n, m), -1, dtype=np.int32)
 
     for i in range(1, n):
+        sig = float(sig_rows[i])
         cur = np.full(m, NEG)
         choice = np.full(m, -1, dtype=np.int32)
 
@@ -253,7 +270,7 @@ def align_monotonic(
         prev = cur
 
     # Charge for slides never reached after the last assignment.
-    final = prev - sig * (m - 1 - np.arange(m))
+    final = prev - float(sig_rows[-1]) * (m - 1 - np.arange(m))
     j = int(final.argmax())
     path = [j]
     for i in range(n - 1, 0, -1):
@@ -261,6 +278,17 @@ def align_monotonic(
         path.append(j)
     path.reverse()
     return path
+
+
+def abstain(similarity: np.ndarray, path: Sequence[int], min_segment_sim: float | None) -> list[int]:
+    """Per-segment abstention: a segment whose best similarity to ANY slide is below
+    `min_segment_sim` gets -1 (no slide) instead of the path's slide. None = off.
+    The DP path itself is unchanged -- abstention is applied after decoding, so the
+    sequence structure still benefits neighbouring segments."""
+    if min_segment_sim is None:
+        return list(path)
+    row_max = similarity.max(axis=1)
+    return [-1 if row_max[i] < min_segment_sim else int(j) for i, j in enumerate(path)]
 
 
 def align(
@@ -275,6 +303,7 @@ def align(
     back_penalty: float = 0.15,
     max_back: int = 2,
     start_prior_mu: float = 0.0,
+    flatness_scaling: float = 0.0,
 ) -> Alignment:
     if method not in ("monotonic", "naive"):
         raise ValueError(f"unknown alignment method {method!r}: use 'monotonic' or 'naive'")
@@ -290,7 +319,8 @@ def align(
         path = (align_naive(similarity) if method == "naive" else
                 align_monotonic(similarity, jump_penalty=jump_penalty,
                                 skip_penalty=skip_penalty, back_penalty=back_penalty,
-                                max_back=max_back, start_prior_mu=start_prior_mu))
+                                max_back=max_back, start_prior_mu=start_prior_mu,
+                                flatness_scaling=flatness_scaling))
         total = float(sum(similarity[i, j] for i, j in enumerate(path)))
         t["slides_used"] = len(set(path))
         t["back_jumps"] = sum(1 for a, b in zip(path, path[1:]) if b < a)
