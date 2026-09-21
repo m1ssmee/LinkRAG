@@ -137,8 +137,9 @@ explicit instruction.
 6. **The DP improves alignment only when the similarity matrix carries signal; on
    text-poor decks it underperforms naive argmax; abstention and flatness-scaling
    are the designed responses, evaluated on a held-out split.** MaViLS, 20
-   lectures, their protocol (`reports/mavils_alignment.md`): DP +0.06 over naive on
-   average, but below naive on the page-OCR'd image decks. The responses —
+   lectures, their protocol (`reports/mavils_alignment.md`): DP +0.16 over naive on
+   average (0.46 vs 0.30), but below naive on the deck with no text layer at all
+   (Image processing 0.19 vs 0.23) and only level on the partial-layer decks. The responses —
    `align.min_segment_sim` (per-segment abstention → −1) and `align.flatness_scaling`
    (row-contrast-scaled skip penalty) — are set on the 10-lecture tune half only
    (`results/external/mavils_split.json`, `mavils_tuned.json`) and reported on the
