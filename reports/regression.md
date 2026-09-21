@@ -1063,3 +1063,31 @@ deck→transcript **94.2 %**, transcript→deck 61.1 %, deck→paper 46.2 %,
 transcript→paper 38.9 %. The speaker narrates essentially the whole deck. This is
 why so few cross-modal questions survive verification, and it is the number a
 candidate lecture must beat (be lower than) to enter the extended dataset.
+
+### Relatedness gate (priority ii) — what it changed and what it found
+
+`scripts/gate_links.py`, judge gpt-4.1-mini, 3 runs majority, every link. Report:
+`reports/relatedness_pilot01.md`.
+
+| link type | first gate run | after the fix below |
+|---|---:|---:|
+| audio_slide | 50/51 = 98.0 % | 50/51 = 98.0 % |
+| deictic | **94/169 = 55.6 %** | **95/126 = 75.4 %** |
+| figure_text | 103/103 = 100 % | 103/103 = 100 % |
+| same_slide | 31/31 = 100 % | 31/31 = 100 % |
+
+**The gate found a bug.** 54 of the 169 deictic links pointed at *paper* figures:
+`resolve_deictic` tested `figure.page == aligned slide page` without testing the file,
+so with the paper in the corpus "slide 3" also matched the paper's page-3 figures.
+Fixed (slide map now carries `(deck file, page)`; regression test added); links
+rebuilt (deictic 169 → 126); deictic eval re-run: precision 80 % (was 79 %), recall
+86 %, 0 false positives — unchanged in substance because the paper-figure links sat
+outside the pointing windows. The gate's 100 % on `figure_text` and `same_slide` is
+partly tautological: deck figure OCR contains the slide title, so figure and slide
+text always share a subject. Read the deictic row, not those.
+
+Matrix on gated links (same gold, additive expansion): `linkrag/complementarity`
+53.4 % (52.1 % ungated), `linkrag_iter/complementarity` 65.7 ± 2.8 % (67.3 ± 2.1 %
+ungated — inside the LLM band), cross-modal `linkrag/complementarity` 60.4 %
+(unchanged). Removing 31 unrelated deictic links did not move recall; it removed
+edges the reranker's β term was paying for without evidence.

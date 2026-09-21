@@ -17,6 +17,9 @@ flagged *estimated*).
 | `dataset/redundancy.py` | modality redundancy of an ingested corpus | judge |
 | `dataset/candidate.py` | intake: ingest a candidate lecture, measure, keep/reject | judge |
 | `eval_alignment.py`, `eval_deictic.py` | alignment / deixis against ear labels | no |
+| `gate_links.py` | relatedness gate over `links.jsonl`; flags failed links in place | judge |
+| `adapters/mavils.py` | target T2: their 20 lectures, their micro-F1, transcript + PDF only | no |
+| `adapters/lectqa_vid.py` | target T1: fetch / prepare / run on their QA pairs and levels | answerer |
 
 ## LLM backends
 

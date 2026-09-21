@@ -33,3 +33,5 @@ matplotlib==3.11.1             # alignment heatmap + link-graph renders
 # dev
 pytest==9.1.1
 reportlab==5.0.1                # generates the fixture PDF in tests/
+openpyxl==3.1.5          # MaViLS ground truth is xlsx
+yt-dlp==2025.9.5         # LectQA-Vid videos are YouTube links; audio-only progressive download

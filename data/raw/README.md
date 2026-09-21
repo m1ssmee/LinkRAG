@@ -41,3 +41,28 @@ Drop files into `data/raw/<corpus>/` and run:
 Supported: `.pdf`, `.docx`, `.wav/.mp3/.m4a`, `.png/.jpg/.tif`. Slide decks are
 detected by landscape page geometry; override per file with
 `ingest.slide_deck_files` in `configs/default.yaml`.
+
+## mavils — target T2 benchmark
+
+```
+git clone --depth 1 https://github.com/andererka/MaViLS data/raw/mavils
+```
+
+Anderer, Reich, Wölfel — *MaViLS, a Benchmark Dataset for Video-to-Slide Alignment…*,
+Interspeech 2024. Repository licence: **Apache-2.0** (code and the files it ships:
+faster-whisper transcripts `data/audioscripts/*.srt`, ground-truth `data/ground_truth_files/*.xlsx`,
+slide PDFs `data/lectures/*.pdf`). The lecture *videos* are not in the repository
+(Kaggle link in their README) and are not needed by `scripts/adapters/mavils.py`. The
+slide PDFs themselves are the lecturers' / institutions' material (mostly MIT OCW,
+CC BY-NC-SA 4.0) redistributed by the benchmark authors; keep them local.
+
+## lectqa_vid — target T1 benchmark
+
+Shafiq et al. — *Intra-Video Temporal-Aware RAG*, CMC 88(2), 2026. Annotations from
+Mendeley Data, doi:10.17632/yt4nmz9mcv.1, **CC BY 4.0**: `mcq_questions.json`,
+`open_ended_questions.json`, `video_links.docx` (YouTube links only). The dataset
+page states that videos, keyframes and transcripts are *not* provided for copyright
+reasons; `scripts/adapters/lectqa_vid.py fetch` downloads audio + low-res video per
+link with yt-dlp for local research use only — do not commit or redistribute them.
+`fetch_failures.txt` records links that were unavailable at fetch time (video_1 on
+2026-09-21).

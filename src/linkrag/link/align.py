@@ -345,10 +345,16 @@ class LinkManifestMismatch(RuntimeError):
     """Links were built against a different corpus than the one being queried."""
 
 
-def load_links(path: str | Path, expect_manifest: str | None = None) -> list[Link]:
+def load_links(path: str | Path, expect_manifest: str | None = None, *,
+               gated: bool = True) -> list[Link]:
     """Links from JSONL. Raises if the file's corpus stamp disagrees with
     `expect_manifest` -- a hard error, not a warning: every link id would be
-    meaningless and expansion would silently return nothing."""
+    meaningless and expansion would silently return nothing.
+
+    `gated=True` drops links the relatedness gate failed (priority ii; the verdict
+    lives in `metadata["relatedness"]`). Files that were never gated are returned
+    whole either way, and `load_links.last_dropped` says how many were removed so a
+    caller can print it."""
     records = [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
     meta = next((r["_meta"] for r in records if "_meta" in r), {})
     stamp = meta.get("manifest_hash")
@@ -357,4 +363,16 @@ def load_links(path: str | Path, expect_manifest: str | None = None) -> list[Lin
             f"{path} was built against corpus {stamp or 'UNSTAMPED'}, but the index "
             f"is corpus {expect_manifest}. Re-run scripts/build_links.py."
         )
-    return [Link(**r) for r in records if "_meta" not in r]
+    links = [Link(**r) for r in records if "_meta" not in r]
+    dropped = 0
+    if gated:
+        kept = []
+        for l in links:
+            r = (l.metadata or {}).get("relatedness")
+            if r and not r.get("passed", True):
+                dropped += 1
+            else:
+                kept.append(l)
+        links = kept
+    load_links.last_dropped = dropped  # type: ignore[attr-defined]
+    return links

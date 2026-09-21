@@ -163,6 +163,13 @@ link:
                    picture, image, axis, curve, table, box, column, row, highlight,
                    highlighted, display, displayed, draw, drawn, point, pointing]
 
+  # --- relatedness gate (priority ii, 2026-09-21) ---
+  # scripts/gate_links.py judges every link with eval.judge and flags failures in
+  # links.jsonl; load_links(gated=True) drops them. Report: reports/relatedness_<corpus>.md
+  relatedness:
+    enabled: true
+    runs: 3
+
   # Thresholds are per link_type; tune on the dev set, don't hardcode one global.
   figure_text_threshold: 0.50
   deictic_threshold: 0.45
@@ -213,6 +220,17 @@ retrieve:
   iterative:
     rounds: 2                    # total retrievals, including the first
     k_per_round: 8
+
+datasets:
+  # Target benchmarks (scripts/adapters/). Dataset-specific settings live here so
+  # they are recorded, not hidden in a script. LectQA-Vid videos are 2-5 minutes:
+  # 30-second windows would give ~6 units per video and make top-8 trivial.
+  lectqa_vid:
+    audio_segment_seconds: 15
+    frame_interval_s: 5
+    top_k: 4
+  mavils:
+    repo: data/raw/mavils          # clone of github.com/andererka/MaViLS
 
 dataset:
   # Extended-dataset intake (scripts/dataset/candidate.py). A candidate lecture is

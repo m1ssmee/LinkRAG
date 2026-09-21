@@ -86,15 +86,19 @@ explicit instruction.
    `reports/gold_verified_pilot01.md`, including the run history. Rules learned:
    reference answers list only the asked facts; a unit stating *one* required
    fact is gold.
-2. **(ii) Relatedness gate.** A test that a linked pair is actually about the same
-   thing (not merely co-located), applied to every link type before it enters the
-   graph; report the pass rate per type.
-3. **(iii) LectQA-Vid adapter and first run.** Load T1's videos (ASR + frame
-   captions as their pipeline does), run baseline and linkrag, report their Table
-   4/5 metrics on their split, with n stated.
-4. **(iv) MaViLS adapter and first run.** Load the 20 lectures' transcripts + slide
-   PDFs + ground truth, run `align_monotonic` and `align_naive`, report per-lecture
-   F1 with their definition, alongside their audio column and combined row.
+2. **(ii) Relatedness gate.** ✅ **Done 2026-09-21** — `src/linkrag/link/relatedness.py`,
+   `scripts/gate_links.py`; verdicts stored in link metadata, `load_links(gated=True)`
+   drops failures, `reports/relatedness_pilot01.md`. Pass rates: audio_slide 98 %,
+   deictic 75 % (55.6 % before it exposed the page-number bug below), figure_text and
+   same_slide 100 % (partly tautological — shared slide titles in OCR).
+3. **(iii) LectQA-Vid adapter and first run.** 🔶 adapter built
+   (`scripts/adapters/lectqa_vid.py`: fetch / prepare / run). The published dataset
+   ships QA + YouTube links only; videos are re-fetched (yt-dlp), transcribed
+   (whisper) and frame-OCR'd here. Their split and 1,000-pair eval subset are
+   unpublished — results are on the videos processed, n stated. First run:
+   `reports/lectqa_vid_first_run.md`.
+4. **(iv) MaViLS adapter and first run.** 🔶 adapter built (`scripts/adapters/mavils.py`),
+   their micro-F1 reproduced exactly, all 20 lectures: `reports/mavils_alignment.md`.
 5. **(v) Phase 6 — citations + entailment.** Claim-level faithfulness: each
    answer sentence must be entailed by a cited unit; id-level citation checks are
    known to pass wrong answers.
@@ -147,6 +151,7 @@ the previous behaviour, and each was applied once, before re-measuring.
 | **Cost accounting** | `linkrag.costs`, `reports/llm_ledger.jsonl` | Every LLM-touching run prints per-run and cumulative spend; exact tokens from `usage`, cache replays free, backfilled rows flagged *estimated*. |
 | **Colab backend for Phase 8** | `models.llm.backend: colab_openai_compatible` | Reported Phase 8 numbers come from an open model served from Colab (Ollama/vLLM) on the same code path; OpenAI stays the working backend. Setup in `scripts/README.md`. |
 | **Dataset intake** | `scripts/dataset/candidate.py`, `dataset.intake` | A candidate lecture is measured before it is ingested for real; deck→transcript ≥ 0.65 rejects. Procedure in `scripts/dataset/README.md`. |
+| **Relatedness gate** | `link.relatedness.enabled`, `load_links(gated=...)` | Structural links are judged for shared content before they enter the graph; the per-type pass rate is the signal-strength number. Found the deictic file/page bug. |
 
 ## Our three novel components
 

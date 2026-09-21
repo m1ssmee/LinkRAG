@@ -181,7 +181,7 @@ def resolve_deictic(
     figures: Sequence[EvidenceUnit],
     *,
     encoder: Encoder,
-    slide_of_audio: dict[str, int] | None = None,
+    slide_of_audio: dict[str, int | tuple[str, int]] | None = None,
     mode: Mode = "linkrag",
     cues: Sequence[str] | None = None,
     threshold: float = 0.45,
@@ -261,10 +261,16 @@ def resolve_deictic(
             # baseline must not see the alignment at all. An earlier version still
             # added w_slide * on_slide here, so the "no alignment" ablation was
             # quietly using the alignment and measured nothing.
-            page = (slide_of_audio or {}).get(unit.id) if mode == "linkrag" else None
+            slide = (slide_of_audio or {}).get(unit.id) if mode == "linkrag" else None
+            # (file, page) from slide_map_from_links; a bare page is still accepted.
+            # Page alone was the bug the relatedness gate found on 2026-09-21: with
+            # the paper in the corpus, "slide 3" also matched the paper's page-3
+            # figures, and 54 of 169 deictic links pointed into the paper.
+            deck, page = slide if isinstance(slide, tuple) else (None, slide)
             scored = []
             for j, fig in enumerate(figures):
-                on_slide = 1.0 if (page is not None and fig.location.page == page) else 0.0
+                on_slide = 1.0 if (page is not None and fig.location.page == page
+                                   and (deck is None or Path(fig.source_file).name == deck)) else 0.0
                 if mode == "linkrag" and on_slide == 0.0:
                     continue  # the alignment says this figure was not on screen
                 shared = set(tokenize(cue.context)) & fig_tokens[j]
@@ -303,11 +309,15 @@ def resolve_deictic(
     return links
 
 
-def slide_map_from_links(links: Sequence[Link], slide_units: Sequence[EvidenceUnit]) -> dict[str, int]:
-    """audio id -> slide page, from Phase 2's audio_slide links."""
-    page_of = {u.id: u.location.page for u in slide_units}
-    return {l.src_id: page_of[l.dst_id] for l in links
-            if l.link_type == "audio_slide" and page_of.get(l.dst_id) is not None}
+def slide_map_from_links(links: Sequence[Link], slide_units: Sequence[EvidenceUnit]
+                         ) -> dict[str, tuple[str, int]]:
+    """audio id -> (deck file name, slide page), from Phase 2's audio_slide links.
+
+    The file name is part of the key on purpose: a page number alone is ambiguous
+    once a second document is in the corpus."""
+    where = {u.id: (Path(u.source_file).name, u.location.page) for u in slide_units}
+    return {l.src_id: where[l.dst_id] for l in links
+            if l.link_type == "audio_slide" and where.get(l.dst_id, (None, None))[1] is not None}
 
 
 def deictic_pairs(links: Sequence[Link]) -> list[dict]:

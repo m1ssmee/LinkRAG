@@ -180,7 +180,7 @@ def test_slide_map_from_links_ignores_other_link_types() -> None:
     slides = [_txt("s1", 7, "x"), _txt("s2", 8, "y")]
     links = [Link("a1", "s1", "audio_slide", 0.9),
              Link("f1", "s2", "figure_text", 0.8)]
-    assert slide_map_from_links(links, slides) == {"a1": 7}
+    assert slide_map_from_links(links, slides) == {"a1": ("deck.pdf", 7)}
 
 
 def test_scores_are_normalised_so_the_threshold_means_the_same_in_both_modes(
@@ -351,3 +351,22 @@ def test_deictic_ties_break_by_ascending_figure_index(stub_encoder) -> None:
     links = resolve_deictic([audio], figs, encoder=enc, slide_of_audio={"a1": 5},
                             mode="linkrag", threshold=0.0, max_links_per_unit=2)
     assert [l.dst_id for l in links] == ["f0", "f1"]
+
+
+def test_deictic_candidates_require_the_deck_file_not_just_the_page_number() -> None:
+    """Found by the relatedness gate (2026-09-21): with the paper in the corpus,
+    54 of 169 deictic links pointed at paper figures whose page number happened to
+    equal the aligned slide number."""
+    from linkrag.core import EvidenceUnit, Location
+    enc = lambda texts: [[1.0, 0.0] for _ in texts]
+    audio = EvidenceUnit(id="a1", modality="audio", content="as you can see here the recall goes up",
+                         source_file="talk.mp3", location=Location(start_s=0.0, end_s=5.0),
+                         metadata={"words": [(i * 0.5, i * 0.5 + 0.4, w)
+                                             for i, w in enumerate("as you can see here the recall goes up".split())]})
+    deck_fig = EvidenceUnit(id="deck:p5:g0", modality="figure", content="recall vs K",
+                            source_file="deck.pdf", location=Location(page=5))
+    paper_fig = EvidenceUnit(id="paper:p5:c0", modality="figure", content="recall vs K",
+                             source_file="paper.pdf", location=Location(page=5))
+    links = resolve_deictic([audio], [deck_fig, paper_fig], encoder=enc,
+                            slide_of_audio={"a1": ("deck.pdf", 5)}, mode="linkrag", threshold=0.0)
+    assert {l.dst_id for l in links} == {"deck:p5:g0"}

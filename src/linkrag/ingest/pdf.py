@@ -254,10 +254,21 @@ def caption_regions(
 def _save_image(doc: pymupdf.Document, xref: int, out: Path) -> bool:
     pix = pymupdf.Pixmap(doc, xref)
     try:
-        if pix.n - pix.alpha >= 4:  # CMYK / separation -> RGB so PNG can hold it
-            pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
+        # PNG holds grayscale or RGB only. CMYK / separation / Lab / stencil masks
+        # (colorspace None) all have to be converted first -- a MaViLS deck with an
+        # indexed+alpha image crashed the whole lecture ingest here (2026-09-21).
+        cs = pix.colorspace
+        if cs is None or cs.n not in (1, 3):
+            try:
+                pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
+            except Exception:
+                return False
         out.parent.mkdir(parents=True, exist_ok=True)
-        pix.save(out)
+        try:
+            pix.save(out)
+        except Exception as exc:  # one odd image must not sink the document
+            log.warning("skipping image xref %s in %s: %s", xref, doc.name, exc)
+            return False
         return True
     finally:
         pix = None

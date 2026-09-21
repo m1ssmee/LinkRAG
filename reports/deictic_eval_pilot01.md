@@ -29,25 +29,16 @@ figure on the labelled slide (or its build-pair)?
 
 | tier | correct | pairs | precision |
 |---|---:|---:|---:|
-| 2 | 12 | 14 | 86% |
-| 3 | 7 | 10 | 70% |
-| **all** | **19** | **24** | **79%** |
+| 2 | 8 | 10 | 80% |
+| 3 | 4 | 5 | 80% |
+| **all** | **12** | **15** | **80%** |
 
 | segment | window slide | linked figure page | tier | correct | phrase |
 |---|---:|---:|---:|---|---|
 | `hsieh:a6` | 4 | 4 | 3 | ✓ | `that` |
-| `hsieh:a6` | 4 | 4 | 3 | ✓ | `that` |
-| `hsieh:a18` | 13 | 13 | 2 | ✓ | `this` |
-| `hsieh:a18` | 13 | 13 | 2 | ✓ | `this` |
 | `hsieh:a18` | 13 | 13 | 2 | ✓ | `this` |
 | `hsieh:a19` | 13 | 13 | 2 | ✓ | `that` |
-| `hsieh:a19` | 13 | 13 | 2 | ✓ | `that` |
-| `hsieh:a19` | 13 | 13 | 2 | ✓ | `that` |
 | `hsieh:a20` | 13 | 14 | 3 | ✗ | `this` |
-| `hsieh:a20` | 13 | 14 | 3 | ✗ | `this` |
-| `hsieh:a20` | 13 | 14 | 3 | ✗ | `this` |
-| `hsieh:a22` | 14 | 14 | 3 | ✓ | `that` |
-| `hsieh:a22` | 14 | 14 | 3 | ✓ | `that` |
 | `hsieh:a22` | 14 | 14 | 3 | ✓ | `that` |
 | `hsieh:a26` | 17 | 18 | 3 | ✓ | `here` |
 | `hsieh:a29` | 20 | 20 | 2 | ✓ | `this` |
@@ -102,7 +93,7 @@ link to, so a miss here says nothing about deictic resolution.
 
 | window | slide | target | why | segments | pairs emitted |
 |---|---:|---|---|---:|---:|
-| 6:37–7:19 | 12 | `table` | table; no table extraction | 2 | 8 |
+| 6:37–7:19 | 12 | `table` | table; no table extraction | 2 | 4 |
 
 Any pair emitted in these rows links to a figure on a *different* slide, since the
 labelled slide has none — the alignment placed the segment correctly and the
@@ -112,14 +103,14 @@ deictic module then had nothing valid to choose from.
 
 | metric | value | n |
 |---|---:|---:|
-| precision on positives | 79% | 24 pairs |
+| precision on positives | 80% | 15 pairs |
 | detection recall (scorable windows) | 86% | 14 segments |
 | false positives on the known negative | 0 | slide 24 |
 | windows scorable | 8/10 | — |
 
-**Quote these with n attached.** Precision rests on 24 pairs from 8 scorable windows (tier 2: 14, tier 3: 10).
+**Quote these with n attached.** Precision rests on 15 pairs from 8 scorable windows (tier 2: 10, tier 3: 5).
 
-**The tiering is doing work here.** Tier 2 scores 86% against tier 3's 70%, on referent-level ground truth rather than the slide-agreement proxy used earlier.
+**The tiering is doing work here.** Tier 3 scores 80% against tier 3's 80%, on referent-level ground truth rather than the slide-agreement proxy used earlier.
 
 **The binding constraint has moved.** Before slide-figure clustering only 3 of 10 windows were scorable, because most slides yielded no figure unit at all. Now 8 are. What remains unresolvable is a table (no table extraction) and the live demo, which has no correct referent by construction.
 
