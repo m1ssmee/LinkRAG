@@ -131,7 +131,8 @@ link:
     # figure_text links (word-shuffle null). null disables. False-rejection rate at
     # 2.0 measured on MaViLS: reports/relatedness_gate.md
     relatedness_z: 2.0
-    null_std_floor: 0.002      # lower bound on the shuffled std before z (5 shuffles estimate it roughly)
+    null_shuffles: 5           # shuffled slide orders in the null (30 tightens the std; see mavils_gate_v2.md)
+    null_std_floor: 0.002      # lower bound on the shuffled std before z
     build_groups: false        # group Beamer-style build pages (each a superset of the last),
                                # align at group level, assign builds by incremental content
     # Similarity features. MaViLS decomposition (reports/mavils_final.md): the gap to

@@ -103,6 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     links = build_links(audio, slides, result, min_score=acfg["min_score"],
                         min_segment_sim=acfg.get("min_segment_sim"),
                         relatedness_z=acfg.get("relatedness_z"), decode=decode,
+                        relatedness_shuffles=int(acfg.get("null_shuffles", 5)),
                         penalties=dict(jump_penalty=acfg["jump_penalty"], skip_penalty=acfg["skip_penalty"],
                                        back_penalty=acfg["back_penalty"],
                                        null_std_floor=acfg.get("null_std_floor", 0.0)))

@@ -42,7 +42,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 from linkrag.core import EvidenceUnit, Location, load_config, setup_logging
 from linkrag.index import default_encoder
 from linkrag.ingest.pdf import ingest_pdf
-from linkrag.link.align import abstain, align_monotonic, align_naive, fuse_similarity, similarity_matrix
+from linkrag.link.align import abstain, align_monotonic, align_naive, fuse_similarity, relatedness_gate, similarity_matrix
 
 # ground-truth stem -> (slides PDF, their Table 1 name, Table 1 audio F1, Table 2 combined F1 @ lambda 0.1)
 LECTURES = {
@@ -779,9 +779,157 @@ def cmd_fused(args, cfg, encoder) -> int:
     return 0
 
 
+def cmd_gate(args, cfg, encoder) -> int:
+    """Relatedness gate, second pass: 30-shuffle null on the 20 related pairs, the 380
+    cross pairs as a negative set, threshold by false acceptance, z vs F1."""
+    import time
+    from scipy.stats import spearmanr
+    a = cfg["link"]["align"]
+    shuffles = int(args.shuffles)
+    floor = float(a.get("null_std_floor", 0.0))
+    figures_dir = Path(args.figures_dir)
+    dp = lambda S: align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
+                                   back_penalty=a["back_penalty"], max_back=a["max_back"],
+                                   start_prior_mu=a.get("start_prior_mu", 0.0))
+    gate = lambda S: relatedness_gate(S, dp, shuffles=shuffles, z=2.0, jump_penalty=a["jump_penalty"],
+                                      skip_penalty=a["skip_penalty"], back_penalty=a["back_penalty"],
+                                      null_std_floor=floor)
+    stems = sorted(LECTURES)
+    name = lambda s_: LECTURES[s_][1]
+
+    # per-lecture inputs, embedded once per side
+    win, slides, status, gt, f1 = {}, {}, {}, {}, {}
+    emb_cache = CACHE / "emb"
+    emb_cache.mkdir(parents=True, exist_ok=True)
+    for stem in stems:
+        df = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{stem}.xlsx")
+        units, owner = window_units(df, stem, args.window)
+        sl, st = slide_units(stem, "ocr", figures_dir)
+        win[stem], slides[stem], status[stem] = (units, np.array(owner)), sl, st
+        gt[stem] = df["slide"].astype(int).to_numpy()
+        for side, us in (("w", units), ("s", sl)):
+            p = emb_cache / f"{stem}.{side}{int(args.window) if side == 'w' else ''}.npy"
+            if not p.exists():
+                np.save(p, np.asarray(encoder([u.content for u in us]), dtype="float32"))
+        # their-protocol F1 at this granularity (related pair, our DP)
+        S, owner_, _, pages, _ = similarity_for(stem, window=args.window, slide_text="ocr", cfg=cfg,
+                                                encoder=encoder, figures_dir=figures_dir)
+        pred = np.array([pages[j] for j in dp(S)])[owner_]
+        f1[stem] = their_prf(gt[stem], pred)[2]
+        print(f"prepared {name(stem)}: {len(units)} windows, {len(sl)} slides, F1 {f1[stem]:.2f}")
+
+    def S_for(audio_stem, deck_stem):
+        av = np.load(emb_cache / f"{audio_stem}.w{int(args.window)}.npy")
+        sv = np.load(emb_cache / f"{deck_stem}.s.npy")
+        return similarity_matrix(win[audio_stem][0], slides[deck_stem], encoder=encoder,
+                                 w_dense=a["weights"]["dense"], w_bm25=a["weights"]["bm25"],
+                                 w_keyword=a["weights"]["keyword"], a_vec=av, s_vec=sv)
+
+    # per-deck column contrast: mean pairwise cosine between slide-text embeddings.
+    # HIGH mean cosine = slides look alike = LOW contrast; a shuffled slide order then
+    # admits a monotone path almost as good as the true one, and z collapses.
+    contrast = {}
+    for stem in stems:
+        sv = np.load(emb_cache / f"{stem}.s.npy").astype("float64")
+        sv /= np.maximum(np.linalg.norm(sv, axis=1, keepdims=True), 1e-9)
+        C = sv @ sv.T
+        n = len(sv)
+        contrast[stem] = float((C.sum() - np.trace(C)) / (n * (n - 1))) if n > 1 else 1.0
+
+    out = Path(args.out)
+    prev = out.with_suffix(".json")
+    if args.reuse and prev.exists():
+        saved = json.loads(prev.read_text())
+        cross = {tuple(k.split("|")): v for k, v in saved["cross"].items()}
+        related = saved.get("related_detail") or {stem: gate(S_for(stem, stem)) for stem in stems}
+        print("reused the 380 cross-pair z-scores from", prev)
+    else:
+        # 1. related pairs, 30 shuffles
+        t0 = time.perf_counter()
+        related = {stem: gate(S_for(stem, stem)) for stem in stems}
+        print(f"related pairs done ({time.perf_counter() - t0:.0f}s)")
+        # 2. the 380 cross pairs
+        cross = {}
+        for i, au in enumerate(stems):
+            for dk in stems:
+                if au == dk:
+                    continue
+                cross[(au, dk)] = gate(S_for(au, dk))["z"]
+            print(f"cross pairs for {name(au)} done ({time.perf_counter() - t0:.0f}s)")
+    zc = np.array(sorted(cross.values()))
+    zr = np.array([related[s_]["z"] for s_ in stems])
+    # threshold: smallest z with <= 5% false acceptance on the 380
+    cands = sorted(set(np.round(np.concatenate([zc, zr, [0.0, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]]), 2)))
+    chosen = next(z_ for z_ in cands if float(np.mean(zc >= z_)) <= 0.05)
+    fa = lambda z_: float(np.mean(zc >= z_))
+    fr = lambda z_: float(np.mean(zr < z_))
+    tuned = json.loads((EXTERNAL / "mavils_tuned.json").read_text())
+    tuned.update({"relatedness_z": float(chosen), "null_shuffles": shuffles, "gate_granularity_s": args.window,
+                  "gate_study": "2026-09-22: threshold = smallest z with <=5% false acceptance on the 380 cross pairs"})
+    (EXTERNAL / "mavils_tuned.json").write_text(json.dumps(tuned, indent=1) + "\n")
+
+    rho, pval = spearmanr(zr, [f1[s_] for s_ in stems])
+    rej = [s_ for s_ in stems if related[s_]["z"] < chosen]
+    med_f1_rej = float(np.median([f1[s_] for s_ in rej])) if rej else float("nan")
+    med_f1_acc = float(np.median([f1[s_] for s_ in stems if s_ not in rej]))
+
+    L = ["# Relatedness gate — second pass (MaViLS, 30-second windows)", "",
+         f"Gate statistic: penalised DP objective per segment vs the mean of **{shuffles}** shuffled slide orders, "
+         f"z = (true − null mean) / max(null std, {floor}); our DP at pilot parameters; page-OCR slide text; "
+         f"{int(args.window)}-second windows of their transcript sentences. Default config unchanged "
+         f"(`align.relatedness_z` = {a['relatedness_z']}, `align.null_shuffles` = {a.get('null_shuffles', 5)}); "
+         "the values chosen here are recorded in `results/external/mavils_tuned.json`.", "",
+         "## 1. Related pairs (20), 30-shuffle null", "",
+         "| lecture | text layer | windows × slides | column contrast (mean pairwise slide cosine) | objective | null mean ± std | z | F1 (their protocol) |",
+         "|---|---|---:|---:|---:|---:|---:|---:|"]
+    for stem in stems:
+        g = related[stem]
+        L.append(f"| {name(stem)} | {status[stem]['text_layer']} | {len(win[stem][0])}×{len(slides[stem])} | {contrast[stem]:.3f} | "
+                 f"{g['score']:.4f} | {g['null_mean']:.4f} ± {g['null_std']:.4f} | {g['z']:.1f} | {f1[stem]:.2f} |")
+    L += ["", "## 2. Negative set: 380 cross pairs (each audio × every other deck)", "",
+          f"z distribution of unrelated pairs: min {zc.min():.2f} · median {float(np.median(zc)):.2f} · "
+          f"95th percentile {float(np.percentile(zc, 95)):.2f} · max {zc.max():.2f}.", "",
+          "| threshold z | false acceptance (380 unrelated) | false rejection (20 related) |", "|---:|---:|---:|"]
+    for z_ in (0.0, 1.0, 1.5, 2.0, chosen, 3.0, 4.0):
+        L.append(f"| {z_:.2f}{' ←' if z_ == chosen else ''} | {fa(z_):.1%} ({int(round(fa(z_) * 380))}/380) | {fr(z_):.0%} ({int(round(fr(z_) * 20))}/20) |")
+    L += ["", f"**Chosen threshold: z = {chosen:.2f}** — the smallest z with ≤ 5 % false acceptance on the 380 pairs; "
+          f"false rejection on the 20 related pairs at that threshold: **{fr(chosen):.0%}** ({int(round(fr(chosen) * 20))}/20"
+          + (": " + ", ".join(name(s_) for s_ in rej) if rej else "") + ").", "",
+          "Highest-z unrelated pairs (what a false acceptance looks like):", ""]
+    for (au, dk), z_ in sorted(cross.items(), key=lambda kv: -kv[1])[:8]:
+        L.append(f"- {name(au)} audio × {name(dk)} deck: z = {z_:.2f}")
+    L += ["", "## 3. z vs alignment quality", "",
+          f"Spearman ρ between a related pair's z and its their-protocol F1 (20 lectures): **{rho:.2f}** (p = {pval:.3f}). "
+          f"Median F1 of pairs rejected at z = {chosen:.2f}: {med_f1_rej:.2f}; of accepted pairs: {med_f1_acc:.2f}. "
+          + ("**The rejected pairs are the low-F1 pairs**: the gate declines the alignments the DP gets wrong anyway."
+             if rej and med_f1_rej < med_f1_acc else "Rejected and accepted pairs do not separate on F1."), "",
+          "| lecture | z | F1 | column contrast |", "|---|---:|---:|---:|"]
+    for stem in sorted(stems, key=lambda s_: related[s_]["z"]):
+        L.append(f"| {name(stem)} | {related[stem]['z']:.1f} | {f1[stem]:.2f} | {contrast[stem]:.3f} |")
+    rho_c, p_c = spearmanr(zr, [contrast[s_] for s_ in stems])
+    med_c_rej = float(np.median([contrast[s_] for s_ in rej])) if rej else float("nan")
+    med_c_acc = float(np.median([contrast[s_] for s_ in stems if s_ not in rej]))
+    L += ["", "## 4. z vs deck column contrast", "",
+          f"Spearman ρ between z and mean pairwise slide cosine: **{rho_c:.2f}** (p = {p_c:.3f}; negative = slides that look alike "
+          f"give low z). Median mean-pairwise-cosine of rejected decks: {med_c_rej:.3f}; of accepted decks: {med_c_acc:.3f}. "
+          + ("**The rejected pairs are the low-contrast decks** (mutually similar slides), which is the mechanism the ML for health "
+             "inspection shows: a shuffled slide order admits a monotone path nearly as good as the true one."
+             if rej and med_c_rej > med_c_acc else "Rejected and accepted decks do not separate on column contrast."), ""]
+    out.write_text("\n".join(L) + "\n")
+    json.dump({"related": {s_: related[s_]["z"] for s_ in stems}, "related_detail": {s_: {k: v for k, v in related[s_].items() if k != "null_scores"} for s_ in stems},
+               "f1": f1, "contrast": contrast,
+               "cross": {f"{au}|{dk}": z_ for (au, dk), z_ in cross.items()}, "chosen_z": chosen},
+              open(out.with_suffix(".json"), "w"), indent=1)
+    print("\n".join(L[:8]))
+    print(f"chosen z {chosen:.2f}, FA {fa(chosen):.1%}, FR {fr(chosen):.0%}, rho {rho:.2f}\nwrote {out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused"])
+    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate"])
+    ap.add_argument("--shuffles", type=int, default=30)
+    ap.add_argument("--reuse", action="store_true", help="gate: reuse cached z-scores from the previous run's json")
     ap.add_argument("--config", default="configs/default.yaml")
     ap.add_argument("--split", choices=["all", "tune", "test"], default="all")
     ap.add_argument("--window", type=float, default=0.0, help="0 = their sentence granularity (default); e.g. 30")
@@ -792,14 +940,16 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if args.out is None:
         args.out = {"run": "reports/mavils_alignment.md", "study": "reports/mavils_heldout_study.md",
-                    "inspect": None, "final": "reports/mavils_final.md", "fused": "reports/mavils_fused.md"}[args.cmd]
+                    "inspect": None, "final": "reports/mavils_final.md", "fused": "reports/mavils_fused.md",
+                    "gate": "results/external/mavils_gate_v2.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
         raise SystemExit(f"clone https://github.com/andererka/MaViLS to {REPO}")
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
-    return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused}[args.cmd](args, cfg, encoder)
+    return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused,
+            "gate": cmd_gate}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":

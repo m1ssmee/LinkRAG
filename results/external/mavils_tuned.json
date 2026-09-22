@@ -30,5 +30,9 @@
  "final_round": "2026-09-22: sigma by tune their-F1; build_groups on iff it raised tune their-F1 at the tuned sigma",
  "fusion_weight": 0.5,
  "similarity": "fused_weighted",
- "fused_study": "2026-09-22: weight by tune their-F1 over {0,.25,.5,.75,1}; both matrices min-max scaled per lecture"
+ "fused_study": "2026-09-22: weight by tune their-F1 over {0,.25,.5,.75,1}; both matrices min-max scaled per lecture",
+ "relatedness_z": 1.27,
+ "null_shuffles": 30,
+ "gate_granularity_s": 30.0,
+ "gate_study": "2026-09-22: threshold = smallest z with <=5% false acceptance on the 380 cross pairs"
 }

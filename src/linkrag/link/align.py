@@ -148,16 +148,21 @@ def similarity_matrix(
     w_dense: float = 0.6,
     w_bm25: float = 0.25,
     w_keyword: float = 0.15,
+    a_vec: np.ndarray | None = None,
+    s_vec: np.ndarray | None = None,
 ) -> np.ndarray:
-    """S[i][j] for every (audio segment, slide) pair. See module docstring."""
+    """S[i][j] for every (audio segment, slide) pair. See module docstring.
+
+    `a_vec` / `s_vec`: precomputed embeddings (rows aligned with the units), so a
+    many-pairs study can embed each side once instead of once per pair."""
     if not audio_units or not slide_units:
         raise ValueError("need at least one audio unit and one slide unit")
 
     audio_text = [u.content for u in audio_units]
     slide_text = [u.content for u in slide_units]
 
-    a_vec = np.asarray(encoder(audio_text), dtype="float32")
-    s_vec = np.asarray(encoder(slide_text), dtype="float32")
+    a_vec = np.asarray(encoder(audio_text) if a_vec is None else a_vec, dtype="float32")
+    s_vec = np.asarray(encoder(slide_text) if s_vec is None else s_vec, dtype="float32")
     # encoders here are configured to normalise; guard anyway so a custom one
     # cannot silently turn cosine into an unbounded dot product.
     a_vec /= np.maximum(np.linalg.norm(a_vec, axis=1, keepdims=True), 1e-9)
