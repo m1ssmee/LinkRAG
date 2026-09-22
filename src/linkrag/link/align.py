@@ -346,7 +346,8 @@ def path_objective(similarity: np.ndarray, path: Sequence[int], *, jump_penalty:
 
 def relatedness_gate(similarity: np.ndarray, decode: Callable[[np.ndarray], list[int]], *,
                      jump_penalty: float = 0.05, skip_penalty: float = 0.02, back_penalty: float = 0.15,
-                     shuffles: int = 5, z: float = 2.0, seed: int = 20260923) -> dict[str, Any]:
+                     shuffles: int = 5, z: float = 2.0, seed: int = 20260923,
+                     null_std_floor: float = 0.0) -> dict[str, Any]:
     """Is this audio track about this deck at all?
 
     Null model: shuffle the slide order (columns) `shuffles` times and decode each
@@ -365,9 +366,12 @@ def relatedness_gate(similarity: np.ndarray, decode: Callable[[np.ndarray], list
     true = obj(similarity)
     nulls = [obj(similarity[:, rng.permutation(similarity.shape[1])]) for _ in range(shuffles)]
     mean, std = float(np.mean(nulls)), float(np.std(nulls))
-    zscore = (true - mean) / std if std > 1e-12 else (float("inf") if true > mean else 0.0)
-    return {"score": true, "null_mean": mean, "null_std": std, "null_scores": nulls,
-            "z": zscore, "threshold_z": z, "related": bool(zscore >= z)}
+    # Five shuffles give a rough std; a near-zero estimate would turn a tiny margin
+    # into a huge z. `null_std_floor` (config align.null_std_floor) bounds it below.
+    std_used = max(std, float(null_std_floor))
+    zscore = (true - mean) / std_used if std_used > 1e-12 else (float("inf") if true > mean else 0.0)
+    return {"score": true, "null_mean": mean, "null_std": std, "null_std_used": std_used,
+            "null_scores": nulls, "z": zscore, "threshold_z": z, "related": bool(zscore >= z)}
 
 
 def abstain(similarity: np.ndarray, path: Sequence[int], min_segment_sim: float | None) -> list[int]:

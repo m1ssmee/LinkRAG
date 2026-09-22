@@ -139,3 +139,13 @@ def test_unrelated_files_fall_back_to_plain_hybrid_search():
     assert [r.id for r in res][:3] == plain
     assert all(r.origin == "seed" for r in res)
     assert expansion_report(res, graph) == (0, 0)
+
+
+def test_null_std_floor_bounds_z():
+    """A degenerate null (all shuffles identical) must not produce an infinite z."""
+    S = np.zeros((6, 3))
+    S[:, 0] = 0.5                       # every column order gives the same path score
+    g = relatedness_gate(S, DP, null_std_floor=0.0)
+    g_floor = relatedness_gate(S, DP, null_std_floor=0.01)
+    assert g["null_std"] == 0.0 and g_floor["null_std_used"] == 0.01
+    assert abs(g_floor["z"]) < 1e-9 and not g_floor["related"]
