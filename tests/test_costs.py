@@ -54,3 +54,24 @@ def test_ledger_accumulates_and_footer_mentions_unpriced(tmp_path):
     cum = cumulative(ledger)
     assert cum["rows"] == 3 and cum["cost_usd"] == 4.0 and cum["unpriced_rows"] == 1
     assert len(ledger.read_text().splitlines()) == 3
+
+
+def test_cache_only_never_calls_and_cost_cap_stops(tmp_path):
+    from linkrag.costs import CacheMiss
+    import pytest
+    calls = {"n": 0}
+
+    def inner(system, user):
+        calls["n"] += 1
+        inner.last_usage = {"prompt_tokens": 400_000, "completion_tokens": 0}
+        return "r"
+    ro = cached_completer(inner, tmp_path, cache_only=True)
+    with pytest.raises(CacheMiss):
+        ro("s", "u")
+    assert calls["n"] == 0
+    capped = cached_completer(inner, tmp_path, max_cost_usd=1.5, price={"input_per_m": 2.5, "output_per_m": 0})
+    capped("s", "u1")                       # $1.00 spent
+    capped("s", "u2")                       # $2.00 spent -> next call refused
+    with pytest.raises(RuntimeError, match="cost cap"):
+        capped("s", "u3")
+    assert calls["n"] == 2

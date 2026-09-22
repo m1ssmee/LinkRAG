@@ -40,7 +40,7 @@ from pathlib import Path
 import numpy as np
 
 from linkrag.core import EvidenceUnit, Link, Location, load_config, setup_logging
-from linkrag.costs import cached_completer, record_run
+from linkrag.costs import CacheMiss, cached_completer, price_for, record_run
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, build_index, default_encoder
 from linkrag.link.graph import build_graph
@@ -370,7 +370,11 @@ def run(ids: list[str], cfg: dict, dcfg: dict, modes: list[str], out: Path, repe
 # ----------------------------------------------------------------- v2: localisation
 
 def _hms(t: str) -> float:
-    h, m, s_ = (int(x) for x in t.split(":"))
+    """'HH:MM:SS' or 'MM:SS' (both occur in the annotation files) -> seconds."""
+    parts = [float(x) for x in str(t).strip().split(":")]   # 83 stamps are plain seconds ('210.72')
+    while len(parts) < 3:
+        parts.insert(0, 0.0)
+    h, m, s_ = parts[-3:]
     return h * 3600 + m * 60 + s_
 
 
@@ -401,14 +405,19 @@ def retrieve_pool(mode, q, index, graph, *, encoder, cfg, complete, pool):
     return out
 
 
-def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index", label: str = "") -> tuple[list[dict], dict]:
+def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index", label: str = "",
+             cache_only: bool = True, max_cost: float = 1.0) -> tuple[list[dict], dict]:
     """Temporal localisation: does a retrieved unit overlap the gold interval? No answerer.
-    (iterative modes call the LLM once per question to write the follow-up query; that
-    is retrieval, and the reply is cached.)"""
+    The iterative modes need one LLM call per question for the follow-up query; with
+    `cache_only` (default) those cells are filled only where that call was already
+    paid for, and are marked `not run` otherwise -- no new spend."""
     from linkrag.retrieve.rerank import rerank
     qa = load_qa()
     llm = cfg["models"]["llm"]
-    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / str(llm.get("model")))
+    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / str(llm.get("model")),
+                                cache_only=cache_only, max_cost_usd=max_cost,
+                                price=price_for(str(llm.get("model")), cfg["models"].get("pricing")))
+    skipped = 0
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
     rcfg = cfg["retrieve"]["rerank"]
@@ -426,7 +435,11 @@ def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index"
             if g1 <= g0:
                 g1 = g0 + 1.0
             for mode in ("baseline", "linkrag", "iterative", "linkrag_iter"):
-                cand = retrieve_pool(mode, q["question"], index, graph, encoder=encoder, cfg=cfg, complete=complete, pool=pool)
+                try:
+                    cand = retrieve_pool(mode, q["question"], index, graph, encoder=encoder, cfg=cfg, complete=complete, pool=pool)
+                except CacheMiss:
+                    skipped += 1
+                    continue
                 for method in ("none", "complementarity"):
                     picked = rerank(cand, 8, method=method, index=index, graph=graph, alpha=rcfg["alpha"],
                                     beta=rcfg["beta"], gamma=rcfg["gamma"], question=q["question"], device=cfg["device"])
@@ -437,7 +450,7 @@ def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index"
                         row[f"hit@{k}"] = float(any(x > 0 for x in ious[:k]))
                     rows.append(row)
         print(f"{label} {vid}: {len(qa.get(vid, []))} QA localised")
-    return rows, {"llm_usage": complete.usage, "model": str(llm.get("model"))}
+    return rows, {"llm_usage": complete.usage, "model": str(llm.get("model")), "skipped_cells": skipped}
 
 
 def localisation_table(rows: list[dict], title: str) -> list[str]:
@@ -482,12 +495,12 @@ def rebuild_fixed_index(vid: str, cfg: dict, dcfg: dict) -> tuple[float, float]:
     return mid_sentence(sent_buckets), mid_sentence(fixed)
 
 
-def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path) -> int:
+def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = True, max_cost: float = 1.0) -> int:
     import statistics as st
     ids = [v for v in ids if (PROCESSED / v / "index").exists()]
-    rows_sent, u1 = localise(ids, cfg, dcfg, label="sentence")
+    rows_sent, u1 = localise(ids, cfg, dcfg, label="sentence", cache_only=cache_only, max_cost=max_cost)
     rates = [rebuild_fixed_index(v, cfg, dcfg) for v in ids]
-    rows_fixed, u2 = localise(ids, cfg, dcfg, index_name="index_fixed", label="fixed")
+    rows_fixed, u2 = localise(ids, cfg, dcfg, index_name="index_fixed", label="fixed", cache_only=cache_only, max_cost=max_cost)
     n_q = len({(r["vid"], r["kind"], r["level"]) for r in rows_sent}) and len(rows_sent) // 8
     first = json.loads(Path("reports/lectqa_vid_first_run.jsonl").read_text().splitlines()[0]) if Path("reports/lectqa_vid_first_run.jsonl").exists() else {}
     L = [f"# LectQA-Vid — second pass ({len(ids)}/100 videos, {n_q} QA pairs)", "",
@@ -499,9 +512,12 @@ def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path) -> int:
          "available is temporal co-occurrence between a transcript segment and the frames on screen; **cross-file linking is inactive by "
          "construction**. These rows test additive expansion + the complementarity reranker over transcript and frame-OCR units, nothing more.", "",
          "## 1. Temporal localisation (primary metric; no answerer)", "",
-         "hit@k: any of the top-k retrieved units overlaps the question's gold interval `[timestamp_start, timestamp_end]`; "
-         "mean best IoU: the best temporal IoU among the top 8. `iterative` / `linkrag_iter` make one LLM call per question to "
-         "write the follow-up query (retrieval, cached); no answer is generated for this table.", ""]
+         "hit@k: any of the top-k retrieved units overlaps the question's gold interval `[timestamp_start, timestamp_end]` "
+         "(the files mix `HH:MM:SS`, `MM:SS` and plain-seconds stamps; all three are parsed); "
+         "mean best IoU: the best temporal IoU among the top 8. `iterative` / `linkrag_iter` need one LLM call per question "
+         "for the follow-up query; **this run made no new LLM calls** — those cells are filled only where the call was already "
+         f"cached, so their n is smaller (sentence pass: {u1['skipped_cells']} question-mode cells skipped; fixed pass: "
+         f"{u2['skipped_cells']}). No answer is generated for this table.", ""]
     L += localisation_table(rows_sent, f"Sentence-aware segmentation (`ingest.audio_segmentation: sentence`, the default)") + [""]
     L += ["## 2. Segmentation ablation on their data", "",
           "Same transcript words, same frames, same retrieval; only the cut points change. `fixed` = equal-time windows "
@@ -547,6 +563,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--modes", default="baseline,linkrag")
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--out", default="reports/lectqa_vid_first_run.md")
+    ap.add_argument("--allow-new-calls", action="store_true", help="v2: let iterative modes call the LLM on cache misses")
+    ap.add_argument("--max-cost", type=float, default=1.0, help="stop when uncached spend in this run exceeds this many USD")
     args = ap.parse_args(argv)
     setup_logging()
     cfg = load_config(args.config)
@@ -559,7 +577,8 @@ def main(argv: list[str] | None = None) -> int:
         prepare(ids, cfg, dcfg)
         return 0
     if args.step == "v2":
-        return v2(ids, cfg, dcfg, Path("results/external/lectqa_v2.md"))
+        return v2(ids, cfg, dcfg, Path("results/external/lectqa_v2.md"), cache_only=not args.allow_new_calls,
+                  max_cost=args.max_cost)
     return run(ids, cfg, dcfg, args.modes.split(","), Path(args.out), args.repeats)
 
 
