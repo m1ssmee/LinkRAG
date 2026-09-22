@@ -1,6 +1,6 @@
 # LectQA-Vid — target T1 — first run
 
-3 of 100 videos · 90 QA pairs per mode · modes ['baseline', 'linkrag'] · k=4 · answerer `gpt-5.4-2026-03-05` temperature=0.0 · repeats 1 · transcript: whisper-small · frames every 5s, OCR tesseract (their pipeline used Whisper large-v3 and Gemini captions)
+28 of 100 videos · 840 QA pairs per mode · modes ['baseline', 'linkrag'] · k=4 · answerer `gpt-5.4-2026-03-05` temperature=0.0 · repeats 1 · transcript: whisper-small · frames every 5s, OCR tesseract (their pipeline used Whisper large-v3 and Gemini captions)
 
 Their split and 1,000-pair evaluation subset are unpublished; this is every QA pair of the videos processed. Semantic similarity here is bge-m3 cosine; they do not name their embedder.
 
@@ -10,30 +10,43 @@ Their split and 1,000-pair evaluation subset are unpublished; this is every QA p
 
 | level | n | mode | token-F1 | ROUGE-1 | sim (bge-m3) | their F1 | their ROUGE-1 | their sim |
 |---|---:|---|---:|---:|---:|---:|---:|---:|
-| simple | 15 | baseline | 55.1% | 61.0% | 0.87 | 31.15% | 39.80% | 0.75 |
-| simple | 15 | linkrag | 46.1% | 52.5% | 0.81 | 31.15% | 39.80% | 0.75 |
-| hard | 15 | baseline | 41.1% | 43.9% | 0.82 | 19.35% | 24.60% | 0.68 |
-| hard | 15 | linkrag | 34.6% | 37.1% | 0.78 | 19.35% | 24.60% | 0.68 |
-| very hard | 15 | baseline | 25.5% | 28.5% | 0.75 | 10.24% | 15.32% | 0.51 |
-| very hard | 15 | linkrag | 24.5% | 27.3% | 0.74 | 10.24% | 15.32% | 0.51 |
-| overall | 45 | baseline | 40.6% | 44.5% | 0.81 | 23.52% | 29.76% | 0.71 |
-| overall | 45 | linkrag | 35.1% | 39.0% | 0.78 | 23.52% | 29.76% | 0.71 |
+| simple | 141 | baseline | 33.9% | 38.7% | 0.76 | 31.15% | 39.80% | 0.75 |
+| simple | 141 | linkrag | 31.8% | 36.6% | 0.75 | 31.15% | 39.80% | 0.75 |
+| hard | 140 | baseline | 28.3% | 31.4% | 0.73 | 19.35% | 24.60% | 0.68 |
+| hard | 140 | linkrag | 25.5% | 28.5% | 0.70 | 19.35% | 24.60% | 0.68 |
+| very hard | 139 | baseline | 16.8% | 20.1% | 0.65 | 10.24% | 15.32% | 0.51 |
+| very hard | 139 | linkrag | 15.1% | 18.1% | 0.63 | 10.24% | 15.32% | 0.51 |
+| overall | 420 | baseline | 26.4% | 30.1% | 0.71 | 23.52% | 29.76% | 0.71 |
+| overall | 420 | linkrag | 24.2% | 27.8% | 0.69 | 23.52% | 29.76% | 0.71 |
 
 ## MCQ (their Table 5)
 
 | level | n | mode | accuracy | their accuracy |
 |---|---:|---|---:|---:|
-| simple | 15 | baseline | 100.0% | 68.40% |
-| simple | 15 | linkrag | 100.0% | 68.40% |
-| hard | 15 | baseline | 100.0% | 56.30% |
-| hard | 15 | linkrag | 100.0% | 56.30% |
-| very hard | 15 | baseline | 100.0% | 44.20% |
-| very hard | 15 | linkrag | 100.0% | 44.20% |
-| overall | 45 | baseline | 100.0% | 56.30% |
-| overall | 45 | linkrag | 100.0% | 56.30% |
+| simple | 140 | baseline | 93.6% | 68.40% |
+| simple | 140 | linkrag | 93.6% | 68.40% |
+| hard | 140 | baseline | 95.7% | 56.30% |
+| hard | 140 | linkrag | 95.0% | 56.30% |
+| very hard | 140 | baseline | 99.3% | 44.20% |
+| very hard | 140 | linkrag | 99.3% | 44.20% |
+| overall | 420 | baseline | 96.2% | 56.30% |
+| overall | 420 | linkrag | 96.0% | 56.30% |
 
 LLM cost (this run):
 
-- `gpt-5.4-2026-03-05`: 180 calls (0 cached) · 43,075 in / 3,738 out · $0.1638
-- run total: $0.1638
-- cumulative (all recorded runs, `reports/llm_ledger.jsonl`): 6,508 calls · 5,253,381 in / 308,718 out · $8.07 · 5 row(s) unpriced · 4,719,273 tokens estimated
+- `gpt-5.4-2026-03-05`: 1680 calls (1318 cached) · 436,118 in / 39,474 out · $0.3443 (cache replays free; would have been $1.6824)
+- run total: $0.3443
+- cumulative (all recorded runs, `reports/llm_ledger.jsonl`): 8,188 calls · 5,689,499 in / 348,192 out · $8.42 · 5 row(s) unpriced · 4,719,273 tokens estimated
+
+## Reading (28/100 videos, 840 QA pairs)
+
+- **Open-ended**: baseline token-F1 **26.4 %** / ROUGE-1 30.1 % / sim 0.71 vs their 23.52 % / 29.76 % / 0.71 — level with
+  their number, not above it, once n grows from 3 videos (40.6 %) to 28. The 3-video figure was a small-sample artefact.
+- **MCQ**: **96.2 %** vs their 56.30 % — mostly the answerer (gpt-5.4 vs their open model) and weak distractors; this column
+  says little about retrieval.
+- **linkrag is 2 points *below* baseline on open-ended** (24.2 % vs 26.4 %) at every level. On a single 2–5-minute video the only
+  link is temporal co-occurrence, and expansion + complementarity admit frame-OCR units that displace transcript units the
+  reference answers are worded from. This is the setting LinkRAG was not built for (no cross-file structure), reported as such.
+- Every number here is on 28 of 100 videos (7 of the first 35 links are unavailable; `data/raw/lectqa_vid/fetch_failures.txt`),
+  one run, their split unpublished. Repeats and the remaining 65 videos are a cost/time decision (~$1 per 28 videos in
+  answerer calls; whisper on CPU is the bottleneck at ~4 min per video).
