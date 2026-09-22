@@ -1091,3 +1091,628 @@ Matrix on gated links (same gold, additive expansion): `linkrag/complementarity`
 ungated — inside the LLM band), cross-modal `linkrag/complementarity` 60.4 %
 (unchanged). Removing 31 unrelated deictic links did not move recall; it removed
 edges the reranker's β term was paying for without evidence.
+## 2026-09-22 22:04 — phase6 grounded generation, strict OFF (25 verified questions)
+
+mode=`linkrag` · index=`data/processed/index` · embedder=`BAAI/bge-m3` · units=209 · top_k=8
+
+corpus manifest `2f3b35f27e86caf8` (209 units) · gold stamped `2f3b35f27e86caf8`
+
+| Q | type | modality distribution | expanded | gold evidence | gold missed | claims (unsupported) |
+|---|---|---|---:|---|---|---|
+| Q1 | `single_modality` | text 5/8, figure 1/8, audio 2/8 | 2 | **no** | osdi18_slides_hsieh.pdf p.5, osdi18-hsieh.pdf p.17, osdi18-hsieh.pdf p.17 | 2 (1 unsupported) |
+| Q2 | `audio_only` | text 2/8, figure 1/8, audio 5/8 | 2 | **yes** | — | 2 |
+| Q3 | `paper_only` | text 7/8, figure 1/8 | 1 | **partial** | osdi18_slides_hsieh.pdf p.1, osdi18_slides_hsieh.pdf p.27, osdi18_slides_hsieh.pdf p.1, osdi18_slides_hsieh.pdf p.27, hsieh.mp3 0.0-30.0s | 5 |
+| Q4 | `single_modality` | text 3/8, figure 2/8, audio 3/8 | 2 | **partial** | osdi18-hsieh.pdf p.3, osdi18-hsieh.pdf p.3, osdi18-hsieh.pdf p.3 | 4 |
+| A1 | `slides_only` | text 3/8, figure 1/8, audio 4/8 | 2 | **no** | osdi18_slides_hsieh.pdf p.25 | 2 |
+| A2 | `slides_only` | text 5/8, figure 2/8, audio 1/8 | 2 | **no** | osdi18_slides_hsieh.pdf p.12, osdi18_slides_hsieh.pdf p.12 | 2 |
+| A4 | `audio_only` | text 5/8, figure 1/8, audio 2/8 | 2 | **yes** | — | 2 |
+| A5 | `audio_only` | text 2/8, figure 1/8, audio 5/8 | 2 | **no** | hsieh.mp3 1051.9-1080.7s | 2 |
+| A7 | `paper_only` | text 6/8, figure 2/8 | 2 | **no** | osdi18-hsieh.pdf p.11, osdi18-hsieh.pdf p.11 | 0/2 |
+| A8 | `single_modality` | text 4/8, figure 2/8, audio 2/8 | 1 | **yes** | — | 3 (1 unsupported) |
+| B1 | `paper_only` | text 6/8, figure 2/8 | 2 | **partial** | osdi18_slides_hsieh.pdf p.23 | 3 |
+| B2 | `cross_modal_split` | text 5/8, figure 2/8, audio 1/8 | 2 | **partial** | hsieh.mp3 1109.7-1138.3s | 1 |
+| B3 | `paper_only` | text 4/8, figure 1/8, audio 3/8 | 2 | **yes** | — | 2 |
+| B4 | `cross_modal_split` | text 5/8, figure 2/8, audio 1/8 | 2 | **partial** | hsieh.mp3 175.6-205.2s | 2 |
+| B5 | `single_modality` | text 3/8, figure 3/8, audio 2/8 | 2 | **yes** | — | 3 |
+| B6 | `cross_modal_split` | text 6/8, figure 2/8 | 2 | **yes** | — | 10 |
+| B7 | `audio_only` | text 3/8, figure 1/8, audio 4/8 | 2 | **partial** | osdi18-hsieh.pdf p.11, osdi18-hsieh.pdf p.11 | 2 |
+| B8 | `audio_only` | text 3/8, figure 2/8, audio 3/8 | 2 | **yes** | — | 6 |
+| C1 | `single_modality` | text 5/8, figure 1/8, audio 2/8 | 2 | **yes** | — | 2 |
+| C2 | `single_modality` | text 4/8, figure 2/8, audio 2/8 | 2 | **partial** | osdi18_slides_hsieh.pdf p.13, hsieh.mp3 506.3-536.3s | 3 |
+| C3 | `audio_only` | text 6/8, figure 2/8 | 2 | **no** | osdi18_slides_hsieh.pdf p.14, hsieh.mp3 563.8-580.1s | 2 |
+| C4 | `single_modality` | text 2/8, figure 3/8, audio 3/8 | 3 | **partial** | osdi18_slides_hsieh.pdf p.14, osdi18_slides_hsieh.pdf p.14 | 4 (1 unsupported) |
+| C5 | `cross_modal_deictic` | text 5/8, figure 2/8, audio 1/8 | 2 | **partial** | osdi18_slides_hsieh.pdf p.22, osdi18_slides_hsieh.pdf p.22, osdi18_slides_hsieh.pdf p.22 | 3 |
+| C6 | `slides_only` | text 3/8, figure 3/8, audio 2/8 | 2 | **partial** | osdi18_slides_hsieh.pdf p.22 | 5 |
+| C7 | `single_modality` | text 4/8, figure 2/8, audio 2/8 | 1 | **yes** | — | 3 |
+
+<details><summary>Q1 answer (2 citations)</summary>
+
+The talk cites NoScope as the state-of-the-art query-time approach. The provided material identifies it as a recent state-of-the-art querying system but does not state its publication venue or year.
+
+</details>
+
+<details><summary>Q2 answer (2 citations)</summary>
+
+In the Q&A, the speaker says they currently generate cheap CNNs by starting with a simple CNN, ResNet18, and removing layers one by one to create a set of cheaper CNNs. The speaker also says this process is not automatic, and they do not have an automatic way to generate cheap CNNs from the architecture of the expensive ones.
+
+</details>
+
+<details><summary>Q3 answer (1 citations)</summary>
+
+The authors of Focus are Kevin Hsieh, Ganesh Ananthanarayanan, Peter Bodik, Shivaram Venkataraman, Paramvir Bahl, Matthai Philipose, Phillip B. Gibbons, and Onur Mutlu. Their institutions are Carnegie Mellon University, Microsoft, University of Wisconsin, and ETH Zürich.
+
+</details>
+
+<details><summary>Q4 answer (3 citations)</summary>
+
+The plot labels the options as Optimize for Query Latency, Balance, and Optimize for Ingest Cost. The speaker says they can select the Balance option, or choose Optimize for Query Latency for low-latency, frequently queried applications, or Optimize for Ingest Cost for applications like home cameras where minimizing ingest cost matters more.
+
+</details>
+
+<details><summary>A1 answer (2 citations)</summary>
+
+The deck says the paper contains a lot more details, while the talk’s key takeaway is the problem of querying objects in massive videos and the approach/results summary.
+
+</details>
+
+<details><summary>A2 answer (4 citations)</summary>
+
+The top-K example includes the object class truck in the cheap CNN’s outputs, and the expensive CNN’s best result usually appears within the cheap CNN’s top-K results. The audio example specifically says the third output of the cheap CNN is the correct result, which is a truck.
+
+</details>
+
+<details><summary>A4 answer (2 citations)</summary>
+
+The speaker directs the audience to poster number 47. A slide in the same material lists the poster as #41, indicating a discrepancy between the audio and slide text.
+
+</details>
+
+<details><summary>A5 answer (2 citations)</summary>
+
+In the live demo, the baseline query was shown as taking five hours to query a month-long video. The video being queried was month-long.
+
+</details>
+
+<details><summary>A7 answer (0 citations)</summary>
+
+not found in the provided material
+
+</details>
+
+<details><summary>A8 answer (3 citations)</summary>
+
+A Pareto-optimal parameter setting is one on the Pareto boundary, meaning you cannot improve one metric without worsening the other. In Focus, the two metrics are ingest cost and query latency, and non-Pareto configurations can be discarded because some Pareto-boundary point is better in both metrics.
+
+</details>
+
+<details><summary>B1 answer (2 citations)</summary>
+
+The evaluation uses 14 video streams spanning traffic cameras, surveillance cameras, and news channels; the named datasets are auburn_c, auburn_r, bellevue_d, bellevue_r, bend, jackson_h, jackson_ts, coral, lausanne, oxford, sittard, cnn, foxnews, and msnbc. auburn_c is a traffic video showing a commercial area intersection in the City of Auburn.
+
+</details>
+
+<details><summary>B2 answer (1 citations)</summary>
+
+The provided material identifies Section 4.2 as covering video-specific specialization of the ingest CNN. The speaker's poster number is not found in the provided material.
+
+</details>
+
+<details><summary>B3 answer (3 citations)</summary>
+
+The coral dataset is a surveillance video of an aquarium. The speaker says NoScope takes five hours to query a month-long video.
+
+</details>
+
+<details><summary>B4 answer (4 citations)</summary>
+
+The paper cites Viola et al. [88] as the earliest work that cascades a series of classifiers from the simplest to the most complicated to quickly disregard regions in an image. In the talk, the speaker describes Focus at a high level as querying large video datasets with low latency and low cost.
+
+</details>
+
+<details><summary>B5 answer (4 citations)</summary>
+
+The three configurations are Focus-Opt-Query, Focus-Balance, and Focus-Opt-Ingest. The speaker says home cameras suit the ingest-cost-optimized option, i.e. Focus-Opt-Ingest.
+
+</details>
+
+<details><summary>B6 answer (3 citations)</summary>
+
+The deck lists further paper content as characterization of real-world videos, implementation details, other applications, processing large and growing data with CNNs such as audio, bioinformatics, and geoinformatics, more results, trade-off alternatives, and sensitivity studies. The paper reports that on moving cameras, Focus uses Tiny YOLO as the ingest-time CNN, achieves 49× average query-latency speedup over NoScope, and has ingest cost 5× cheaper than Ingest-heavy.
+
+</details>
+
+<details><summary>B7 answer (3 citations)</summary>
+
+The ground-truth CNN is YOLOv2. The speaker says the compared cheap CNNs are three ResNet18-based architectures created by removing different numbers of layers.
+
+</details>
+
+<details><summary>B8 answer (2 citations)</summary>
+
+The takeaways slide says that querying objects in massive videos is challenging, the approach is low-latency query with low-cost ingest, and the key results are 57X cheaper than ingest-time-only solutions and 162X faster than state-of-the-art query-time-only solutions. The speaker adds that their poster is number 47 and invites people to come see it.
+
+</details>
+
+<details><summary>C1 answer (4 citations)</summary>
+
+He is comparing the three CheapCNN curves in Figure 5: ResNet18, ResNet18 with 4 fewer layers, and ResNet18 with 6 fewer layers. The point is that, at the same K, the cheaper models’ curves lie lower in recall than the less-cheap model’s curve.
+
+</details>
+
+<details><summary>C2 answer (4 citations)</summary>
+
+"The small top-k results" refers to using a small value of K, meaning the top K object classes output by the cheap CNN. On the chart, K is the number of top-ranked cheap-CNN results considered when measuring whether the expensive CNN’s best result is included.
+
+</details>
+
+<details><summary>C3 answer (2 citations)</summary>
+
+At ingest time, Focus generates a top-K index as the output of its ingest-time processing. The ingest processor also generates the approximate index for the input video stream.
+
+</details>
+
+<details><summary>C4 answer (1 citations)</summary>
+
+He is referring to the query-time part of the Focus architecture, shown as the right part of Figure 4. In that part, when a user queries for a class, Focus retrieves matching clusters from the top-K index, runs cluster centroids through GT-CNN, and returns frames from clusters classified as that class.
+
+</details>
+
+<details><summary>C5 answer (3 citations)</summary>
+
+On the ingest-cost versus query-latency plot, Focus is compared against the Ingest-heavy and NoScope baselines: its ingest cost is measured relative to Ingest-heavy, and its query latency is measured relative to NoScope. In the speaker’s summary, Focus is on average 57× cheaper than Ingest-heavy and 162× faster in query latency than NoScope.
+
+</details>
+
+<details><summary>C6 answer (4 citations)</summary>
+
+The two baselines marked on the ingest-cost versus query-latency plot are Ingest-heavy and NoScope. Ingest-heavy is plotted with ingest cost normalized to the cost of ingesting all video frames with GT-CNN (YOLOv2), while query latency is normalized to the query latency using NoScope; the talk also states Ingest-heavy is about $380/month/stream and NoScope has no ingest cost but about five hours to query a month-long video.
+
+</details>
+
+<details><summary>C7 answer (4 citations)</summary>
+
+He means the two chart series labeled “Approximate indexing” and “+Clustering.” The slide and transcript say both techniques are important to Focus’s performance.
+
+</details>
+
+
+**Grounding** (`generation.strict=False`): hallucination rate **4.0%** (3 unsupported of 75 claims) · citation correctness **89.0%** (cited units matching a gold locator, by file+location) · 1 answer(s) abstained · 0 claim(s) cited nothing
+
+
+LLM cost (this run):
+
+- `gpt-5.4-2026-03-05`: 25 calls (0 cached) · 46,236 in / 4,796 out · $0.1875
+- `gpt-4.1-mini-2025-04-14`: 234 calls (0 cached) · 101,829 in / 18,213 out · $0.0699
+- run total: $0.2574
+- cumulative (all recorded runs, `reports/llm_ledger.jsonl`): 15,292 calls · 8,924,094 in / 500,734 out · $10.02 · 5 row(s) unpriced · 4,719,273 tokens estimated
+
+## 2026-09-22 22:09 — phase6 grounded generation, strict ON (25 verified questions)
+
+mode=`linkrag` · index=`data/processed/index` · embedder=`BAAI/bge-m3` · units=209 · top_k=8
+
+corpus manifest `2f3b35f27e86caf8` (209 units) · gold stamped `2f3b35f27e86caf8`
+
+| Q | type | modality distribution | expanded | gold evidence | gold missed | claims (unsupported) |
+|---|---|---|---:|---|---|---|
+| Q1 | `single_modality` | text 5/8, figure 1/8, audio 2/8 | 2 | **no** | osdi18_slides_hsieh.pdf p.5, osdi18-hsieh.pdf p.17, osdi18-hsieh.pdf p.17 | 2 (1 unsupported) |
+| Q2 | `audio_only` | text 2/8, figure 1/8, audio 5/8 | 2 | **yes** | — | 2 |
+| Q3 | `paper_only` | text 7/8, figure 1/8 | 1 | **partial** | osdi18_slides_hsieh.pdf p.1, osdi18_slides_hsieh.pdf p.27, osdi18_slides_hsieh.pdf p.1, osdi18_slides_hsieh.pdf p.27, hsieh.mp3 0.0-30.0s | 2 |
+| Q4 | `single_modality` | text 3/8, figure 2/8, audio 3/8 | 2 | **partial** | osdi18-hsieh.pdf p.3, osdi18-hsieh.pdf p.3, osdi18-hsieh.pdf p.3 | 4 |
+| A1 | `slides_only` | text 3/8, figure 1/8, audio 4/8 | 2 | **no** | osdi18_slides_hsieh.pdf p.25 | 5 |
+| A2 | `slides_only` | text 5/8, figure 2/8, audio 1/8 | 2 | **no** | osdi18_slides_hsieh.pdf p.12, osdi18_slides_hsieh.pdf p.12 | 1 |
+| A4 | `audio_only` | text 5/8, figure 1/8, audio 2/8 | 2 | **yes** | — | 2 |
+| A5 | `audio_only` | text 2/8, figure 1/8, audio 5/8 | 2 | **no** | hsieh.mp3 1051.9-1080.7s | 2 |
+| A7 | `paper_only` | text 6/8, figure 2/8 | 2 | **no** | osdi18-hsieh.pdf p.11, osdi18-hsieh.pdf p.11 | 0/2 |
+| A8 | `single_modality` | text 4/8, figure 2/8, audio 2/8 | 1 | **yes** | — | 3 |
+| B1 | `paper_only` | text 6/8, figure 2/8 | 2 | **partial** | osdi18_slides_hsieh.pdf p.23 | 3 |
+| B2 | `cross_modal_split` | text 5/8, figure 2/8, audio 1/8 | 2 | **partial** | hsieh.mp3 1109.7-1138.3s | 1 |
+| B3 | `paper_only` | text 4/8, figure 1/8, audio 3/8 | 2 | **yes** | — | 2 |
+| B4 | `cross_modal_split` | text 5/8, figure 2/8, audio 1/8 | 2 | **partial** | hsieh.mp3 175.6-205.2s | 2 |
+| B5 | `single_modality` | text 3/8, figure 3/8, audio 2/8 | 2 | **yes** | — | 3 |
+| B6 | `cross_modal_split` | text 6/8, figure 2/8 | 2 | **yes** | — | 10 |
+| B7 | `audio_only` | text 3/8, figure 1/8, audio 4/8 | 2 | **partial** | osdi18-hsieh.pdf p.11, osdi18-hsieh.pdf p.11 | 3 |
+| B8 | `audio_only` | text 3/8, figure 2/8, audio 3/8 | 2 | **yes** | — | 6 |
+| C1 | `single_modality` | text 5/8, figure 1/8, audio 2/8 | 2 | **yes** | — | 2 |
+| C2 | `single_modality` | text 4/8, figure 2/8, audio 2/8 | 2 | **partial** | osdi18_slides_hsieh.pdf p.13, hsieh.mp3 506.3-536.3s | 3 |
+| C3 | `audio_only` | text 6/8, figure 2/8 | 2 | **no** | osdi18_slides_hsieh.pdf p.14, hsieh.mp3 563.8-580.1s | 2 |
+| C4 | `single_modality` | text 2/8, figure 3/8, audio 3/8 | 3 | **partial** | osdi18_slides_hsieh.pdf p.14, osdi18_slides_hsieh.pdf p.14 | 3 |
+| C5 | `cross_modal_deictic` | text 5/8, figure 2/8, audio 1/8 | 2 | **partial** | osdi18_slides_hsieh.pdf p.22, osdi18_slides_hsieh.pdf p.22, osdi18_slides_hsieh.pdf p.22 | 3 |
+| C6 | `slides_only` | text 3/8, figure 3/8, audio 2/8 | 2 | **partial** | osdi18_slides_hsieh.pdf p.22 | 4 |
+| C7 | `single_modality` | text 4/8, figure 2/8, audio 2/8 | 1 | **yes** | — | 3 |
+
+<details><summary>Q1 answer (1 citations)</summary>
+
+The talk cites NoScope as the state-of-the-art query-time approach. The provided material identifies it as a recent state-of-the-art querying system but does not state its publication venue or year.
+
+</details>
+
+<details><summary>Q2 answer (2 citations)</summary>
+
+In the Q&A, the speaker says they currently generate cheap CNNs by starting with a simple CNN, ResNet18, and removing layers one by one to create a set of cheaper CNNs. The speaker also says this process is not automatic; they do not have an automatic way to generate cheap CNNs from the architecture of the expensive ones.
+
+</details>
+
+<details><summary>Q3 answer (1 citations)</summary>
+
+The authors of Focus are Kevin Hsieh, Ganesh Ananthanarayanan, Peter Bodik, Shivaram Venkataraman, Paramvir Bahl, Matthai Philipose, Phillip B. Gibbons, and Onur Mutlu. Their institutions are Carnegie Mellon University, Microsoft, University of Wisconsin, and ETH Zürich.
+
+</details>
+
+<details><summary>Q4 answer (3 citations)</summary>
+
+The plot labels the configuration options as Optimize for Query Latency, Balance, and Optimize for Ingest Cost. The speaker says they would select the Balance option, while noting that low-latency applications might choose the higher-cost lower-latency option and applications like home cameras might optimize for ingest cost instead.
+
+</details>
+
+<details><summary>A1 answer (2 citations)</summary>
+
+The deck says the paper contains a lot more beyond the talk’s demo and summary. It specifically highlights key quantitative results and the approach of low-latency query with low-cost ingest for querying objects in massive videos.
+
+</details>
+
+<details><summary>A2 answer (1 citations)</summary>
+
+In the top-K example, the cheap CNN’s third output is truck. The provided material does not name any other object classes shown in that example.
+
+</details>
+
+<details><summary>A4 answer (2 citations)</summary>
+
+The speaker directs the audience to poster number 47. A slide in the same material lists the poster as #41, indicating a discrepancy between the audio and slide text.
+
+</details>
+
+<details><summary>A5 answer (4 citations)</summary>
+
+In the live demo, the baseline query was described as taking five hours to query a month-long video. The video being queried was month-long.
+
+</details>
+
+<details><summary>A7 answer (0 citations)</summary>
+
+not found in the provided material
+
+</details>
+
+<details><summary>A8 answer (3 citations)</summary>
+
+A Pareto-optimal parameter setting is one on the Pareto boundary, where Focus cannot improve ingest cost or query latency without worsening the other metric. Focus discards non-Pareto settings because some Pareto-boundary setting is better than each non-Pareto setting in both metrics.
+
+</details>
+
+<details><summary>B1 answer (2 citations)</summary>
+
+The evaluation uses 14 video streams spanning traffic cameras, surveillance cameras, and news channels; the named datasets are auburn_c, auburn_r, bellevue_d, bellevue_r, bend, jackson_h, jackson_ts, coral, lausanne, oxford, sittard, cnn, foxnews, and msnbc. The auburn_c dataset is a traffic video showing a commercial area intersection in the City of Auburn.
+
+</details>
+
+<details><summary>B2 answer (1 citations)</summary>
+
+The provided material identifies Section 4.2 as covering video-specific specialization of the ingest CNN. The speaker's poster number is not found in the provided material.
+
+</details>
+
+<details><summary>B3 answer (3 citations)</summary>
+
+The coral dataset is a surveillance video of an aquarium. The speaker says NoScope takes five hours to query a month-long video.
+
+</details>
+
+<details><summary>B4 answer (4 citations)</summary>
+
+The paper cites Viola et al. [88] as the earliest work that cascades a series of classifiers from the simplest to the most complicated to quickly disregard regions in an image. In the talk, the speaker describes Focus at a high level as querying large video datasets with low latency and low cost.
+
+</details>
+
+<details><summary>B5 answer (4 citations)</summary>
+
+The three configurations are Focus-Opt-Query, Focus-Balance, and Focus-Opt-Ingest. The speaker says home cameras suit the ingest-cost-optimized option, i.e. Focus-Opt-Ingest.
+
+</details>
+
+<details><summary>B6 answer (3 citations)</summary>
+
+The deck lists further paper content as characterization of real-world videos, implementation details, other applications, processing large and growing data with CNNs such as audio, bioinformatics, and geoinformatics, more results, trade-off alternatives, and sensitivity studies. The paper reports that on moving cameras, Focus uses Tiny YOLO as the ingest-time CNN, achieves 49× average query-latency speedup over NoScope, and has ingest cost 5× cheaper than Ingest-heavy.
+
+</details>
+
+<details><summary>B7 answer (4 citations)</summary>
+
+The ground-truth CNN is YOLOv2. The speaker says the cheap CNNs are three different ResNet18 architectures created by removing different numbers of layers, and that these cheap CNNs are about 5 to 40–50 times faster than the expensive CNNs.
+
+</details>
+
+<details><summary>B8 answer (2 citations)</summary>
+
+The takeaways slide says that querying objects in massive videos is challenging, and that the approach is low-latency query with low-cost ingest. It also reports key results of 57X (up to 92X) cheaper than ingest-time-only solutions and 162X (up to 607X) faster than state-of-the-art query-time-only solutions; the speaker adds that their poster is number 47 and invites people to come see it.
+
+</details>
+
+<details><summary>C1 answer (3 citations)</summary>
+
+He is comparing the three model curves on Figure 5: ResNet18, ResNet18 with 4 fewer layers, and ResNet18 with 6 fewer layers. The comparison is that, at the same K, the cheaper models have lower recall than the less-cheap ones.
+
+</details>
+
+<details><summary>C2 answer (3 citations)</summary>
+
+"The small top-k results" refers to taking the top K object classes output by the cheap CNN, where K is a small value. On the shown example chart, this means the expensive CNN’s best result appears within the cheap CNN’s top-ranked outputs, such as the truck appearing at rank 3.
+
+</details>
+
+<details><summary>C3 answer (2 citations)</summary>
+
+At ingest time, Focus generates a top-K index as the output of its ingest-time processing of videos. The ingest processor also generates the approximate index for the input video stream.
+
+</details>
+
+<details><summary>C4 answer (1 citations)</summary>
+
+He is referring to the query-time part of the Focus architecture, shown as the right part of Figure 4. In that part, when a user queries for a class, the system retrieves matching clusters from the top-K index, runs cluster centroids through GT-CNN, and returns frames from clusters classified as that class.
+
+</details>
+
+<details><summary>C5 answer (2 citations)</summary>
+
+On the ingest-cost versus query-latency plot, Focus sits between the baselines: its ingest cost is compared against Ingest-heavy and Ingest-NoScope, while its query latency is compared against NoScope. In the speaker’s summary, Focus is on average 57× cheaper than Ingest-heavy and 162× faster in query latency than NoScope.
+
+</details>
+
+<details><summary>C6 answer (4 citations)</summary>
+
+The two baselines marked on the ingest-cost versus query-latency plot are Ingest-heavy and NoScope. The plot uses ingest cost on one axis and query latency on the other; Ingest-heavy is described as taking $380 per month per stream with very low query latency, while NoScope is described as having no ingest cost and taking five hours to query a month-long video.
+
+</details>
+
+<details><summary>C7 answer (4 citations)</summary>
+
+He means the two chart series labeled “Approximate indexing” and “+Clustering.” The slide and narration say these are the two components whose combination drives Focus’s performance.
+
+</details>
+
+
+**Grounding** (`generation.strict=True`): hallucination rate **1.4%** (1 unsupported of 73 claims) · citation correctness **87.6%** (cited units matching a gold locator, by file+location) · 1 answer(s) abstained · 0 claim(s) cited nothing
+
+
+LLM cost (this run):
+
+- `gpt-5.4-2026-03-05`: 25 calls (0 cached) · 46,236 in / 4,708 out · $0.1862
+- `gpt-4.1-mini-2025-04-14`: 228 calls (0 cached) · 97,494 in / 17,852 out · $0.0676
+- run total: $0.2538
+- cumulative (all recorded runs, `reports/llm_ledger.jsonl`): 15,545 calls · 9,067,824 in / 523,294 out · $10.27 · 5 row(s) unpriced · 4,719,273 tokens estimated
+
+## 2026-09-22 22:13 — phase6 grounded generation, strict OFF, baseline retrieval
+
+mode=`baseline` · index=`data/processed/index` · embedder=`BAAI/bge-m3` · units=209 · top_k=8
+
+corpus manifest `2f3b35f27e86caf8` (209 units) · gold stamped `2f3b35f27e86caf8`
+
+| Q | type | modality distribution | expanded | gold evidence | gold missed | claims (unsupported) |
+|---|---|---|---:|---|---|---|
+| Q1 | `single_modality` | text 6/8, audio 2/8 | 0 | **no** | osdi18_slides_hsieh.pdf p.5, osdi18-hsieh.pdf p.17, osdi18-hsieh.pdf p.17 | 2 (1 unsupported) |
+| Q2 | `audio_only` | text 2/8, audio 6/8 | 0 | **yes** | — | 2 |
+| Q3 | `paper_only` | 8/8 text | 0 | **partial** | osdi18_slides_hsieh.pdf p.1, osdi18_slides_hsieh.pdf p.27, osdi18_slides_hsieh.pdf p.1, osdi18_slides_hsieh.pdf p.27, hsieh.mp3 0.0-30.0s | 2 |
+| Q4 | `single_modality` | text 4/8, audio 4/8 | 0 | **partial** | osdi18_slides_hsieh.pdf p.20, osdi18-hsieh.pdf p.3, osdi18-hsieh.pdf p.3, osdi18-hsieh.pdf p.3 | 2 |
+| A1 | `slides_only` | text 4/8, audio 4/8 | 0 | **yes** | — | 7 |
+| A2 | `slides_only` | text 6/8, audio 2/8 | 0 | **no** | osdi18_slides_hsieh.pdf p.12, osdi18_slides_hsieh.pdf p.12 | 3 |
+| A4 | `audio_only` | text 5/8, audio 3/8 | 0 | **yes** | — | 1 |
+| A5 | `audio_only` | text 3/8, audio 5/8 | 0 | **no** | hsieh.mp3 1051.9-1080.7s | 2 (1 unsupported) |
+| A7 | `paper_only` | 8/8 text | 0 | **no** | osdi18-hsieh.pdf p.11, osdi18-hsieh.pdf p.11 | 0/2 |
+| A8 | `single_modality` | text 4/8, figure 1/8, audio 3/8 | 0 | **yes** | — | 3 (1 unsupported) |
+| B1 | `paper_only` | 8/8 text | 0 | **partial** | osdi18_slides_hsieh.pdf p.23 | 5 (1 unsupported) |
+| B2 | `cross_modal_split` | text 7/8, audio 1/8 | 0 | **partial** | hsieh.mp3 1109.7-1138.3s | 2 |
+| B3 | `paper_only` | text 5/8, audio 3/8 | 0 | **yes** | — | 3 (1 unsupported) |
+| B4 | `cross_modal_split` | text 7/8, audio 1/8 | 0 | **partial** | hsieh.mp3 175.6-205.2s | 3 |
+| B5 | `single_modality` | text 4/8, figure 1/8, audio 3/8 | 0 | **yes** | — | 2 |
+| B6 | `cross_modal_split` | text 7/8, audio 1/8 | 0 | **yes** | — | 9 |
+| B7 | `audio_only` | text 4/8, audio 4/8 | 0 | **partial** | osdi18-hsieh.pdf p.11, osdi18-hsieh.pdf p.11 | 3 |
+| B8 | `audio_only` | text 4/8, audio 4/8 | 0 | **yes** | — | 6 |
+| C1 | `single_modality` | text 6/8, audio 2/8 | 0 | **partial** | osdi18_slides_hsieh.pdf p.13, osdi18_slides_hsieh.pdf p.13 | 2 |
+| C2 | `single_modality` | text 5/8, figure 1/8, audio 2/8 | 0 | **partial** | osdi18_slides_hsieh.pdf p.13, hsieh.mp3 506.3-536.3s | 3 |
+| C3 | `audio_only` | 8/8 text | 0 | **no** | osdi18_slides_hsieh.pdf p.14, hsieh.mp3 563.8-580.1s | 2 |
+| C4 | `single_modality` | text 3/8, audio 5/8 | 0 | **partial** | osdi18_slides_hsieh.pdf p.14, osdi18_slides_hsieh.pdf p.14 | 2 |
+| C5 | `cross_modal_deictic` | text 6/8, audio 2/8 | 0 | **partial** | osdi18_slides_hsieh.pdf p.22, osdi18_slides_hsieh.pdf p.22, osdi18_slides_hsieh.pdf p.22 | 3 |
+| C6 | `slides_only` | text 5/8, figure 1/8, audio 2/8 | 0 | **partial** | osdi18_slides_hsieh.pdf p.22 | 3 |
+| C7 | `single_modality` | text 5/8, figure 1/8, audio 2/8 | 0 | **yes** | — | 3 |
+
+<details><summary>Q1 answer (4 citations)</summary>
+
+The talk cites NoScope as the state-of-the-art query-time approach. The provided material identifies it as a recent state-of-the-art querying system, but does not state its publication venue or year.
+
+</details>
+
+<details><summary>Q2 answer (2 citations)</summary>
+
+In the Q&A, the speaker says they generate cheap CNNs by starting with a simple CNN, ResNet18, and removing layers one by one to create a set of cheaper CNNs. The speaker also says this process is not automatic, and they do not have an automatic way to generate cheap CNNs from the architecture of the expensive ones.
+
+</details>
+
+<details><summary>Q3 answer (1 citations)</summary>
+
+The authors of Focus are Kevin Hsieh, Ganesh Ananthanarayanan, Peter Bodik, Shivaram Venkataraman, Paramvir Bahl, Matthai Philipose, Phillip B. Gibbons, and Onur Mutlu. Their listed institutions are Carnegie Mellon University, Microsoft, University of Wisconsin, and ETH Zürich.
+
+</details>
+
+<details><summary>Q4 answer (2 citations)</summary>
+
+The plot labels the configuration options as Balance, Opt-Query, and Opt-Ingest. The speaker says they can select the option that balances the two metrics, i.e., Balance.
+
+</details>
+
+<details><summary>A1 answer (1 citations)</summary>
+
+The deck says the paper includes characterization of real-world videos, implementation details, other applications, more results, trade-off alternatives, and sensitivity studies. It also says the paper covers processing large and growing data with CNNs in domains such as audio, bioinformatics, and geoinformatics.
+
+</details>
+
+<details><summary>A2 answer (2 citations)</summary>
+
+In the example, the expensive CNN’s topmost output is truck, while the cheap CNN’s topmost output is moving van. The cheap CNN’s third output in that example is also truck.
+
+</details>
+
+<details><summary>A4 answer (1 citations)</summary>
+
+The speaker directs the audience to poster number 47.
+
+</details>
+
+<details><summary>A5 answer (2 citations)</summary>
+
+In the live demo, the baseline query was said to take five hours to query a month-long video. The video being queried was month-long.
+
+</details>
+
+<details><summary>A7 answer (0 citations)</summary>
+
+not found in the provided material
+
+</details>
+
+<details><summary>A8 answer (3 citations)</summary>
+
+A Pareto-optimal parameter setting is one on the Pareto boundary, meaning it is a configuration for which one metric cannot be improved without worsening the other. In Focus, the two metrics are ingest cost and query latency, and non-Pareto configurations can be discarded because some Pareto-boundary point is better in both metrics.
+
+</details>
+
+<details><summary>B1 answer (2 citations)</summary>
+
+The evaluated video datasets are 14 video streams spanning traffic cameras, surveillance cameras, and news channels. auburn_c is a traffic video from a static camera, described as a commercial area intersection in the City of Auburn.
+
+</details>
+
+<details><summary>B2 answer (2 citations)</summary>
+
+The provided material identifies “4.2. Video-specific Specialization of Ingest CNN” and notes that parameter setting is jointly described with §4.2 and §4.3, but it does not state any poster number given by the speaker. Video-specific specialization of the ingest CNN is covered in §4.2 of the paper, with related parameter-setting context referring to §4.2 and §4.3.
+
+</details>
+
+<details><summary>B3 answer (2 citations)</summary>
+
+The coral dataset is an aquarium surveillance video downloaded from the NoScope project website. The speaker says NoScope takes five hours to query a month-long video.
+
+</details>
+
+<details><summary>B4 answer (2 citations)</summary>
+
+The paper cites Viola et al. [88] as the earliest work that cascades a series of classifiers from the simplest to the most complicated to quickly disregard regions in an image. In the provided talk excerpt, the speaker does not describe this cascading idea; he only says he will talk about Focus for querying large video datasets with low latency and low cost.
+
+</details>
+
+<details><summary>B5 answer (3 citations)</summary>
+
+The three trade-off configurations are Focus-Opt-Query, Focus-Balance, and Focus-Opt-Ingest. The speaker says home cameras suit the ingest-cost-optimized option, i.e., Focus-Opt-Ingest.
+
+</details>
+
+<details><summary>B6 answer (3 citations)</summary>
+
+The deck lists further paper content as characterization of real-world videos, implementation details, other applications, more results, trade-off alternatives, and sensitivity studies. The paper reports that on moving cameras, Focus uses Tiny YOLO as the ingest-time CNN, achieves a 49× average query-latency speedup over NoScope, and has ingest cost that is 5× cheaper than Ingest-heavy.
+
+</details>
+
+<details><summary>B7 answer (3 citations)</summary>
+
+The ground-truth CNN is an expensive YOLO V2. The cheap CNNs are described as three different ResNet-18 architectures created by removing different numbers of layers, and more generally as compressed and specialized versions with fewer convolutional layers, smaller image sizes, and training for classes specific to each video stream.
+
+</details>
+
+<details><summary>B8 answer (2 citations)</summary>
+
+The takeaways slide says that querying objects in massive videos is challenging, and that the approach is low-latency query with low-cost ingest. It also reports key results of 57X (up to 92X) cheaper than ingest-time-only solutions and 162X (up to 607X) faster than state-of-the-art query-time-only solutions; the speaker adds that their poster is number 47 and invites people to come see it.
+
+</details>
+
+<details><summary>C1 answer (4 citations)</summary>
+
+He is comparing the three CheapCNN curves in Figure 5: ResNet18, ResNet18 with 4 fewer layers, and ResNet18 with 6 fewer layers. The comparison is at the same K, where cheaper models have lower recall than the less-cheap ones.
+
+</details>
+
+<details><summary>C2 answer (4 citations)</summary>
+
+It refers to using a small value of K in the cheap CNN’s top-K output classes. On the chart, K is the number of top class results from the cheap CNN used to index each object, and recall is plotted as K changes.
+
+</details>
+
+<details><summary>C3 answer (2 citations)</summary>
+
+At ingest time, Focus generates a top-K index as the output of its ingest-time processing of videos. The ingest processor also generates the approximate index for the input video stream.
+
+</details>
+
+<details><summary>C4 answer (1 citations)</summary>
+
+He is referring to the query-time part of the Focus architecture, shown as the right part of Figure 4. In that part, when a user queries for a certain class, Focus retrieves matching clusters from the top-K index and runs the cluster centroids through GT-CNN.
+
+</details>
+
+<details><summary>C5 answer (2 citations)</summary>
+
+On the ingest-cost versus query-latency plot, Focus sits between the baselines: the paper compares Focus’ ingest cost against Ingest-heavy and Ingest-NoScope, and compares Focus’ query latency against NoScope. In the talk, the speaker says Focus is on average 57× cheaper than Ingest-heavy and 162× faster in query latency than NoScope.
+
+</details>
+
+<details><summary>C6 answer (3 citations)</summary>
+
+The two baselines marked on the ingest-cost versus query-latency plot are Ingest-heavy and NoScope. Ingest-heavy is plotted with about $380 per month per stream ingest cost and very low query latency, while NoScope is plotted with no ingest cost and about five hours to query a month-long video.
+
+</details>
+
+<details><summary>C7 answer (3 citations)</summary>
+
+He means the two chart series labeled “Approximate indexing” and “+Clustering.” The speaker says query speed is 89× with approximate indexing and 162× when clustering is also included, and concludes both techniques are important.
+
+</details>
+
+
+**Grounding** (`generation.strict=False`): hallucination rate **6.7%** (5 unsupported of 75 claims) · citation correctness **90.6%** (cited units matching a gold locator, by file+location) · 1 answer(s) abstained · 0 claim(s) cited nothing
+
+
+LLM cost (this run):
+
+- `gpt-5.4-2026-03-05`: 25 calls (0 cached) · 55,437 in / 4,606 out · $0.2077
+- `gpt-4.1-mini-2025-04-14`: 237 calls (0 cached) · 102,639 in / 16,445 out · $0.0674
+- run total: $0.2751
+- cumulative (all recorded runs, `reports/llm_ledger.jsonl`): 15,807 calls · 9,225,900 in / 544,345 out · $10.55 · 5 row(s) unpriced · 4,719,273 tokens estimated
+
+
+## Phase 6 — grounded generation, verified claims (2026-09-22/23)
+
+`generate/answer.py` now emits JSON (answer + one claim per checkable fact, each citing
+unit ids), `generate/verify.py` checks every claim against the units it cites with the
+gold-verification entailment primitive (3 runs, majority, quotable span), and
+`generate/citations.py` turns a cited unit into a page crop, a figure image or an audio
+clip. Metrics: **hallucination rate** = unsupported claims / all claims, **citation
+correctness** = cited units matching a gold locator by file+location (never by id).
+
+25 verified pilot01 questions, k=8:
+
+| mode | strict | claims | unsupported | hallucination rate | citation correctness | abstentions |
+|---|---|---:|---:|---:|---:|---:|
+| linkrag | off | 75 | 3 | **4.0 %** | 89.0 % | 1 |
+| linkrag | **on** | 73 | 1 | **1.4 %** | 87.6 % | 1 |
+| baseline | off | 75 | 5 | **6.7 %** | 90.6 % | 1 |
+
+Reading:
+
+- **Link-following lowers the hallucination rate** (4.0 % vs baseline 6.7 %): the
+  expanded set contains the unit a claim needs more often, so fewer claims are asserted
+  past their evidence. Citation correctness is flat (89–91 %) — what changes is whether
+  the cited unit *supports* the claim, not whether it is a gold unit.
+- **`generation.strict` works as designed**: unsupported claims are dropped from the
+  shown answer, taking the rate to 1.4 %, and one answer abstains with "not found in
+  the provided material" in every mode (the question whose gold is a slide the
+  retriever never reaches).
+- **The Q3 case is a named test.** `test_q3_false_author_claim_is_caught_by_claim_level_verification`
+  uses the persisted `hsieh:a42` text — the unit genuinely contains "Saurabh Bakhti from
+  Purdue", so the id-level check passes (asserted in the test), while the claim
+  *"Saurabh Bakshi from Purdue is an author of Focus"* is marked **unsupported**. The
+  Phase-1 failure that motivated claim-level checking cannot recur silently.
+
+⚠️ **The per-cell (mode × rerank) grounding table was not produced.** The run that
+would have written it crashed after the retrieval matrix had printed, left no ledger
+row, and its traceback was lost to an output filter; the credit was exhausted before it
+could be repeated. The renderer is now extracted as `grounding_table()` and covered by
+a test that runs without an API key, so the next attempt fails loudly instead. The
+three per-mode rows above are real and stand.

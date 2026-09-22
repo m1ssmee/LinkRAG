@@ -59,6 +59,23 @@ def gold_ids_for(row: dict, index: Index) -> set[str]:
     return ids
 
 
+def grounding_table(grounding: dict, units: list) -> list[str]:
+    """Per-cell claim-level grounding. Kept out of main() so it can be tested without
+    an API key: the first run of this block crashed after the matrix had printed and
+    left no ledger row, and the traceback was lost to an output filter."""
+    if not grounding:
+        return []
+    md = ["", "### Grounding (claim-level verification of one answer per cell)", "",
+          "| mode | rerank | claims | unsupported | hallucination rate | citation correctness | abstentions |",
+          "|---|---|---:|---:|---:|---:|---:|"]
+    for (mode, method), vs in grounding.items():
+        gold = [g for v in vs for g in v.get("gold_units", [])]
+        md.append(f"| {mode} | {method} | {sum(len(v['claims']) for v in vs)} | "
+                  f"{sum(v['unsupported'] for v in vs)} | {hallucination_rate(vs):.1%} | "
+                  f"{citation_correctness(vs, units, gold):.1%} | {sum(v['abstained'] for v in vs)} |")
+    return md + [""]
+
+
 def prf(retrieved_ids, gold):
     if not gold:
         return float("nan"), float("nan")
@@ -265,17 +282,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {mode:<14} {verdict}")
         md.append(f"- `{mode}`: {verdict}")
 
-    if grounding:
-        all_units = list(index.units)
-        md += ["", "### Grounding (claim-level verification of one answer per cell)", "",
-               "| mode | rerank | claims | unsupported | hallucination rate | citation correctness | abstentions |",
-               "|---|---|---:|---:|---:|---:|---:|"]
-        for (mode, method), vs in grounding.items():
-            gold = [g for v in vs for g in v["gold_units"]]
-            md.append(f"| {mode} | {method} | {sum(len(v['claims']) for v in vs)} | {sum(v['unsupported'] for v in vs)} | "
-                      f"{hallucination_rate(vs):.1%} | {citation_correctness(vs, all_units, gold):.1%} | "
-                      f"{sum(v['abstained'] for v in vs)} |")
-        md.append("")
+    md += grounding_table(grounding, list(index.units))
 
     # per-type breakdown: the table that matters (DESIGN.md 2026-09-21)
     def cell_by_type(bucket, mode, method):

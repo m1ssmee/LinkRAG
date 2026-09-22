@@ -168,3 +168,22 @@ def test_verify_module_reuses_the_gold_entailment_primitive_not_a_copy():
     from linkrag.generate import verify
     assert "from linkrag.eval.verify_gold import entail_unit" in inspect.getsource(verify)
     assert "ENTAIL_PROMPT" not in inspect.getsource(verify), "the prompt must not be duplicated here"
+
+
+def test_compare_retrieval_grounding_table_renders_without_an_api_key():
+    """The per-cell block crashed once after the matrix had already printed, leaving no
+    ledger row and no table. Exercised here with stub verdicts so it cannot regress."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("cmp_retr", "scripts/compare_retrieval.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    units = [_audio()]
+    verdict = {"claims": [{"claim": "c", "unit_ids": ["hsieh:a42"], "verdict": "supported"},
+                          {"claim": "d", "unit_ids": ["hsieh:a42"], "verdict": "unsupported"}],
+               "unsupported": 1, "weak": 0, "supported": 1, "abstained": False,
+               "gold_units": [{"source": "hsieh.mp3", "start_s": 1100.0, "end_s": 1150.0}]}
+    out = m.grounding_table({("linkrag", "complementarity"): [verdict]}, units)
+    assert any("Grounding (claim-level" in line for line in out)
+    row = [line for line in out if line.startswith("| linkrag |")][0]
+    assert "50.0%" in row and "100.0%" in row        # 1 of 2 claims unsupported; both citations on gold
+    assert m.grounding_table({}, units) == []
