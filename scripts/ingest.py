@@ -56,7 +56,8 @@ def main(argv: list[str] | None = None) -> int:
     with stage_timer("index.save", dir=out):
         index.save(out)
 
-    manifest = build_manifest(args.files, units)
+    from linkrag.ingest import transcripts_used
+    manifest = build_manifest(args.files, units, derived=transcripts_used())
     manifest_path = write_manifest(manifest, Path(out).parent / MANIFEST_NAME)
 
     by_modality: dict[str, int] = {}

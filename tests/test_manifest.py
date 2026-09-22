@@ -160,3 +160,20 @@ def test_meta_line_is_not_returned_as_a_link(tmp_path: Path) -> None:
                       manifest_hash="h")
     links = load_links(path, expect_manifest="h")
     assert len(links) == 1 and links[0].link_type == "deictic"
+
+
+def test_same_audio_different_transcript_gets_a_different_hash(tmp_path) -> None:
+    """pilot01 and pilot01-w1 index the same three files; only the frozen transcript
+    differs. Without hashing the transcript they collided, so a gold set verified on
+    one would silently pass its manifest check against the other (2026-09-23)."""
+    from linkrag.core import EvidenceUnit
+    audio = tmp_path / "talk.mp3"
+    audio.write_bytes(b"same audio bytes")
+    units = [EvidenceUnit(id="talk:a0", modality="audio", content="x", source_file=str(audio))]
+    t1, t2 = tmp_path / "local.frozen.json", tmp_path / "w1.frozen.json"
+    t1.write_text('{"words": [[0, 1, "ingest"]]}')
+    t2.write_text('{"words": [[0, 1, "interest"]]}')
+    h1 = build_manifest([audio], units, derived=[t1])["hash"]
+    h2 = build_manifest([audio], units, derived=[t2])["hash"]
+    assert h1 != h2
+    assert build_manifest([audio], units, derived=[t1])["hash"] == h1, "same inputs, same hash"

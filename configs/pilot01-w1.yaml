@@ -1,0 +1,279 @@
+# pilot01-w1: the pilot corpus with the whisper-1 transcript, ingested as a NEW
+# candidate through the extended-dataset intake. The frozen pilot01 corpus
+# (data/processed/index, links.jsonl, transcripts/hsieh.frozen.json) is untouched.
+mode: linkrag
+device: cpu
+models:
+  embedding: BAAI/bge-m3
+  whisper: small
+  whisper_compute_type: int8
+  llm:
+    provider: openai
+    model: gpt-5.4-2026-03-05
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.0
+    seed: 20260910
+    max_tokens: 1024
+    timeout_s: 120
+    backend: default
+  llm_backends:
+    colab_openai_compatible:
+      provider: openai_compatible
+      model: qwen2.5:7b-instruct
+      base_url: https://REPLACE-ME.trycloudflare.com/v1
+      api_key_env: COLAB_LLM_KEY
+      temperature: 0.0
+      seed: 20260910
+      max_tokens: 1024
+      timeout_s: 300
+  pricing:
+    gpt-5.4-mini:
+      input_per_m: 0.75
+      output_per_m: 4.5
+    gpt-5.4:
+      input_per_m: 2.5
+      output_per_m: 15.0
+    gpt-5-mini:
+      input_per_m: 0.25
+      output_per_m: 2.0
+    gpt-5:
+      input_per_m: 1.25
+      output_per_m: 10.0
+    gpt-4.1-mini:
+      input_per_m: 0.4
+      output_per_m: 1.6
+    gpt-4.1:
+      input_per_m: 2.0
+      output_per_m: 8.0
+    whisper-1:
+      per_minute: 0.006
+    qwen2.5:
+      input_per_m: 0.0
+      output_per_m: 0.0
+    llama3.1:
+      input_per_m: 0.0
+      output_per_m: 0.0
+ingest:
+  chunk_tokens: 300
+  chunk_overlap_tokens: 60
+  audio_segment_seconds: 30
+  audio_segmentation: sentence
+  min_figure_area_px: 10000
+  figures_dir: data/processed/figures
+  ocr_images: true
+  ocr_figures: true
+  slide_deck_landscape_ratio: 0.6
+  slide_deck_files: {}
+  figures_from_captions: null
+  cluster_deck_figures: true
+  vlm_captions:
+    enabled: false
+    model: llava:7b
+    base_url: http://localhost:11434
+    max_words: 60
+    cache_dir: data/processed/vlm_captions
+    timeout_s: 300
+  asr_backend: local
+  asr_openai:
+    model: whisper-1
+    max_upload_mb: 20
+    chunk_search_s: 30
+    timeout_s: 600
+  asr_vocab_from_slides: true
+  frozen_transcript_dir: data/processed/pilot01-w1/transcripts
+index:
+  backend: numpy
+  normalize_embeddings: true
+  store_dir: data/processed/pilot01-w1/index
+link:
+  align:
+    method: monotonic
+    weights:
+      dense: 0.6
+      bm25: 0.25
+      keyword: 0.15
+    jump_penalty: 0.05
+    skip_penalty: 0.02
+    back_penalty: 0.15
+    max_back: 2
+    start_prior_mu: 0.02
+    flatness_scaling: 0.0
+    min_segment_sim: null
+    relatedness_z: 1.27
+    null_shuffles: 30
+    null_std_floor: 0.002
+    build_groups: false
+    similarity: ours
+    fusion_weight: 0.5
+    min_score: 0.0
+    links_path: data/processed/pilot01-w1/links.jsonl
+  figure_text:
+    weights:
+      reference: 0.3
+      layout: 0.15
+      page: 0.15
+      dense: 0.25
+      overlap: 0.15
+    page_decay: 2.0
+    layout_max_gap_pt: 220.0
+    reference_page_window: 1
+  same_slide:
+    enabled: true
+    score: 1.0
+  deictic:
+    weights:
+      slide: 0.45
+      cue: 0.15
+      dense: 0.2
+      overlap: 0.2
+    object_nouns:
+    - arrow
+    - box
+    - step
+    - line
+    - circle
+    - node
+    - column
+    - row
+    - bar
+    - point
+    - block
+    - region
+    - curve
+    - axis
+    directions:
+    - above
+    - below
+    - on the left
+    - on the right
+    - here
+    - there
+    determiners:
+    - the
+    - this
+    - that
+    tier_weights:
+      1: 1.0
+      2: 0.6
+      3: 0.3
+    visual_terms:
+    - see
+    - seen
+    - show
+    - shows
+    - showing
+    - shown
+    - look
+    - looking
+    - plot
+    - plotted
+    - screen
+    - slide
+    - figure
+    - graph
+    - diagram
+    - arrow
+    - chart
+    - picture
+    - image
+    - axis
+    - curve
+    - table
+    - box
+    - column
+    - row
+    - highlight
+    - highlighted
+    - display
+    - displayed
+    - draw
+    - drawn
+    - point
+    - pointing
+  relatedness:
+    enabled: true
+    runs: 3
+  figure_text_threshold: 0.5
+  deictic_threshold: 0.45
+  deictic_cues:
+  - here
+  - this
+  - that
+  - that one
+  - this one
+  - shown
+  - on the left
+  - on the right
+  - this slide
+  - as you can see
+  - as you see
+  - look at this
+  - over here
+  - right here
+  max_links_per_unit: 8
+retrieve:
+  top_k: 8
+  candidates: 50
+  rrf_k: 60
+  expansion: additive
+  linkrag:
+    k_seed: 5
+    k_final: 8
+    hops: 1
+    link_types:
+    - audio_slide
+    - figure_text
+    - deictic
+    min_link_score: 0.0
+    decay: 0.5
+    normalise_seeds: true
+  rerank:
+    method: complementarity
+    alpha: 0.3
+    beta: 0.2
+    gamma: 0.4
+    mmr_lambda: 0.5
+    cross_encoder: null
+    pool: 20
+    modality_gate: false
+  iterative:
+    rounds: 2
+    k_per_round: 8
+datasets:
+  lectqa_vid:
+    audio_segment_seconds: 15
+    frame_interval_s: 5
+    top_k: 4
+  mavils:
+    repo: data/raw/mavils
+generation:
+  structured: true
+  verify: true
+  strict: false
+  verify_runs: 3
+  citations:
+    media: true
+    dir: data/processed/citations
+dataset:
+  intake:
+    max_deck_to_transcript: 0.65
+    redundancy_k: 8
+    redundancy_runs: 3
+eval:
+  metrics:
+  - answer_accuracy
+  - evidence_precision
+  - evidence_recall
+  - cross_modal_coverage
+  - citation_faithfulness
+  report_both_modes: true
+  judge:
+    provider: openai
+    model: gpt-4.1-mini-2025-04-14
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.0
+    seed: 20260921
+    max_tokens: 1024
+    timeout_s: 120

@@ -99,3 +99,51 @@ def test_pilot01_openai_run_is_on_the_original_timeline():
     assert len(d["chunks"]) == 2, "21.9 MB must split at the 20 MB limit"
     assert d["words"][-1][1] > 1300, "the merged transcript must span the whole 22.9-minute talk"
     assert Path("data/processed/transcripts/hsieh.frozen.json").exists(), "the frozen transcript stays"
+
+
+# ---------------------------------------------- punctuation (pilot01-w1 intake bug)
+
+def test_punctuation_is_restored_from_segment_texts():
+    """whisper-1's word timestamps carry no punctuation, and the sentence splitter cuts
+    on terminal punctuation -- without this the whole talk becomes ONE unit (observed:
+    pilot01-w1 ingested 1 audio unit instead of 51)."""
+    words = [(0.0, .5, "Good"), (.5, 1., "afternoon"), (1., 1.5, "I'm"), (1.5, 2., "sure"),
+             (2., 2.5, "everyone"), (2.5, 3., "wants"), (3., 3.5, "to"), (3.5, 4., "end")]
+    segs = [{"text": " Good afternoon, I'm sure everyone wants to end."}]
+    out = A.restore_punctuation(words, segs)
+    assert [t for _, _, t in out] == ["Good", "afternoon,", "I'm", "sure", "everyone", "wants", "to", "end."]
+    assert [(a, b) for a, b, _ in out] == [(a, b) for a, b, _ in words], "times must not move"
+
+
+def test_punctuation_restore_survives_a_token_mismatch_without_shifting():
+    words = [(0., .5, "top"), (.5, 1., "K"), (1., 1.5, "results")]
+    segs = [{"text": " top-K results."}]                 # one segment token, two words
+    out = A.restore_punctuation(words, segs)
+    assert out[-1][2] == "results." and len(out) == 3
+
+
+def test_no_segments_leaves_words_untouched():
+    words = [(0., .5, "a"), (.5, 1., "b")]
+    assert A.restore_punctuation(words, []) == words
+
+
+def test_both_granularities_are_requested(monkeypatch, tmp_path):
+    sent = {}
+
+    class R:
+        status_code = 200
+
+        def json(self):
+            return {"words": [{"start": 0.0, "end": 1.0, "word": "hi"}],
+                    "segments": [{"text": " Hi."}], "duration": 1.0}
+
+    def fake_post(url, headers=None, files=None, data=None, timeout=None):
+        sent["data"] = data
+        return R()
+    monkeypatch.setattr(A.requests, "post", fake_post)
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    (tmp_path / "c.m4a").write_bytes(b"0")
+    words, info = A.transcribe_chunk(A.Chunk(tmp_path / "c.m4a", 0.0, 1.0), {"models": {"llm": {}}})
+    grans = [v for k, v in sent["data"] if k == "timestamp_granularities[]"]
+    assert set(grans) == {"word", "segment"}
+    assert words[0].text == "Hi."

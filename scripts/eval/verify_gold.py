@@ -36,6 +36,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--reports-dir", default="reports",
                     help="where the .md/.json go (scratch dir for a cost backfill replay)")
     ap.add_argument("--only", default=None, help="comma-separated qids (debugging)")
+    ap.add_argument("--max-cost", type=float, default=10.0, help="stop when uncached spend exceeds this")
     args = ap.parse_args(argv)
 
     setup_logging()
@@ -57,8 +58,13 @@ def main(argv: list[str] | None = None) -> int:
     jcfg = cfg.get("eval", {}).get("judge") or llm
     if jcfg.get("model") == llm.get("model"):
         print("WARNING: eval.judge is the same model as models.llm -- self-grading is lenient")
-    complete = cached_completer(http_completer(llm), Path(args.cache) / mhash / str(llm.get("model")))
-    judge = cached_completer(http_completer(jcfg), Path(args.cache) / mhash / str(jcfg.get("model")))
+    from linkrag.costs import price_for
+    complete = cached_completer(http_completer(llm), Path(args.cache) / mhash / str(llm.get("model")),
+                                max_cost_usd=args.max_cost,
+                                price=price_for(str(llm.get("model")), cfg["models"].get("pricing")))
+    judge = cached_completer(http_completer(jcfg), Path(args.cache) / mhash / str(jcfg.get("model")),
+                             max_cost_usd=args.max_cost,
+                             price=price_for(str(jcfg.get("model")), cfg["models"].get("pricing")))
     deck_files = {Path(u.source_file).name for u in index.units if u.metadata.get("slide_deck")}
     print(f"{len(rows)} questions · corpus {mhash} ({len(index)} units) · deck files {sorted(deck_files)}")
     print(f"answerer {llm.get('model')} · judge {jcfg.get('model')} @ temperature={jcfg.get('temperature')} "

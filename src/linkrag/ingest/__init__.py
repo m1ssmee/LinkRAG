@@ -115,6 +115,12 @@ def dedupe_ids(units: list[EvidenceUnit]) -> list[EvidenceUnit]:
     return units
 
 
+def transcripts_used() -> list[str]:
+    """Frozen transcripts the last ingest read or wrote -- corpus-identifying inputs
+    that are not corpus files, so `build_manifest(..., derived=...)` can hash them."""
+    return list(getattr(ingest_files, "last_transcripts", []))
+
+
 def ingest_files(
     paths: list[str | Path],
     cfg: dict[str, Any] | None = None,
@@ -154,7 +160,14 @@ def ingest_files(
         if prompt:
             log.info("asr vocab from %d document units: %d chars", len(slide_text), len(prompt))
 
-    units += [u for p in audio for u in run(p, asr_prompt=prompt)]
+    from linkrag.ingest.audio import ingest_audio
+    transcripts: list[str] = []
+    for p in audio:
+        units += run(p, asr_prompt=prompt)
+        used = getattr(ingest_audio, "last_transcript", None)
+        if used:
+            transcripts.append(used)
+    ingest_files.last_transcripts = transcripts  # type: ignore[attr-defined]
     if failures:
         # Loud, because a skipped audio file yields an index that looks fine and
         # is missing an entire modality.

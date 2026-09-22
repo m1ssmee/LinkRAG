@@ -239,12 +239,14 @@ def ingest_audio(
     if backend not in ("local", "openai"):
         raise ValueError(f"unknown asr_backend {backend!r}: use 'local' or 'openai'")
     ingest_audio.last_asr_meta = None                  # type: ignore[attr-defined]
+    ingest_audio.last_transcript = None                # type: ignore[attr-defined]
     with stage_timer(
         "ingest.audio", file=path.name, seg=segmentation,
         src="frozen" if transcript else backend,
     ) as t:
         if transcript is not None:
             words = load_frozen_transcript(transcript)
+            ingest_audio.last_transcript = str(transcript)   # type: ignore[attr-defined]
         elif backend == "openai":
             from linkrag.ingest.asr_openai import transcribe, write_transcript
             words, meta = transcribe(path, cfg or {}, prompt=initial_prompt)
@@ -253,6 +255,7 @@ def ingest_audio(
             ingest_audio.last_asr_meta = meta          # type: ignore[attr-defined]
             if freeze_to:
                 write_transcript(words, freeze_to, path, meta)
+                ingest_audio.last_transcript = str(freeze_to)   # type: ignore[attr-defined]
         else:
             segments = transcribe_segments(
                 path, model_size=model_size, device=device, compute_type=compute_type,

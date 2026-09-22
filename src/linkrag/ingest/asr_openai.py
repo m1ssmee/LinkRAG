@@ -30,11 +30,14 @@ from typing import Any
 
 import requests
 
+import re
+
 from linkrag.core import stage_timer
 from linkrag.ingest.audio import Word
 
 TRANSCRIBE_PATH = "/audio/transcriptions"
 SILENCE_WINDOW_S = 0.5          # width of the quiet window we look for at a cut point
+_CORE = re.compile(r"[^\w']+")  # strip punctuation to compare a word with a segment token
 
 
 @dataclass
@@ -151,9 +154,14 @@ def transcribe_chunk(chunk: Chunk, cfg: dict[str, Any], *, prompt: str | None = 
         raise RuntimeError(f"{key_env} is not set (models.llm.api_key_env)")
     model = acfg.get("model", "whisper-1")
 
-    data = {"model": model, "response_format": "verbose_json", "timestamp_granularities[]": "word"}
+    # BOTH granularities: whisper-1's word timestamps carry NO punctuation, and the
+    # sentence splitter downstream cuts on terminal punctuation -- with words alone the
+    # whole talk becomes one segment (found on pilot01-w1, 1 audio unit instead of 51).
+    # The segment texts are punctuated, so the punctuation is re-attached below.
+    data = [("model", model), ("response_format", "verbose_json"),
+            ("timestamp_granularities[]", "word"), ("timestamp_granularities[]", "segment")]
     if prompt:
-        data["prompt"] = prompt[:1000]           # whisper conditions on ~224 tokens
+        data.append(("prompt", prompt[:1000]))   # whisper conditions on ~224 tokens
     with open(chunk.path, "rb") as fh:
         response = requests.post(f"{base}{TRANSCRIBE_PATH}",
                                  headers={"Authorization": f"Bearer {key}"},
@@ -162,9 +170,36 @@ def transcribe_chunk(chunk: Chunk, cfg: dict[str, Any], *, prompt: str | None = 
     if response.status_code != 200:
         raise RuntimeError(f"whisper-1 returned {response.status_code}: {response.text[:300]}")
     body = response.json()
-    words = [Word(float(w["start"]) + chunk.offset_s, float(w["end"]) + chunk.offset_s, str(w["word"]))
-             for w in body.get("words") or []]
-    return words, {"model": model, "duration_s": float(body.get("duration") or chunk.duration_s)}
+    raw = [(float(w["start"]), float(w["end"]), str(w["word"])) for w in body.get("words") or []]
+    punctuated = restore_punctuation(raw, body.get("segments") or [])
+    words = [Word(a + chunk.offset_s, b + chunk.offset_s, t) for a, b, t in punctuated]
+    return words, {"model": model, "duration_s": float(body.get("duration") or chunk.duration_s),
+                   "segments": len(body.get("segments") or [])}
+
+
+def restore_punctuation(words: list[tuple[float, float, str]], segments: list[dict]
+                        ) -> list[tuple[float, float, str]]:
+    """Re-attach the punctuation the word-level response drops.
+
+    The segment texts are the same token sequence *with* punctuation, so walk the two
+    in step: a word adopts the trailing punctuation of the segment token whose
+    alphanumeric core matches it. A mismatch (rare: a hyphenation or a number written
+    differently) skips forward rather than shifting everything after it."""
+    tokens: list[str] = []
+    for seg in segments:
+        tokens.extend(str(seg.get("text", "")).split())
+    if not tokens:
+        return words
+    out, j = [], 0
+    for start, end, word in words:
+        core = _CORE.sub("", word).lower()
+        match = None
+        for k in range(j, min(j + 4, len(tokens))):       # small look-ahead, never a global resync
+            if _CORE.sub("", tokens[k]).lower() == core:
+                match, j = tokens[k], k + 1
+                break
+        out.append((start, end, match if match else word))
+    return out
 
 
 def transcribe(path: str | Path, cfg: dict[str, Any], *, prompt: str | None = None,

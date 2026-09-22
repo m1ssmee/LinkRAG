@@ -33,7 +33,15 @@ def file_digest(path: str | Path, chunk: int = 1 << 20) -> str:
     return digest.hexdigest()
 
 
-def build_manifest(paths: Sequence[str | Path], units: Sequence[EvidenceUnit]) -> dict[str, Any]:
+def build_manifest(paths: Sequence[str | Path], units: Sequence[EvidenceUnit],
+                   derived: Sequence[str | Path] = ()) -> dict[str, Any]:
+    """`derived`: files that are not corpus sources but change what was indexed --
+    a frozen transcript above all. Two corpora over the SAME audio with DIFFERENT
+    transcripts must not share a hash: pilot01 and pilot01-w1 did, until this was
+    added (2026-09-23), which would have let a gold set verified on one silently
+    pass its manifest check against the other.
+    """
+
     by_source: dict[str, Counter] = {}
     for unit in units:
         by_source.setdefault(Path(unit.source_file).name, Counter())[unit.modality] += 1
@@ -50,8 +58,15 @@ def build_manifest(paths: Sequence[str | Path], units: Sequence[EvidenceUnit]) -
             "units": dict(sorted(by_source.get(p.name, Counter()).items())),
         })
 
+    derived_files = []
+    for path in sorted({str(p) for p in derived}):
+        p = Path(path)
+        if p.exists():
+            derived_files.append({"name": p.name, "sha256": file_digest(p), "role": "frozen_transcript"})
+
     manifest: dict[str, Any] = {
         "files": files,
+        "derived": derived_files,
         "total_units": len(units),
         "units_by_modality": dict(sorted(Counter(u.modality for u in units).items())),
         "created_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
