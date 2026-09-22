@@ -167,7 +167,30 @@ explicit instruction.
      Decarbonization, but on the tune half it lowers F1 (0.478 vs 0.484) → off; test
      0.462 vs 0.461. The Decarbonization gap itself was an input effect (text layer
      vs page OCR: 0.21 → 0.44, 0.55 at σ = 0.2), not a DP effect.
-7. **Extended-dataset selection criterion** (priority vi): **low redundancy**
+7. **The file-pair relatedness gate works on unrelated pairs and fails on
+   topical neighbours.** (`align.relatedness_z`, `results/external/mavils_gate_v2.md`.)
+   Penalised DP objective vs a 30-shuffle slide-order null, 30-second windows:
+   on 380 unrelated MaViLS audio × deck pairs the z distribution is median −0.09,
+   95th percentile 1.26; at z = 1.27 (the default, set as the smallest z with
+   ≤ 5 % false acceptance) it accepts 4.7 % of unrelated pairs and rejects 15 % of
+   related ones — the low-F1 ones (ρ(z, F1) = 0.56), plus ML for health, which is
+   aligned correctly (F1 0.56) and rejected for a cause not yet confirmed. The
+   segments-per-slide hypothesis was tested and **rejected**
+   (`results/external/mavils_gate_v3.md`): z does not rise with finer transcript
+   granularity — it falls (pooled ρ(z, n/m) = −0.31), and the three rejects stay
+   rejected at 30 s, 15 s and sentence level — so no adaptive re-windowing was added.
+   30-second windows are the gate's best operating granularity.
+   **Limitation:** the false acceptances are *topical neighbours* — Solar resource
+   audio × Climate policies deck scores z = 3.5, Physics × Climate policies 3.3 —
+   because a talk on a neighbouring subject does produce a weakly monotone match
+   against a related-topic deck. The gate separates "about this deck" from "about
+   nothing here"; it cannot separate two decks on the same subject. On an extended
+   dataset drawn from one course (several lectures, several decks) this is exactly
+   the confusion that will occur, so audio → deck pairing there must come from
+   metadata (which lecture the deck belongs to), with the gate as a check, not as
+   the pairing mechanism. Negative control (pilot01 audio × unrelated deck): 0
+   cross-file links (`reports/relatedness_gate.md`).
+8. **Extended-dataset selection criterion** (priority vi): **low redundancy**
    (measure it with `scripts/dataset/redundancy.py` before ingesting; a candidate
    with transcript→deck above pilot01's number is rejected), **diagram-heavy decks**
    (figures that carry facts the text does not), and **a speaker who points**

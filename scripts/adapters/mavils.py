@@ -925,9 +925,86 @@ def cmd_gate(args, cfg, encoder) -> int:
     return 0
 
 
+def cmd_gate_gran(args, cfg, encoder) -> int:
+    """Segments-per-slide hypothesis: z of the 20 related pairs at 30 s, 15 s and sentence
+    granularity (30-shuffle null), with n/m; rho(z, n/m)."""
+    from scipy.stats import spearmanr
+    a = cfg["link"]["align"]
+    floor = float(a.get("null_std_floor", 0.0))
+    figures_dir = Path(args.figures_dir)
+    dp = lambda S: align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
+                                   back_penalty=a["back_penalty"], max_back=a["max_back"],
+                                   start_prior_mu=a.get("start_prior_mu", 0.0))
+    gate = lambda S: relatedness_gate(S, dp, shuffles=int(args.shuffles), z=float(a["relatedness_z"]),
+                                      jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
+                                      back_penalty=a["back_penalty"], null_std_floor=floor)
+    stems = sorted(LECTURES)
+    name = lambda s_: LECTURES[s_][1]
+    emb_cache = CACHE / "emb"
+    grans = [(30.0, "w30"), (15.0, "w15"), (0.0, "sentence")]
+    res: dict[str, dict[str, tuple[float, int, int]]] = {s_: {} for s_ in stems}
+    for stem in stems:
+        df = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{stem}.xlsx")
+        sl, _ = slide_units(stem, "ocr", figures_dir)
+        sv_path = emb_cache / f"{stem}.s.npy"
+        if not sv_path.exists():
+            np.save(sv_path, np.asarray(encoder([u.content for u in sl]), dtype="float32"))
+        sv = np.load(sv_path)
+        for w, tag in grans:
+            units, _ = window_units(df, stem, w) if w else sentence_units(df, stem)
+            av_path = emb_cache / f"{stem}.{tag}.npy"
+            if not av_path.exists():
+                np.save(av_path, np.asarray(encoder([u.content for u in units]), dtype="float32"))
+            S = similarity_matrix(units, sl, encoder=encoder, w_dense=a["weights"]["dense"], w_bm25=a["weights"]["bm25"],
+                                  w_keyword=a["weights"]["keyword"], a_vec=np.load(av_path), s_vec=sv)
+            g = gate(S)
+            res[stem][tag] = (g["z"], S.shape[0], S.shape[1])
+        print(f"{name(stem):<20} " + "  ".join(f"{tag}: z={res[stem][tag][0]:5.1f} n/m={res[stem][tag][1] / res[stem][tag][2]:5.1f}" for _, tag in grans))
+    zs, ratios = [], []
+    for stem in stems:
+        for _, tag in grans:
+            z_, n, m = res[stem][tag]
+            zs.append(z_); ratios.append(n / m)
+    rho_all, p_all = spearmanr(zs, ratios)
+    per_gran = {tag: spearmanr([res[s_][tag][0] for s_ in stems], [res[s_][tag][1] / res[s_][tag][2] for s_ in stems]) for _, tag in grans}
+    thr = float(a["relatedness_z"])
+    L = ["# Gate v3 — segments-per-slide hypothesis (20 related MaViLS pairs)", "",
+         f"z at three transcript granularities, {args.shuffles}-shuffle null, threshold z = {thr} (`align.relatedness_z`). "
+         "n = transcript segments, m = slides. Hypothesis under test: low n/m (few segments per slide) → low z.", "",
+         "| lecture | z 30 s | n/m | z 15 s | n/m | z sentence | n/m | rejected at (30 s / 15 s / sentence) |",
+         "|---|---:|---:|---:|---:|---:|---:|---|"]
+    for stem in stems:
+        cells = []
+        for _, tag in grans:
+            z_, n, m = res[stem][tag]
+            cells += [f"{z_:.1f}", f"{n / m:.1f}"]
+        flags = " / ".join("✗" if res[stem][tag][0] < thr else "✓" for _, tag in grans)
+        L.append(f"| {name(stem)} | " + " | ".join(cells) + f" | {flags} |")
+    fr = {tag: sum(res[s_][tag][0] < thr for s_ in stems) for _, tag in grans}
+    L += ["", f"False rejections at z = {thr}: 30 s {fr['w30']}/20 · 15 s {fr['w15']}/20 · sentence {fr['sentence']}/20.", "",
+          f"Spearman ρ(z, n/m) pooled over the 60 (lecture, granularity) points: **{rho_all:.2f}** (p = {p_all:.3f}). "
+          "Within a granularity: " + "; ".join(f"{tag} ρ = {per_gran[tag][0]:.2f} (p = {per_gran[tag][1]:.2f})" for _, tag in grans) + ".", ""]
+    movers = ["ML_for_health_MIT", "image_processing", "sensory_systems"]
+    L += ["The three 30-second rejects:", ""]
+    for stem in movers:
+        L.append(f"- {name(stem)}: " + ", ".join(f"{tag} z = {res[stem][tag][0]:.1f} (n/m {res[stem][tag][1] / res[stem][tag][2]:.1f})" for _, tag in grans))
+    confirmed = rho_all > 0.3 and p_all < 0.05 and all(res[s_]["sentence"][0] > res[s_]["w30"][0] for s_ in movers[:1])
+    L += ["", ("**Hypothesis confirmed** — z rises with segments per slide; the adaptive re-windowing "
+               "(`align.gate_min_windows_per_slide`) is justified." if confirmed else
+               "**Hypothesis not confirmed** — finer granularity does not raise z for the rejected pairs (and the pooled "
+               "correlation is driven by the granularity change itself, not by per-lecture n/m). No adaptive re-windowing is added; "
+               "`align.gate_min_windows_per_slide` is not introduced."), ""]
+    out = Path(args.out)
+    out.write_text("\n".join(L) + "\n")
+    json.dump({s_: {tag: {"z": v[0], "n": v[1], "m": v[2]} for tag, v in res[s_].items()} for s_ in stems}, open(out.with_suffix(".json"), "w"), indent=1)
+    print("\n".join(L[-12:]))
+    print(f"wrote {out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate"])
+    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran"])
     ap.add_argument("--shuffles", type=int, default=30)
     ap.add_argument("--reuse", action="store_true", help="gate: reuse cached z-scores from the previous run's json")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -941,7 +1018,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.out is None:
         args.out = {"run": "reports/mavils_alignment.md", "study": "reports/mavils_heldout_study.md",
                     "inspect": None, "final": "reports/mavils_final.md", "fused": "reports/mavils_fused.md",
-                    "gate": "results/external/mavils_gate_v2.md"}[args.cmd]
+                    "gate": "results/external/mavils_gate_v2.md", "gate-gran": "results/external/mavils_gate_v3.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
@@ -949,7 +1026,7 @@ def main(argv: list[str] | None = None) -> int:
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
     return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused,
-            "gate": cmd_gate}[args.cmd](args, cfg, encoder)
+            "gate": cmd_gate, "gate-gran": cmd_gate_gran}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":
