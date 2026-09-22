@@ -242,6 +242,11 @@ retrieve:
     mmr_lambda: 0.5              # only used by method: mmr
     cross_encoder: null          # e.g. BAAI/bge-reranker-base; null = retrieval scores
     pool: 20                     # candidates retrieved before reranking down to k
+    # Modality-need gate (2026-09-23, design item): when the pool's evidence is
+    # concentrated in one modality (top-8 share >= 0.75 or score margin >= 0.5), run
+    # complementarity with alpha = 0 -- beta and gamma unchanged. Rule fixed once,
+    # not tuned on any reported set. OFF until evaluated; see reports/modality_gate.md.
+    modality_gate: false
 
   # --- iterative re-querying, our P1 (MI-RAG) approximation ---
   iterative:

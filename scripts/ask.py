@@ -84,7 +84,8 @@ def main(argv: list[str] | None = None) -> int:
     results = rerank(results, k, method=method, index=index, graph=graph,
                      alpha=rcfg["alpha"], beta=rcfg["beta"], gamma=rcfg["gamma"],
                      mmr_lambda=rcfg["mmr_lambda"], question=args.question,
-                     cross_encoder=rcfg.get("cross_encoder"), device=cfg["device"])
+                     cross_encoder=rcfg.get("cross_encoder"), device=cfg["device"],
+                     modality_gate=rcfg.get("modality_gate", False))
     retrieved = [(r.unit, r.score) for r in results]
     units = [r.unit for r in results]
 

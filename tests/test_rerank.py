@@ -165,3 +165,60 @@ def test_set_diagnostics_reports_coverage_and_redundancy(scenario) -> None:
     assert d["units"] == 5 and d["modalities"] == 1
     assert d["redundancy"] == pytest.approx(1.0, abs=1e-6), "identical audio text"
     assert set_diagnostics([], index)["units"] == 0
+
+
+# ------------------------------------------------ modality-need gate (2026-09-23)
+
+def _unit(uid, modality, text="x"):
+    from linkrag.core import EvidenceUnit, Location
+    return EvidenceUnit(id=uid, modality=modality, content=text, source_file="f.pdf",
+                        location=Location(page=1))
+
+
+def _res(pairs):
+    from linkrag.retrieve.linkrag import RetrievedUnit
+    return [RetrievedUnit(unit=_unit(f"u{i}", m), score=s, origin="seed")
+            for i, (m, s) in enumerate(pairs)]
+
+
+def test_gate_calls_a_single_modality_pool_concentrated():
+    from linkrag.retrieve.rerank import modality_concentration
+    g = modality_concentration(_res([("text", 1.0 - 0.05 * i) for i in range(8)]))
+    assert g["concentrated"] and g["share"] == 1.0 and g["dominant"] == "text"
+
+
+def test_gate_calls_a_mixed_pool_spread():
+    from linkrag.retrieve.rerank import modality_concentration
+    mix = [("text", 0.9), ("audio", 0.88), ("figure", 0.86), ("text", 0.84),
+           ("audio", 0.82), ("figure", 0.80), ("text", 0.78), ("audio", 0.76)]
+    g = modality_concentration(_res(mix))
+    assert not g["concentrated"] and g["share"] < 0.75 and g["margin"] < 0.5
+
+
+def test_gate_zeroes_alpha_only_when_concentrated():
+    """Concentrated pool: gated selection == plain top-k by score (alpha 0, no links,
+    and the redundancy penalty cannot reorder identical-modality ties here).
+    Spread pool: the gate leaves alpha alone, so the set still covers modalities."""
+    from linkrag.retrieve.rerank import rerank
+    conc = _res([("text", 0.90 - 0.01 * i) for i in range(7)] + [("figure", 0.70)])
+    gated = [r.id for r in rerank(conc, 4, method="complementarity", alpha=0.3, beta=0.0, gamma=0.0,
+                                  modality_gate=True)]
+    assert rerank.last_gate["concentrated"]
+    assert gated == [r.id for r in rerank(conc, 4, method="none")]
+    ungated = [r.id for r in rerank(conc, 4, method="complementarity", alpha=0.3, beta=0.0, gamma=0.0)]
+    assert ungated != gated, "without the gate, alpha pulls in the low-scoring other modalities"
+
+    mix = _res([("text", 0.90), ("text", 0.89), ("text", 0.88), ("text", 0.87),
+                ("audio", 0.86), ("audio", 0.85), ("figure", 0.84), ("figure", 0.83)])
+    with_gate = [r.id for r in rerank(mix, 3, method="complementarity", alpha=0.3, beta=0.0, gamma=0.0,
+                                      modality_gate=True)]
+    assert not rerank.last_gate["concentrated"]
+    assert with_gate == [r.id for r in rerank(mix, 3, method="complementarity", alpha=0.3, beta=0.0, gamma=0.0)]
+
+
+def test_gate_is_inert_for_other_methods():
+    from linkrag.retrieve.rerank import rerank
+    conc = _res([("text", 1.0 - 0.05 * i) for i in range(8)])
+    assert ([r.id for r in rerank(conc, 3, method="mmr", modality_gate=True)]
+            == [r.id for r in rerank(conc, 3, method="mmr")])
+    assert rerank.last_gate is None

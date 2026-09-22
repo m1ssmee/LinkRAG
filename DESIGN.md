@@ -190,7 +190,29 @@ explicit instruction.
    metadata (which lecture the deck belongs to), with the gate as a check, not as
    the pairing mechanism. Negative control (pilot01 audio × unrelated deck): 0
    cross-file links (`reports/relatedness_gate.md`).
-8. **Extended-dataset selection criterion** (priority vi): **low redundancy**
+8. **LectQA-Vid (target T1) is a single-stream benchmark: linking is inactive by
+   construction, re-querying is what helps, and the reranker costs recall on
+   speech-defined gold.** (`results/external/lectqa_v2.md`, 28/100 videos, 840 QA.)
+   Their paper reports **no localisation metric** (§5.2 is answer quality only), so
+   the localisation table is ours-on-their-data with their fixed-window configuration
+   replicated as the baseline row. Findings: `linkrag` ≡ `baseline` to three decimals
+   on hit@1/3/8 and IoU — one video, no deck or paper, so the only link type is
+   temporal co-occurrence and expansion proposes units already retrieved; **iterative
+   re-querying gains +7 pp hit@1** (44.8 → 52.0, `linkrag_iter` 52.7) while all modes
+   converge by hit@8 (84–86 %); and **complementarity costs 13 pp of hit@3** at every
+   difficulty (68.1 → 55.4) because it spends slots on frame OCR while the gold
+   interval is defined by what was *said*. The modality-need gate (α = 0 on
+   concentrated pools) was built and evaluated: it fires on 79 % of cells and changes
+   nothing measurable on either benchmark — α decides which unit is taken first, not
+   which eight are taken. Default off; gating β and γ is the next thing to test.
+9. **Sentence-aware segmentation is free on localisation, not on answers.** On
+   LectQA-Vid, sentence cutting removes 82.8 % of mid-sentence boundaries
+   (82.8 % → 0.0 %) and moves hit@1 by 0.5 pp and IoU by 0.010 — inside noise, at
+   every difficulty. The pilot01 result that segmentation matters was about answer
+   quality and BM25 matching, not about finding the right 15 seconds. Keep
+   `ingest.audio_segmentation: sentence` (it costs nothing), but do not claim it as a
+   retrieval gain.
+10. **Extended-dataset selection criterion** (priority vi): **low redundancy**
    (measure it with `scripts/dataset/redundancy.py` before ingesting; a candidate
    with transcript→deck above pilot01's number is rejected), **diagram-heavy decks**
    (figures that carry facts the text does not), and **a speaker who points**

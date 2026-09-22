@@ -47,7 +47,9 @@ from __future__ import annotations
 
 import logging
 from functools import lru_cache
-from typing import Sequence
+from typing import Any, Sequence
+
+from collections import Counter
 
 import numpy as np
 
@@ -137,6 +139,34 @@ def _edge_matrix(results: Sequence[RetrievedUnit], graph) -> np.ndarray:
     return edges
 
 
+def modality_concentration(results: Sequence[RetrievedUnit], k_seeds: int = 8) -> dict[str, Any]:
+    """Is the query's evidence concentrated in one modality?
+
+    Looked at the top `k_seeds` candidates (the pool's own ranking):
+      * `share`  -- fraction of them in the most common modality
+      * `margin` -- best score in that modality minus the best score in any other
+                    modality, divided by the best score overall (0 when a second
+                    modality ties at the top, 1 when nothing else scores at all)
+
+    The rule (fixed once, 2026-09-23; not tuned on any reported set): the evidence is
+    CONCENTRATED when `share >= 0.75` or `margin >= 0.5`. On a concentrated query the
+    coverage term alpha buys a modality the answer does not live in, which cost
+    recall on pilot01 (-20.8 pp for baseline) and localisation on LectQA-Vid
+    (hit@3 68 -> 55 %); beta and gamma are unaffected either way."""
+    top = list(results)[:k_seeds]
+    if not top:
+        return {"share": 1.0, "margin": 1.0, "concentrated": True, "dominant": None}
+    counts = Counter(r.unit.modality for r in top)
+    dominant, n = counts.most_common(1)[0]
+    share = n / len(top)
+    best = max(float(r.score) for r in top)
+    best_dom = max((float(r.score) for r in top if r.unit.modality == dominant), default=0.0)
+    best_other = max((float(r.score) for r in top if r.unit.modality != dominant), default=0.0)
+    margin = (best_dom - best_other) / best if best > 0 else 1.0
+    return {"share": share, "margin": margin, "dominant": dominant,
+            "concentrated": bool(share >= 0.75 or margin >= 0.5)}
+
+
 def rerank(
     results: Sequence[RetrievedUnit],
     k: int,
@@ -151,14 +181,28 @@ def rerank(
     question: str | None = None,
     cross_encoder: str | None = None,
     device: str = "cpu",
+    modality_gate: bool = False,
 ) -> list[RetrievedUnit]:
-    """Select k units from `results` under the chosen objective."""
+    """Select k units from `results` under the chosen objective.
+
+    `modality_gate` (config `retrieve.rerank.modality_gate`, default off): when the
+    pool's evidence is concentrated in one modality (`modality_concentration`), run
+    with alpha = 0 -- keep the link bonus and the redundancy penalty, drop the
+    coverage bonus. Only affects `complementarity`."""
     if method not in METHODS:
         raise ValueError(f"unknown rerank method {method!r}: use one of {METHODS}")
     if not results:
         return []
+    gate = None
+    if modality_gate and method == "complementarity":
+        gate = modality_concentration(results)
+        if gate["concentrated"]:
+            alpha = 0.0
+    rerank.last_gate = gate  # type: ignore[attr-defined]
 
-    with stage_timer("retrieve.rerank", method=method, candidates=len(results), k=k) as t:
+    with stage_timer("retrieve.rerank", method=method, candidates=len(results), k=k,
+                     gate=("concentrated" if gate and gate["concentrated"] else
+                           ("spread" if gate else "off"))) as t:
         rel = [float(r.score) for r in results]
         if cross_encoder and question:
             scored = cross_encoder_scores(question, results, cross_encoder, device)

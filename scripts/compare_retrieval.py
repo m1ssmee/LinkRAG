@@ -112,6 +112,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--k", type=int, default=None)
     ap.add_argument("--repeats", type=int, default=3, help="runs per LLM-touching cell")
     ap.add_argument("--no-llm", action="store_true", help="skip modes that call an LLM")
+    ap.add_argument("--modality-gate", action="store_true",
+                    help="run complementarity with the modality-need gate (retrieve.rerank.modality_gate)")
     ap.add_argument("--rerank", default=",".join(METHODS),
                     help="comma-separated subset of rerank methods (default: all)")
     ap.add_argument("--label", default="", help="heading written above the appended table")
@@ -174,7 +176,8 @@ def main(argv: list[str] | None = None) -> int:
                                     gamma=rcfg["gamma"], mmr_lambda=rcfg["mmr_lambda"],
                                     question=row["question"],
                                     cross_encoder=rcfg.get("cross_encoder"),
-                                    device=cfg["device"])
+                                    device=cfg["device"],
+                                    modality_gate=args.modality_gate or rcfg.get("modality_gate", False))
                     ids = [r.id for r in picked]
                     r_, p_ = prf(ids, gold)
                     d = set_diagnostics(picked, index)
