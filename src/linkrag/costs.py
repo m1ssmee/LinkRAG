@@ -27,7 +27,8 @@ CHARS_PER_TOKEN = 4.0        # estimate for backfilled cache hits only
 
 
 USAGE_KEYS = ("calls", "cached_calls", "prompt_tokens", "completion_tokens",
-              "cached_prompt_tokens", "cached_completion_tokens", "estimated_tokens")
+              "cached_prompt_tokens", "cached_completion_tokens", "estimated_tokens",
+              "audio_seconds", "cached_audio_seconds")
 
 
 def empty_usage() -> dict[str, Any]:
@@ -131,7 +132,9 @@ def usage_cost(usage: dict[str, Any], price: dict[str, float] | None,
         return None
     pt = usage.get("prompt_tokens", 0) - (0 if charge_cached else usage.get("cached_prompt_tokens", 0))
     ct = usage.get("completion_tokens", 0) - (0 if charge_cached else usage.get("cached_completion_tokens", 0))
-    return (pt * float(price.get("input_per_m", 0)) + ct * float(price.get("output_per_m", 0))) / 1e6
+    secs = usage.get("audio_seconds", 0.0) - (0.0 if charge_cached else usage.get("cached_audio_seconds", 0.0))
+    return ((pt * float(price.get("input_per_m", 0)) + ct * float(price.get("output_per_m", 0))) / 1e6
+            + (secs / 60.0) * float(price.get("per_minute", 0)))
 
 
 def fmt_cost(cost: float | None) -> str:
@@ -165,10 +168,10 @@ def record_run(script: str, label: str, parts: list[tuple[str, dict[str, Any]]],
         if usage.get("cached_calls") and not charge_cached and price is not None:
             would = usage_cost(usage, price, charge_cached=True)
             cached_note = f" (cache replays free; would have been {fmt_cost(would)})"
+        body = (f"{usage['audio_seconds'] / 60:.1f} audio minutes" if usage.get("audio_seconds")
+                else f"{usage.get('prompt_tokens', 0):,} in / {usage.get('completion_tokens', 0):,} out")
         lines.append(f"- `{model}`: {usage.get('calls', 0)} calls "
-                     f"({usage.get('cached_calls', 0)} cached) · "
-                     f"{usage.get('prompt_tokens', 0):,} in / {usage.get('completion_tokens', 0):,} out"
-                     f"{note} · {fmt_cost(cost)}{cached_note}")
+                     f"({usage.get('cached_calls', 0)} cached) · {body}{note} · {fmt_cost(cost)}{cached_note}")
         if cost is None:
             run_known = False
         else:
@@ -185,7 +188,7 @@ def record_run(script: str, label: str, parts: list[tuple[str, dict[str, Any]]],
 
 def cumulative(ledger: Path = LEDGER) -> dict[str, Any]:
     out = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "cost_usd": 0.0,
-           "unpriced_rows": 0, "estimated_tokens": 0, "rows": 0}
+           "unpriced_rows": 0, "estimated_tokens": 0, "audio_seconds": 0.0, "rows": 0}
     if not ledger.exists():
         return out
     for line in ledger.read_text().splitlines():
@@ -195,6 +198,7 @@ def cumulative(ledger: Path = LEDGER) -> dict[str, Any]:
         out["rows"] += 1
         for k in ("calls", "prompt_tokens", "completion_tokens", "estimated_tokens"):
             out[k] += int(r.get(k, 0))
+        out["audio_seconds"] += float(r.get("audio_seconds", 0.0))
         if r.get("cost_usd") is None:
             out["unpriced_rows"] += 1
         else:

@@ -12,9 +12,11 @@ selects a default base_url.
 
 from __future__ import annotations
 
+import json
 import random
 import re
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
@@ -40,6 +42,20 @@ Rules:
 - If the evidence does not answer the question, say so plainly. Do not guess and
   do not use outside knowledge -- an uncited or unsupported claim is a failure.
 - Be concise."""
+
+JSON_SYSTEM = """You answer questions using ONLY the evidence given to you, as JSON.
+
+Output EXACTLY this shape and nothing else -- no prose before or after, no code fence:
+
+{"answer": "<one or two sentences>",
+ "claims": [{"claim": "<a single checkable statement>", "unit_ids": ["<id>", ...]}, ...]}
+
+Rules:
+- Every claim must be supported by the evidence, and `unit_ids` must list the units
+  that state it, copied exactly (they look like notes:p2:t0 or lecture03:a5).
+- Split the answer into one claim per checkable fact; do not merge two facts.
+- Never use outside knowledge. If the evidence does not answer the question, return
+  {"answer": "not found in the provided material", "claims": []}."""
 
 LINKRAG_SYSTEM_SUFFIX = """
 - The evidence spans several files and modalities and has been linked as covering
@@ -188,6 +204,103 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
     complete.last_usage = {}      # type: ignore[attr-defined]
     complete.model = model        # type: ignore[attr-defined]
     return complete
+
+
+@dataclass
+class Claim:
+    """One checkable statement from the answer, with the units it cites."""
+
+    claim: str
+    unit_ids: list[str]
+    verdict: str = "unchecked"          # supported | weak | unsupported | unchecked
+    span: str = ""
+    votes: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Answer:
+    answer: str
+    claims: list[Claim]
+    raw: str
+    malformed: bool = False             # JSON could not be parsed even after one retry
+
+    @property
+    def unsupported(self) -> list[Claim]:
+        return [c for c in self.claims if c.verdict == "unsupported"]
+
+    def text(self, *, strict: bool = False) -> str:
+        """The answer as shown to a reader. `strict` drops unsupported claims and
+        abstains when nothing survives."""
+        if strict and self.claims and not [c for c in self.claims if c.verdict in ("supported", "weak", "unchecked")]:
+            return "not found in the provided material"
+        return self.answer
+
+
+def parse_answer_json(text: str) -> tuple[str, list[Claim]] | None:
+    """Tolerate a fenced or prefixed reply; return None when it is not usable."""
+    body = text.strip()
+    if body.startswith("```"):
+        body = re.sub(r"^```[a-z]*\s*|\s*```$", "", body)
+    start, end = body.find("{"), body.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    try:
+        data = json.loads(body[start:end + 1])
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict) or "answer" not in data:
+        return None
+    claims = []
+    for c in data.get("claims") or []:
+        if not isinstance(c, dict) or not str(c.get("claim", "")).strip():
+            continue
+        ids = c.get("unit_ids") or c.get("units") or []
+        if isinstance(ids, str):
+            ids = [ids]
+        claims.append(Claim(claim=str(c["claim"]).strip(), unit_ids=[str(i).strip() for i in ids if str(i).strip()]))
+    return str(data["answer"]).strip(), claims
+
+
+def answer_json(
+    question: str,
+    units: list[EvidenceUnit],
+    cfg: dict[str, Any] | None = None,
+    *,
+    mode: Mode = "baseline",
+    complete: Completer | None = None,
+) -> Answer:
+    """Structured answer: prose plus one claim per checkable fact, each citing units.
+
+    A malformed reply is retried once with the parse failure fed back; a second
+    failure is flagged (`Answer.malformed`) and the raw text is kept as the answer,
+    so a downstream verifier can still see what was said."""
+    if not units:
+        return Answer(answer="No evidence was retrieved for this question, so I cannot answer it.",
+                      claims=[], raw="")
+    llm_cfg = (cfg or {}).get("models", {}).get("llm", {})
+    complete = complete or http_completer(llm_cfg)
+    system = JSON_SYSTEM + (LINKRAG_SYSTEM_SUFFIX if mode == "linkrag" else "")
+    prompt = build_prompt(question, units)
+    with stage_timer("generate.answer_json", mode=mode, units=len(units)) as t:
+        raw = complete(system, prompt)
+        parsed = parse_answer_json(raw)
+        t["retried"] = 0
+        if parsed is None:
+            t["retried"] = 1
+            raw = complete(system, prompt + "\n\nYour previous reply was not valid JSON. "
+                                            "Reply with the JSON object only.")
+            parsed = parse_answer_json(raw)
+        if parsed is None:
+            t["malformed"] = 1
+            return Answer(answer=raw.strip(), claims=[], raw=raw, malformed=True)
+        text_, claims = parsed
+        t["claims"] = len(claims)
+        # keep only ids that are actually in the evidence set: a cited id that was
+        # never shown is a fabrication, and must not become a "supported" claim.
+        valid = {u.id for u in units}
+        for c in claims:
+            c.unit_ids = [i for i in c.unit_ids if i in valid]
+        return Answer(answer=text_, claims=claims, raw=raw)
 
 
 def answer(

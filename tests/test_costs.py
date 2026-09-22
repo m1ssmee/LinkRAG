@@ -17,9 +17,10 @@ def test_cache_records_exact_usage_and_flags_estimates(tmp_path):
     assert c("s", "u") == "reply"                       # 2nd identical call = new key .1 -> miss
     c2 = cached_completer(inner, tmp_path)              # fresh process: hits with stored usage
     c2("s", "u"); c2("s", "u")
-    assert c2.usage == {"calls": 2, "cached_calls": 2, "prompt_tokens": 200,
-                        "completion_tokens": 20, "cached_prompt_tokens": 200,
-                        "cached_completion_tokens": 20, "estimated_tokens": 0}
+    from linkrag.costs import empty_usage
+    assert c2.usage == empty_usage() | {"calls": 2, "cached_calls": 2, "prompt_tokens": 200,
+                                        "completion_tokens": 20, "cached_prompt_tokens": 200,
+                                        "cached_completion_tokens": 20}
     assert usage_cost(c2.usage, {"input_per_m": 1e6, "output_per_m": 1e6}) == 0.0
     assert usage_cost(c2.usage, {"input_per_m": 1e6, "output_per_m": 1e6}, charge_cached=True) == 220.0
     # a legacy cache file with no usage sidecar is estimated and flagged

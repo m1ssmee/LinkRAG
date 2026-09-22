@@ -23,7 +23,8 @@ from pathlib import Path
 from linkrag.core import load_config, setup_logging
 from linkrag.costs import record_run
 from linkrag.eval import matches_locator
-from linkrag.generate.answer import http_completer
+from linkrag.generate.answer import answer_json, http_completer
+from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
 from linkrag.index import Index, default_encoder
 from linkrag.link.align import load_links
 from linkrag.link.graph import build_graph
@@ -112,6 +113,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--k", type=int, default=None)
     ap.add_argument("--repeats", type=int, default=3, help="runs per LLM-touching cell")
     ap.add_argument("--no-llm", action="store_true", help="skip modes that call an LLM")
+    ap.add_argument("--grounding", action="store_true",
+                    help="also generate and verify an answer per cell: hallucination rate and citation correctness")
     ap.add_argument("--modality-gate", action="store_true",
                     help="run complementarity with the modality-need gate (retrieve.rerank.modality_gate)")
     ap.add_argument("--rerank", default=",".join(METHODS),
@@ -150,6 +153,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # cell -> list of per-run dicts; a run is the mean over all questions
     cells: dict[tuple[str, str], list[dict]] = {}
+    grounding: dict[tuple[str, str], list[dict]] = {}
+    judge = None
+    if args.grounding and not args.no_llm:
+        jcfg = cfg.get("eval", {}).get("judge") or llm
+        judge = http_completer(jcfg)
     id_sets: dict[str, list[tuple]] = {}
     per_q: dict[tuple[str, str, str], list[float]] = {}   # (qid, mode, method) -> recall per run
     per_q_full: dict[tuple[str, str, str], list[dict]] = {}   # -> per-run {recall, prec, mods}
@@ -183,6 +191,14 @@ def main(argv: list[str] | None = None) -> int:
                     d = set_diagnostics(picked, index)
                     per_method[method]["recall"].append(r_)
                     per_q.setdefault((row["qid"], mode, method), []).append(r_)
+                    if args.grounding and complete is not None:
+                        gcfg = cfg.get("generation", {})
+                        a_ = answer_json(row["question"], [r.unit for r in picked], cfg, mode="linkrag" if "linkrag" in mode else "baseline", complete=complete)
+                        if not a_.malformed:
+                            v_ = verify_answer(a_, [r.unit for r in picked], judge,
+                                               runs=int(gcfg.get("verify_runs", 3)), strict=gcfg.get("strict", False))
+                            v_["gold_units"] = row["gold_units"]
+                            grounding.setdefault((mode, method), []).append(v_)
                     per_q_full.setdefault((row["qid"], mode, method), []).append(
                         {"recall": r_, "prec": p_, "mods": d["modalities"]})
                     per_method[method]["prec"].append(p_)
@@ -249,6 +265,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {mode:<14} {verdict}")
         md.append(f"- `{mode}`: {verdict}")
 
+    if grounding:
+        all_units = list(index.units)
+        md += ["", "### Grounding (claim-level verification of one answer per cell)", "",
+               "| mode | rerank | claims | unsupported | hallucination rate | citation correctness | abstentions |",
+               "|---|---|---:|---:|---:|---:|---:|"]
+        for (mode, method), vs in grounding.items():
+            gold = [g for v in vs for g in v["gold_units"]]
+            md.append(f"| {mode} | {method} | {sum(len(v['claims']) for v in vs)} | {sum(v['unsupported'] for v in vs)} | "
+                      f"{hallucination_rate(vs):.1%} | {citation_correctness(vs, all_units, gold):.1%} | "
+                      f"{sum(v['abstained'] for v in vs)} |")
+        md.append("")
+
     # per-type breakdown: the table that matters (DESIGN.md 2026-09-21)
     def cell_by_type(bucket, mode, method):
         qids = [r["qid"] for r in rows if bucket in buckets_of(r.get("type", ""))]
@@ -304,8 +332,11 @@ def main(argv: list[str] | None = None) -> int:
         md.append(f"| {row['qid']} | {row.get('type', '')} | " + " | ".join(vals) + " |")
 
     if complete is not None:
+        parts = [(str(llm.get("model")), complete.usage)]
+        if judge is not None:
+            parts.append((str((cfg.get("eval", {}).get("judge") or llm).get("model")), judge.usage))
         footer = record_run("scripts/compare_retrieval.py", args.label or "compare_retrieval",
-                            [(str(llm.get("model")), complete.usage)], cfg["models"].get("pricing"))
+                            parts, cfg["models"].get("pricing"))
         md += footer
         print("\n".join(footer))
 

@@ -67,6 +67,11 @@ def ingest_file(
             segmentation=ing.get("audio_segmentation", "sentence"),
             initial_prompt=asr_prompt,
             transcript=frozen,
+            backend=ing.get("asr_backend", "local"),
+            cfg=cfg,
+            # freeze on first run so a paid transcription is never repeated
+            freeze_to=(Path(ing["frozen_transcript_dir"]) / f"{path.stem}.frozen.json"
+                       if ing.get("frozen_transcript_dir") and not frozen else None),
         )
 
     if kind == "pdf":

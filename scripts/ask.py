@@ -12,7 +12,9 @@ from pathlib import Path
 from linkrag.core import load_config, setup_logging, stage_timer
 from linkrag.eval import format_modality_distribution
 from linkrag.costs import record_run
-from linkrag.generate.answer import answer, cited_ids, http_completer
+from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer
+from linkrag.generate.citations import citations_for
+from linkrag.generate.verify import verify_answer
 from linkrag.index import Index, default_encoder
 from linkrag.link.align import load_links
 from linkrag.manifest import MANIFEST_NAME, load_manifest
@@ -32,6 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--links", default=None, help="links.jsonl for --mode linkrag")
     parser.add_argument("--rerank", choices=list(METHODS), default=None,
                         help="override retrieve.rerank.method")
+    parser.add_argument("--prose", action="store_true", help="Phase-1 prose answer instead of JSON claims")
+    parser.add_argument("--strict", action="store_true", help="drop unsupported claims; abstain if none survive")
     parser.add_argument("--show-evidence", action="store_true")
     args = parser.parse_args(argv)
 
@@ -104,13 +108,51 @@ def main(argv: list[str] | None = None) -> int:
         print()
 
     complete = http_completer(cfg["models"]["llm"])
-    text = answer(args.question, units, cfg, mode=args.mode, complete=complete)
-    print(text)
+    gcfg = cfg.get("generation", {})
+    structured = gcfg.get("structured", True) and not args.prose
+    strict = args.strict or gcfg.get("strict", False)
+    verdicts = None
+
+    if structured:
+        ans = answer_json(args.question, units, cfg, mode=args.mode, complete=complete)
+        if ans.malformed:
+            print("WARNING: model did not return valid JSON after one retry; showing the raw reply")
+        if gcfg.get("verify", True) and not ans.malformed:
+            jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
+            judge = http_completer(jcfg)
+            verdicts = verify_answer(ans, units, judge, runs=int(gcfg.get("verify_runs", 3)), strict=strict)
+            print(verdicts["answer"])
+            print()
+            mark = {"supported": "✓", "weak": "?", "unsupported": "✗", "unchecked": "·"}
+            for c in ans.claims:
+                line = f"  {mark.get(c.verdict, '·')} {c.claim}  [{', '.join(c.unit_ids) or 'no citation'}]"
+                if c.verdict == "unsupported":
+                    line += "   <- NOT SUPPORTED by the units it cites"
+                elif c.verdict == "weak":
+                    line += "   <- cites nothing"
+                print(line)
+            if strict and verdicts["unsupported"]:
+                print(f"  ({verdicts['unsupported']} unsupported claim(s) hidden: generation.strict is on)")
+            text = verdicts["answer"]
+        else:
+            text = ans.text(strict=strict)
+            print(text)
+            for c in ans.claims:
+                print(f"  · {c.claim}  [{', '.join(c.unit_ids) or 'no citation'}]")
+        cited = [i for c in ans.claims for i in c.unit_ids]
+    else:
+        text = answer(args.question, units, cfg, mode=args.mode, complete=complete)
+        print(text)
+        cited = cited_ids(text)
 
     valid = {u.id for u in units}
-    cited = cited_ids(text)
     unknown = [c for c in cited if c not in valid]
-    print(f"\ncited {len(cited)} of {len(units)} units" + (f"; NOT IN EVIDENCE: {unknown}" if unknown else ""))
+    print(f"\ncited {len(set(cited))} of {len(units)} units" + (f"; NOT IN EVIDENCE: {unknown}" if unknown else ""))
+    ccfg = (cfg.get("generation", {}) or {}).get("citations", {})
+    if cited and ccfg.get("media", True):
+        print("--- citations ---")
+        for c in citations_for(units, cited, Path(ccfg.get("dir", "data/processed/citations"))).values():
+            print("  " + c.render())
     print("\n".join(record_run("scripts/ask.py", args.question[:60],
                               [(str(cfg["models"]["llm"].get("model")), complete.usage)],
                               cfg["models"].get("pricing"))))

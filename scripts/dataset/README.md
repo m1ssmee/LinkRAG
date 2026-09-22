@@ -43,8 +43,12 @@ Exit code 0 = KEEP, 1 = REJECT, 2 = a file was missing. The number is written to
 report either way; a REJECT that is close to the bar with a diagram-heavy deck is
 worth flagging rather than discarding.
 
-Whisper runs on CPU here (~3× realtime): a 60-minute lecture takes ~20 minutes to
-transcribe the first time. Re-runs reuse the scratch index unless `--reingest`.
+Transcription: set `ingest.asr_backend: openai` for intake (whisper-1, ~15× realtime,
+about **$0.36 per hour of audio**, and better terminology — see
+`reports/asr_openai_pilot01.md`). The local CPU backend is free but ~3× realtime, so a
+60-minute lecture costs ~20 minutes of machine time. Either way the transcript is
+frozen to `data/processed/transcripts/<stem>.frozen.json` on the first run and reused
+after that; re-runs reuse the scratch index unless `--reingest`.
 
 ## Record every decision
 

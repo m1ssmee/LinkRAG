@@ -18,7 +18,8 @@ from pathlib import Path
 from linkrag.core import load_config, setup_logging
 from linkrag.costs import record_run
 from linkrag.eval import describe_locator, format_modality_distribution, gold_coverage, gold_hits
-from linkrag.generate.answer import answer, cited_ids, http_completer
+from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer
+from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
 from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, check_gold_manifest, load_manifest
 from linkrag.link.align import load_links
@@ -67,6 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--questions", default=str(QUESTIONS))
     ap.add_argument("--links", default=None, help="links.jsonl for --mode linkrag")
     ap.add_argument("--out", default="reports/regression.md")
+    ap.add_argument("--strict", action="store_true", help="drop unsupported claims; abstain if none survive")
+    ap.add_argument("--prose", action="store_true", help="Phase-1 prose answers instead of verified claims")
     ap.add_argument("--no-llm", action="store_true",
                     help="retrieval instruments only; skips generation and its cost")
     args = ap.parse_args(argv)
@@ -93,6 +96,13 @@ def main(argv: list[str] | None = None) -> int:
     if warning:
         print(f"WARNING: {warning}")
     complete = None if args.no_llm else http_completer(cfg["models"]["llm"])
+    gcfg = cfg.get("generation", {})
+    structured = gcfg.get("structured", True) and not args.prose and complete is not None
+    judge = None
+    if structured and gcfg.get("verify", True):
+        jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
+        judge = http_completer(jcfg)
+    verified: list[dict] = []
     results = []
     for row in rows:
         units, expanded, seeded = retrieve_for_mode(
@@ -104,8 +114,20 @@ def main(argv: list[str] | None = None) -> int:
             print(f"WARNING: {msg}")
             expansion_warnings.append(msg)
         found, missed = gold_hits(units, row["gold_units"])
-        text = "" if args.no_llm else answer(row["question"], units, cfg, mode=args.mode,
-                                             complete=complete)
+        verdict = None
+        if structured:
+            ans = answer_json(row["question"], units, cfg, mode=args.mode, complete=complete)
+            if judge is not None and not ans.malformed:
+                verdict = verify_answer(ans, units, judge, runs=int(gcfg.get("verify_runs", 3)),
+                                        strict=args.strict or gcfg.get("strict", False))
+                verdict["gold_units"] = row["gold_units"]
+                verified.append(verdict)
+                text = verdict["answer"]
+            else:
+                text = ans.text(strict=args.strict)
+        else:
+            text = "" if args.no_llm else answer(row["question"], units, cfg, mode=args.mode,
+                                                 complete=complete)
 
         blob = text.lower()
         want = row["gold_terms"]["slide"] + row["gold_terms"]["audio"]
@@ -118,10 +140,22 @@ def main(argv: list[str] | None = None) -> int:
             "missed": [describe_locator(x) for x in missed],
             "terms": "—" if args.no_llm else f"{len(in_answer)}/{len(want)}",
             "answer": text.strip(),
-            "cited": len(cited_ids(text)) if text else 0,
+            "cited": (len({i for c in verdict["claims"] for i in c["unit_ids"]}) if verdict
+                      else (len(cited_ids(text)) if text else 0)),
+            "claims": len(verdict["claims"]) if verdict else 0,
+            "unsupported": verdict["unsupported"] if verdict else 0,
+            "abstained": bool(verdict and verdict["abstained"]),
             "n": len(units),
             "expanded": expanded,
         })
+
+    def claims_cell(r: dict) -> str:
+        if not r["claims"]:
+            return r["terms"]
+        cell = str(r["claims"])
+        if r["unsupported"]:
+            cell += f" ({r['unsupported']} unsupported)"
+        return cell + (" · ABSTAINED" if r["abstained"] else "")
 
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     out = Path(args.out)
@@ -150,13 +184,13 @@ def main(argv: list[str] | None = None) -> int:
         f"gold stamped `{gold_meta.get('manifest_hash', 'unstamped')}`",
         "",
     ] + ([f"> **WARNING** {warning}", ""] if warning else []) + [
-        "| Q | type | modality distribution | expanded | gold evidence | gold missed | gold terms in answer |",
+        "| Q | type | modality distribution | expanded | gold evidence | gold missed | claims (unsupported) |",
         "|---|---|---|---:|---|---|---|",
     ]
     for r in results:
         lines.append(
             f"| {r['qid']} | `{r['type']}` | {r['modality']} | {r['expanded']} "
-            f"| **{r['gold']}** | {', '.join(r['missed']) or '—'} | {r['terms']} |"
+            f"| **{r['gold']}** | {', '.join(r['missed']) or '—'} | {claims_cell(r)} |"
         )
     if expansion_warnings:
         lines += [""] + [f"> **WARNING** {w}" for w in expansion_warnings]
@@ -165,10 +199,25 @@ def main(argv: list[str] | None = None) -> int:
         for r in results:
             lines += [f"<details><summary>{r['qid']} answer ({r['cited']} citations)</summary>",
                       "", r["answer"], "", "</details>", ""]
+    if verified:
+        all_units = list(index.units)
+        hr = hallucination_rate(verified)
+        cc = citation_correctness(verified, all_units, [g for v in verified for g in v["gold_units"]])
+        lines += ["", f"**Grounding** (`generation.strict={args.strict or gcfg.get('strict', False)}`): "
+                  f"hallucination rate **{hr:.1%}** ({sum(v['unsupported'] for v in verified)} unsupported of "
+                  f"{sum(len(v['claims']) for v in verified)} claims) · citation correctness **{cc:.1%}** "
+                  f"(cited units matching a gold locator, by file+location) · "
+                  f"{sum(v['abstained'] for v in verified)} answer(s) abstained · "
+                  f"{sum(v['weak'] for v in verified)} claim(s) cited nothing", ""]
+        print(f"  grounding: hallucination {hr:.1%} · citation correctness {cc:.1%} · "
+              f"{sum(v['abstained'] for v in verified)} abstentions")
+
     if complete is not None:
-        footer = record_run("scripts/run_regression.py", args.phase,
-                            [(str(cfg["models"]["llm"].get("model")), complete.usage)],
-                            cfg["models"].get("pricing"))
+        parts = [(str(cfg["models"]["llm"].get("model")), complete.usage)]
+        if judge is not None:
+            jm = str((cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]).get("model"))
+            parts.append((jm, judge.usage))
+        footer = record_run("scripts/run_regression.py", args.phase, parts, cfg["models"].get("pricing"))
         lines += footer + [""]
         print("\n".join(footer))
     with out.open("a") as fh:

@@ -217,22 +217,42 @@ def ingest_audio(
     segmentation: str = "sentence",
     initial_prompt: str | None = None,
     transcript: str | Path | None = None,
+    backend: str = "local",
+    cfg: dict | None = None,
+    freeze_to: str | Path | None = None,
 ) -> list[EvidenceUnit]:
     """segmentation="sentence" merges whole whisper segments up to the window.
     "fixed" is the naive equal-time windowing the baseline papers use -- kept so
-    the choice stays an ablation rather than a silent assumption."""
+    the choice stays an ablation rather than a silent assumption.
+
+    `backend`: "local" = faster-whisper here; "openai" = whisper-1 with word
+    timestamps (`ingest.asr_openai`), chunked at silence points when the file is over
+    the upload limit. Both produce the same words, so everything downstream of this
+    function is identical. `freeze_to` writes the transcript so the next run reuses
+    it -- the same freeze the local path relies on."""
     if segmentation not in ("sentence", "fixed"):
         # Validate before transcribing: whisper on a lecture is minutes of work
         # to then throw away on a typo.
         raise ValueError(f"unknown segmentation {segmentation!r}: use 'sentence' or 'fixed'")
 
     path = Path(path)
+    if backend not in ("local", "openai"):
+        raise ValueError(f"unknown asr_backend {backend!r}: use 'local' or 'openai'")
+    ingest_audio.last_asr_meta = None                  # type: ignore[attr-defined]
     with stage_timer(
         "ingest.audio", file=path.name, seg=segmentation,
-        src="frozen" if transcript else "whisper",
+        src="frozen" if transcript else backend,
     ) as t:
         if transcript is not None:
             words = load_frozen_transcript(transcript)
+        elif backend == "openai":
+            from linkrag.ingest.asr_openai import transcribe, write_transcript
+            words, meta = transcribe(path, cfg or {}, prompt=initial_prompt)
+            t["asr_backend"] = "openai"
+            t["audio_seconds"] = meta["audio_seconds"]
+            ingest_audio.last_asr_meta = meta          # type: ignore[attr-defined]
+            if freeze_to:
+                write_transcript(words, freeze_to, path, meta)
         else:
             segments = transcribe_segments(
                 path, model_size=model_size, device=device, compute_type=compute_type,

@@ -393,10 +393,14 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   corpus manifest is identical across the compared runs. Complementarity-aware
   reranking is still the intended fix for the underlying blindness.
 
-- **(c) `type -k` ASR regression.** The slide-vocabulary prompt turns four spoken
-  "top-K" into `type -k`. Hyphenation ruled out (identical output with and
-  without). Cause unknown, unfixed, accepted as future work. A prompt omitting
-  `Top K` entirely is the next thing to try.
+- **(c) `type -k` ASR regression — cause identified 2026-09-23: the local model.**
+  faster-whisper `small` turns four spoken "top-K" into `type -k` with the slide
+  vocabulary prompt. With the **same prompt**, OpenAI `whisper-1` produces 0
+  occurrences and 16 correct `top-K` (`reports/asr_openai_pilot01.md`), so it was a
+  property of the local model, not of the prompt. pilot01 stays on the frozen local
+  transcript -- switching it would invalidate every recorded alignment, deictic and
+  regression number -- but `ingest.asr_backend: openai` is the default for the
+  extended dataset.
 - **(d) Gold is machine-verified, not human-verified.** Judge (gpt-4.1-mini) and
   answerer (gpt-5.4) are different models and agree at κ = 0.85 on unit verdicts;
   the sampled audit (`reports/audit_sheet_pilot01.csv`) is unfilled until someone

@@ -53,6 +53,7 @@ models:
     gpt-5:        {input_per_m: 1.25, output_per_m: 10.00}
     gpt-4.1-mini: {input_per_m: 0.40, output_per_m: 1.60}
     gpt-4.1:      {input_per_m: 2.00, output_per_m: 8.00}
+    whisper-1:    {per_minute: 0.006}                      # audio, priced by duration not tokens
     qwen2.5:      {input_per_m: 0.0, output_per_m: 0.0}   # self-hosted on Colab: no per-token price
     llama3.1:     {input_per_m: 0.0, output_per_m: 0.0}
 
@@ -92,6 +93,16 @@ ingest:
     max_words: 60
     cache_dir: data/processed/vlm_captions
     timeout_s: 300
+  # ASR backend. `local` = faster-whisper on the CPU (free, ~3x realtime, the frozen
+  # pilot01 transcript). `openai` = whisper-1 with word timestamps; inputs over 25 MB
+  # are split at silence points, transcribed, and the timestamps re-offset. Both write
+  # the same frozen-transcript JSON, so the sentence-split path is unchanged.
+  asr_backend: local
+  asr_openai:
+    model: whisper-1
+    max_upload_mb: 20          # API limit is 25; leave room for container overhead
+    chunk_search_s: 30         # look this far around a target cut for the quietest moment
+    timeout_s: 600
   # Prime whisper with vocabulary mined from the slide deck. Untuned, whisper
   # transcribed *ingest* as "interest" throughout pilot01 -- the talk's central
   # term, which BM25 then cannot match. Documents are always ingested first.
@@ -263,6 +274,18 @@ datasets:
     top_k: 4
   mavils:
     repo: data/raw/mavils          # clone of github.com/andererka/MaViLS
+
+generation:
+  # Phase 6. JSON answers (answer + claims with cited unit ids), claim-level
+  # entailment against the cited units (same prompt and 3-run majority as gold
+  # verification), and citations a reader can open.
+  structured: true             # false = the Phase-1 prose answer with [id] citations
+  verify: true                 # run claim-level entailment (judge = eval.judge)
+  strict: false                # true: drop unsupported claims; abstain if none survive
+  verify_runs: 3               # majority over this many judge calls per claim
+  citations:
+    media: true                # render page crops / figure images / audio clips
+    dir: data/processed/citations
 
 dataset:
   # Extended-dataset intake (scripts/dataset/candidate.py). A candidate lecture is
