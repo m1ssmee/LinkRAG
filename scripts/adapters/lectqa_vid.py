@@ -76,7 +76,7 @@ def video_links() -> dict[str, str]:
     out = {}
     for row in doc.tables[0].rows[1:]:
         vid, url = (c.text.strip() for c in row.cells[:2])
-        out[vid.replace(" ", "_")] = url
+        out[vid.replace(" ", "_").rstrip(".")] = url      # the docx labels one row "video_94."
     return out
 
 
@@ -108,6 +108,8 @@ def fetch(ids: list[str]) -> None:
     import yt_dlp
     links = video_links()
     (RAW / "videos").mkdir(parents=True, exist_ok=True)
+    status_path = RAW / "fetch_status.json"          # per video, merged across runs
+    status = json.loads(status_path.read_text()) if status_path.exists() else {}
     failures = []
     for vid in ids:
         audio, video = RAW / "videos" / f"{vid}.m4a", RAW / "videos" / f"{vid}.video.mp4"
@@ -122,9 +124,12 @@ def fetch(ids: list[str]) -> None:
                     y.download([links[vid]])
             except Exception as exc:  # a private/removed video must not stop the batch
                 failures.append((vid, str(exc).splitlines()[-1][:120]))
+                status[vid] = {"status": "dead", "source": "youtube", "url": links[vid], "error": failures[-1][1]}
                 break
         else:
+            status[vid] = {"status": "obtained", "source": "youtube", "url": links[vid]}
             print(f"fetched {vid}")
+        status_path.write_text(json.dumps(dict(sorted(status.items(), key=lambda kv: int(kv[0].split("_")[1]))), indent=1))
     if failures:
         (RAW / "fetch_failures.txt").write_text("\n".join(f"{v}\t{e}" for v, e in failures) + "\n")
         print(f"{len(failures)} video(s) unavailable -> {RAW / 'fetch_failures.txt'}", file=sys.stderr)
@@ -173,9 +178,12 @@ def prepare(ids: list[str], cfg: dict, dcfg: dict) -> None:
         if index_dir.exists():
             continue
         t0 = time.perf_counter()
+        frozen = PROCESSED / vid / "transcript.frozen.json"     # whisper runs once per video
         audio = ingest_audio(audio_path, model_size=cfg["models"]["whisper"], device=cfg["device"],
                              compute_type=cfg["models"]["whisper_compute_type"],
-                             window_seconds=dcfg["audio_segment_seconds"], segmentation="sentence")
+                             window_seconds=dcfg["audio_segment_seconds"], segmentation="sentence",
+                             transcript=frozen if frozen.exists() else None,
+                             freeze_to=None if frozen.exists() else frozen)
         frames = extract_frames(video, PROCESSED / vid / "frames", dcfg["frame_interval_s"])
         units = list(audio)
         for i, (t, path) in enumerate(frames):
@@ -499,6 +507,37 @@ def localisation_table(rows: list[dict], title: str) -> list[str]:
     return L
 
 
+# ----------------------------------------------------------------- coverage
+
+def coverage(out: Path) -> int:
+    """Per-video acquisition status: source, obtained/dead (with the error), prepared."""
+    status = json.loads((RAW / "fetch_status.json").read_text()) if (RAW / "fetch_status.json").exists() else {}
+    qa = load_qa()
+    rows, obtained, prepared = [], 0, 0
+    for vid in video_ids(None, None):
+        st_ = status.get(vid, {"status": "not attempted"})
+        is_prep = (PROCESSED / vid / "index").exists()
+        obtained += st_["status"] == "obtained"
+        prepared += is_prep
+        rows.append(f"| {vid} | {st_.get('source', '—')} | {st_['status']} | {'yes' if is_prep else 'no'} | "
+                    f"{len(qa.get(vid, []))} | {st_.get('error', '')[:70]} |")
+    dead = [v for v in video_ids(None, None) if status.get(v, {}).get("status") == "dead"]
+    L = ["# LectQA-Vid — acquisition coverage", "",
+         "Source: the Mendeley record (doi:10.17632/yt4nmz9mcv.1, CC BY 4.0) ships the QA pairs and YouTube "
+         "links only (\"videos, keyframes and transcripts are not provided because of copyright issues\"), so "
+         "every video comes from YouTube: audio m4a + 360p video-only mp4, fetched with yt-dlp. Transcripts are "
+         "ours: faster-whisper, sentence-split, frozen on first run.", "",
+         f"**Obtained {obtained}/100 · prepared (transcribed + indexed) {prepared}/100 · dead {len(dead)}**: "
+         + (", ".join(dead) or "none"), "",
+         "| video | source | status | prepared | QA pairs | error |", "|---|---|---|---|---:|---|", *rows]
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L[:6]))
+    return 0
+
+
+
+
 # ----------------------------------------------------------------- v2: segmentation ablation
 
 def rebuild_fixed_index(vid: str, cfg: dict, dcfg: dict) -> tuple[float, float]:
@@ -604,7 +643,7 @@ def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = T
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("step", choices=["fetch", "prepare", "run", "v2"])
+    ap.add_argument("step", choices=["fetch", "prepare", "run", "v2", "coverage"])
     ap.add_argument("--videos", type=int, default=None, help="first N video ids")
     ap.add_argument("--only", default=None, help="comma-separated video ids")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -627,6 +666,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.step == "prepare":
         prepare(ids, cfg, dcfg)
         return 0
+    if args.step == "coverage":
+        return coverage(Path("results/external/lectqa_coverage.md"))
     if args.step == "v2":
         return v2(ids, cfg, dcfg, Path("results/external/lectqa_v2.md"), cache_only=not args.allow_new_calls,
                   max_cost=args.max_cost)
