@@ -91,11 +91,16 @@ Work is done in this order. Nothing outside this list is started without an
 explicit instruction.
 
 1. **(i) LectQA-Vid, full set.** Run on all videos that can be fetched (the first runs used
-   28/100), with n and the skipped videos stated.
+   28/100), with n and the skipped videos stated. 🔶 **2026-09-23:** 95/100 obtained and
+   transcribed (dead: 1, 10, 12, 38, 75), `results/external/lectqa_coverage.md`. The answer
+   metrics are still on the first 28 (stored answers); the rest need new LLM calls.
 2. **(ii) LectQA-Vid protocol-matched metrics.** Their F1, semantic similarity and MCQ
    accuracy, with the per-difficulty tables (Simple / Hard / Very Hard / Overall).
+   ✅ **Implemented 2026-09-23** (`linkrag.eval.lectqa_metrics`, eqs. 29–36);
+   `results/external/lectqa_theirs_metrics.md`. MCQ is not reportable yet (known issue (i)).
 3. **(iii) Frame-derived slide units on LectQA-Vid.** Slide text and figures from video
    frames, so that linking has a second stream on a single-video benchmark (finding 8).
+   ✅ **Built and measured 2026-09-23**: no localisation gain (finding 12).
 4. **(iv) Verification / faithfulness on LectQA-Vid.** Claim-level entailment and
    citation checks on its answers.
 5. **(v) MaViLS alignment rows.** As already done (finding 6); no new work planned.
@@ -282,6 +287,36 @@ explicit instruction.
      (see *Cost policy*). A free judge (Groq, Colab) may replace it only after
      `scripts/eval/judge_agreement.py` has measured it against the stored verdicts. NLI
      remains selectable as an ablation (`--entailment nli`) and never decides gold or intake.
+
+12. **Frame-derived slides do not help localisation on LectQA-Vid, and the reason is the
+   alignment, not the slides.** (`results/external/lectqa_frameslides.md`, 2026-09-23; 95
+   videos; retrieval only, $0; baseline and linkrag modes, since the iterative modes need
+   new LLM calls.)
+   - **Caveats first.** Only **1,598 of 2,832** questions have a usable gold interval;
+     the rest have ambiguous or out-of-range timestamps (known issue (h)). The dHash
+     thresholds were set by eye, not tuned. Many LectQA videos are animated explainers,
+     not static slide talks, so "slides" here are often animation states (2,175 slides,
+     about 23 per 2–5-minute video).
+   - **What changed.** `linkrag.ingest.video_slides` recovers a deck from the frames (1 fps
+     dHash segmentation, transitions merged, revisits deduplicated, OCR, figure boxes by
+     the deck clustering rules). Those units are linked by the same code path as pilot01
+     (`linkrag.link.pipeline.link_corpus`, now shared with `scripts/build_links.py` and
+     verified byte-identical on pilot01): 5,000 links, of which audio_slide 992, deictic
+     995, figure_text 101, same_slide 2,912.
+   - **Localisation**, overall, rerank none: hit@1 **43.2 % with slides vs 45.6 % without**,
+     hit@8 84.3 % vs 85.1 %, IoU 0.397 vs 0.405. With the complementarity reranker, linkrag's
+     hit@3 is 57.7 % with slides vs 63.7 % without. As before, linkrag/none equals baseline/none
+     by construction (*Design changes*, seed normalisation).
+   - **Why.** The known on-screen interval of every slide gives the audio→slide alignment a
+     free check: the DP picks the on-screen slide for **22.5 %** of 1,870 audio segments
+     (naive argmax 21.7 %), and the relatedness gate rejects the alignment on 49 of 95
+     videos. Spoken sentences and OCR'd animation frames share too little text. Slide units
+     displace transcript units in the top-8 (audio 5.8 vs 6.4 per set) without being linked
+     to the right speech.
+   - **Consequence.** On LectQA-Vid, T1's own temporal co-occurrence signal beats a
+     text-derived deck. Frame-derived slides would need time-based linking (the interval is
+     known) to add anything; that would be T1's signal again, not a contribution. Answer
+     quality with frame slides awaits new LLM calls.
 
 ### Design changes recorded against the verified-gold result (2026-09-21)
 
@@ -533,6 +568,16 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   *Priority order* (i) and *Standing instruments* were not updated. That is the drift.
   Both are now corrected. Unit counts (report) and locator counts (regression file) are
   different quantities; name which one a number is.
+- **(h) LectQA-Vid gold timestamps are partly unusable.** The published annotations mix
+  conventions (HH:MM:SS, SS:cc as in `00:12:70` = 12.70 s, SSS:cc, M:SSS:cc), and their
+  meaning differs between videos. Some stamps also end past the fetched video. Only
+  unambiguous, in-range intervals are scored (`strict_seconds`, `gold_interval` in
+  `scripts/adapters/lectqa_vid.py`): **1,598 of 2,832** questions. By video range: 1–35: 828
+  usable, 36–63: 595, 64–100: only 175. The first-run and v2 localisation scored everything,
+  so they are understated (dated note in `results/external/lectqa_v2.md`).
+- **(i) LectQA-Vid MCQ answers are position-confounded.** The correct option is A in 1,484
+  of 1,489 published MCQs. MCQ accuracy with options in stored order is therefore not
+  reportable. A re-run with options shuffled under a fixed seed (new LLM calls) is needed.
 
 ## Environment decisions worth not re-litigating
 
