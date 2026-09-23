@@ -1,15 +1,14 @@
-# Extended-dataset intake (priority vi)
+# Lecture intake tooling (development only)
 
-Who this is for: the teammate collecting lectures. You need Python set up
-(`make setup`) and a GPU for the transcription (a free Colab T4 is the standard route,
-below). Redundancy is judged by the LLM judge on Groq's free tier: export
-`GROQ_API_KEY` (free account) in `~/.zshenv`. Do not switch the intake to the local NLI
-backend: on pilot01 it moves deck→transcript from 94.2 % to 59.6 % and would flip a
-REJECT to KEEP (DESIGN.md finding 11). Until the Groq judge's agreement with the
-stored judges has been measured, treat its intake verdicts as provisional (DESIGN.md
-known issue (f)). The free tier caps requests per day and one lecture needs more than
-a thousand judge calls, so intake takes more than one day. Re-running resumes from the
-reply cache.
+> **Dataset policy (2026-09-23, DESIGN.md):** results are reported only on LectQA-Vid and
+> MaViLS. No own-collected or other third-party lectures enter a reported table, and the
+> extended-dataset plan is dropped. This tooling stays for development and debugging.
+
+You need Python set up (`make setup`) and a GPU for the transcription (a free Colab T4 is
+the standard route, below). Redundancy is judged by the LLM judge (`eval.judge`,
+gpt-4.1-mini). Every run needs `--max-cost`, and `--sample N` keeps it cheap. Do not
+switch the intake to the local NLI backend: on pilot01 it moves deck→transcript from
+94.2 % to 59.6 % and would flip a REJECT to KEEP (DESIGN.md finding 11).
 
 ## What we are looking for
 
@@ -36,7 +35,7 @@ that is the cross-file setting no target benchmark covers.
 mkdir -p data/raw/mit_6006_l03 && cp l03.mp3 l03_slides.pdf l03_notes.pdf data/raw/mit_6006_l03/
 
 # 2. Run intake. Ingests to data/processed/candidates/<name>/ and measures redundancy.
-python scripts/dataset/candidate.py --name mit_6006_l03 \
+python scripts/dataset/candidate.py --name mit_6006_l03 --max-cost 0.25 --sample 50 \
     --audio data/raw/mit_6006_l03/l03.mp3 \
     --deck  data/raw/mit_6006_l03/l03_slides.pdf \
     --notes data/raw/mit_6006_l03/l03_notes.pdf        # optional
@@ -64,7 +63,7 @@ a free Colab T4 is much faster, so batch intake runs there:
 from google.colab import drive; drive.mount("/content/drive")   # lectures live in Drive
 !mkdir -p data/raw && ln -s /content/drive/MyDrive/linkrag_raw/* data/raw/
 # one line per lecture; --device cuda switches whisper to float16
-!python scripts/dataset/candidate.py --name mit_6006_l03 --device cuda \
+!python scripts/dataset/candidate.py --name mit_6006_l03 --device cuda --max-cost 0 \
     --audio data/raw/mit_6006_l03/l03.mp3 --deck data/raw/mit_6006_l03/l03_slides.pdf
 # keep the frozen transcripts and reports: copy them back to Drive, commit from there
 !cp -r data/processed/transcripts reports /content/drive/MyDrive/linkrag_out/
@@ -77,7 +76,7 @@ index unless `--reingest`.
 
 **whisper-1 is kept as an option** (`--asr openai`): ~15× realtime, better
 terminology (`reports/asr_openai_pilot01.md`), **$0.36 per hour of audio**. It bills,
-so under zero-cost mode it is refused before the first upload unless the budget is
+so it is refused before the first upload unless the budget is
 raised (`cost.max_usd` in the config).
 
 ## Record every decision
@@ -94,6 +93,6 @@ evidence that the criterion means something.
 1. Ear-label nothing. Write 20–30 proposed questions with reference answers that
    list only the asked facts (`tests/regression/<name>_proposed.jsonl`, same format as
    `pilot01_proposed.jsonl`).
-2. `python scripts/eval/verify_gold.py --proposed tests/regression/<name>_proposed.jsonl --out tests/regression/<name>_questions.jsonl --corpus <name> --index data/processed/candidates/<name>/index`
+2. `python scripts/eval/verify_gold.py --max-cost 0.50 --proposed tests/regression/<name>_proposed.jsonl --out tests/regression/<name>_questions.jsonl --corpus <name> --index data/processed/candidates/<name>/index`
 3. `python scripts/eval/audit_sample.py --verdicts reports/gold_verified_<name>.json --out reports/audit_sheet_<name>.csv` and fill the sheet.
 4. `python scripts/build_links.py` and `compare_retrieval.py` against the candidate index.

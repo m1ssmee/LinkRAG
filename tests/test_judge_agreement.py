@@ -42,8 +42,9 @@ def test_judge_agreement_writes_a_kappa_report_from_a_mocked_judge(tmp_path, mon
 
     monkeypatch.setitem(sys.modules, "verify_gold", types.SimpleNamespace(main=fake_verify))
     monkeypatch.setenv("LINKRAG_LLM_BACKEND", "colab")   # must be dropped: the answerer is the stored one
-    assert ja.main(["--judge", "groq", "--out-dir", str(tmp_path)]) == 0
+    assert ja.main(["--judge", "groq", "--max-cost", "0", "--out-dir", str(tmp_path)]) == 0
     assert seen["judge_env"] == "groq" and seen["llm_env"] is None
+    assert seen["argv"][seen["argv"].index("--answerer-model") + 1] == "gpt-5.4-2026-03-05"
     assert "--answerer-cache-only" in seen["argv"] and seen["argv"][seen["argv"].index("--entailment") + 1] == "llm"
     report = (tmp_path / "judge_agreement_groq.md").read_text()
     assert "groq:openai/gpt-oss-120b" in report and "llm:gpt-4.1-mini" in report
@@ -58,6 +59,6 @@ def test_judge_agreement_refuses_a_billing_judge_without_a_budget(tmp_path, monk
     monkeypatch.setitem(sys.modules, "verify_gold",
                         types.SimpleNamespace(main=lambda argv: pytest.fail("must not run")))
     with pytest.raises(SystemExit, match="bills"):
-        ja.main(["--judge", "default", "--out-dir", str(tmp_path)])      # gpt-4.1-mini, metered
+        ja.main(["--judge", "default", "--max-cost", "0", "--out-dir", str(tmp_path)])      # gpt-4.1-mini, metered
     ja.refuse_billing({"billing": "metered"}, 0.5, False)               # an explicit budget allows it
     ja.refuse_billing({"billing": "metered"}, 0.0, True)                # replay-only never bills

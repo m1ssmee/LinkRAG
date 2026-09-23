@@ -15,7 +15,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from linkrag.core import load_config, set_max_cost, setup_logging
+from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import record_run
 from linkrag.eval import describe_locator, format_modality_distribution, gold_coverage, gold_hits
 from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer, judge_completer
@@ -64,8 +64,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--phase", required=True, help='label for this run, e.g. "phase2 alignment"')
     ap.add_argument("--config", default="configs/default.yaml")
-    ap.add_argument("--max-cost", type=float, default=0.0,
-                        help="USD budget for LLM calls this run; 0 = zero-cost mode (refuse anything that bills)")
+    ap.add_argument("--max-cost", type=float, required=True,
+                    help="USD budget for this run (required; 0 = cache replays and free backends only)")
     ap.add_argument("--index", default=None)
     ap.add_argument("--mode", choices=["baseline", "linkrag"], default="baseline")
     ap.add_argument("--questions", default=str(QUESTIONS))
@@ -80,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging()
     cfg = load_config(args.config)
     set_max_cost(cfg, args.max_cost)
+    refuse_strong_in_batch(cfg)
     index = Index.load(args.index or cfg["index"]["store_dir"])
     encoder = default_encoder(index.embedding_model, cfg["device"], index.normalize)
     encoder([""])

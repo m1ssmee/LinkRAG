@@ -72,12 +72,46 @@ from the original framing. Mapping: **P1 = MI-RAG (component), P2 = T1
 Intra-Video Temporal-Aware RAG (target), P3 = MARA (related work).** They are not
 renamed in code without a separate instruction.
 
-## Priority order (binding from 2026-09-20)
+## Dataset policy (binding from 2026-09-23)
+
+Mentor's rule: **results are reported only on the datasets of the papers being improved on.**
+
+- **LectQA-Vid** (T1, *Intra-Video Temporal-Aware RAG*, CMC 2026) is the **primary**
+  benchmark.
+- **MaViLS** (T2, Interspeech 2024) is the benchmark for the **alignment** component.
+- **No own-collected data** and **no third-party datasets outside those two papers**. The
+  extended cross-file dataset plan (NPTEL / MIT lectures + notes) and the M3AV adapter are
+  dropped. The intake tooling (`scripts/dataset/`) stays, for development only.
+- **pilot01 is a development lecture only.** It is used to build and debug, and it never
+  appears in a reported table.
+
+## Priority order (binding from 2026-09-23)
 
 Work is done in this order. Nothing outside this list is started without an
 explicit instruction.
 
-1. **(i) Automated gold verification.** ✅ **Done 2026-09-20** —
+1. **(i) LectQA-Vid, full set.** Run on all videos that can be fetched (the first runs used
+   28/100), with n and the skipped videos stated.
+2. **(ii) LectQA-Vid protocol-matched metrics.** Their F1, semantic similarity and MCQ
+   accuracy, with the per-difficulty tables (Simple / Hard / Very Hard / Overall).
+3. **(iii) Frame-derived slide units on LectQA-Vid.** Slide text and figures from video
+   frames, so that linking has a second stream on a single-video benchmark (finding 8).
+4. **(iv) Verification / faithfulness on LectQA-Vid.** Claim-level entailment and
+   citation checks on its answers.
+5. **(v) MaViLS alignment rows.** As already done (finding 6); no new work planned.
+
+### Previous priority order (2026-09-20 → 2026-09-23), for the record
+
+(ii) relatedness gate, (iv) MaViLS and (v) Phase 6 were completed. (iii) LectQA-Vid was
+started (28/100 videos) and continues as the new (i)–(ii). (vi) the extended dataset was
+dropped by the dataset policy. Details of each item as it stood:
+
+
+
+Work is done in this order. Nothing outside this list is started without an
+explicit instruction.
+
+- **(i) Automated gold verification.** ✅ **Done 2026-09-20** —
    `src/linkrag/eval/verify_gold.py`, `scripts/eval/verify_gold.py`,
    `scripts/eval/audit_sample.py`. Unit entailment (3 judge runs, majority,
    quotable span) + modality-only full-context answering decide gold and type
@@ -88,28 +122,27 @@ explicit instruction.
    `reports/gold_verified_pilot01.md`, including the run history. Rules learned:
    reference answers list only the asked facts; a unit stating *one* required
    fact is gold.
-2. **(ii) Relatedness gate.** ✅ **Done 2026-09-21** — `src/linkrag/link/relatedness.py`,
+- **(ii) Relatedness gate.** ✅ **Done 2026-09-21** — `src/linkrag/link/relatedness.py`,
    `scripts/gate_links.py`; verdicts stored in link metadata, `load_links(gated=True)`
    drops failures, `reports/relatedness_pilot01.md`. Pass rates: audio_slide 98 %,
    deictic 75 % (55.6 % before it exposed the page-number bug below), figure_text and
    same_slide 100 % (partly tautological — shared slide titles in OCR).
-3. **(iii) LectQA-Vid adapter and first run.** 🔶 adapter built
+- **(iii) LectQA-Vid adapter and first run.** 🔶 adapter built
    (`scripts/adapters/lectqa_vid.py`: fetch / prepare / run). The published dataset
    ships QA + YouTube links only; videos are re-fetched (yt-dlp), transcribed
    (whisper) and frame-OCR'd here. Their split and 1,000-pair eval subset are
    unpublished — results are on the videos processed, n stated. First run:
    `reports/lectqa_vid_first_run.md`.
-4. **(iv) MaViLS adapter and first run.** ✅ **Run 2026-09-21** (`scripts/adapters/mavils.py`,
+- **(iv) MaViLS adapter and first run.** ✅ **Run 2026-09-21** (`scripts/adapters/mavils.py`,
    their micro-F1 reproduced exactly, all 20 lectures, transcript + PDF only):
    **ours 0.45 vs their audio-only 0.53** (their all-features 0.82); above them on
    6/20 lectures. The DP adds +0.06 over naive argmax on average but *hurts* on
    the three page-OCR'd image decks — the similarity, not the DP, is the limit.
    `reports/mavils_alignment.md`.
-5. **(v) Phase 6 — citations + entailment.** Claim-level faithfulness: each
+- **(v) Phase 6 — citations + entailment.** Claim-level faithfulness: each
    answer sentence must be entailed by a cited unit; id-level citation checks are
    known to pass wrong answers.
-6. **(vi) Extended cross-file dataset.** MaViLS / NPTEL lectures with decks + notes,
-   the setting neither target covers, built only after (iii) and (iv) have numbers.
+- **(vi) Extended cross-file dataset.** *Dropped 2026-09-23 (dataset policy).*
 
 ## Findings (binding for dataset and design decisions)
 
@@ -214,7 +247,7 @@ explicit instruction.
    quality and BM25 matching, not about finding the right 15 seconds. Keep
    `ingest.audio_segmentation: sentence` (it costs nothing), but do not claim it as a
    retrieval gain.
-10. **Extended-dataset selection criterion** (priority vi): **low redundancy**
+10. *Superseded 2026-09-23 by the dataset policy (no extended dataset).* **Extended-dataset selection criterion** (priority vi): **low redundancy**
    (measure it with `scripts/dataset/redundancy.py` before ingesting; a candidate
    with transcript→deck above pilot01's number is rejected), **diagram-heavy decks**
    (figures that carry facts the text does not), and **a speaker who points**
@@ -245,11 +278,10 @@ explicit instruction.
      minutes, and the video was 6 hours long" is rejected. Deck bullets are fragments,
      not propositions, which is why the deck redundancy pairs sit at chance.
    - **Decision:** verification stays LLM-based (`eval.entailment.backend: llm`). The
-     zero-cost judge is Groq's free tier (`eval.judge.backend: groq`). NLI remains
-     selectable as an ablation (`--entailment nli`) and is never used for gold or intake
-     decisions. The Groq judge's agreement with the stored judges is **not yet measured**;
-     measure it with `scripts/eval/compare_entailment.py` before any Groq-judged number
-     is reported.
+     judge is gpt-4.1-mini, the cheap OpenAI tier and the model behind the stored verdicts
+     (see *Cost policy*). A free judge (Groq, Colab) may replace it only after
+     `scripts/eval/judge_agreement.py` has measured it against the stored verdicts. NLI
+     remains selectable as an ablation (`--entailment nli`) and never decides gold or intake.
 
 ### Design changes recorded against the verified-gold result (2026-09-21)
 
@@ -260,7 +292,7 @@ the previous behaviour, and each was applied once, before re-measuring.
 |---|---|---|
 | **Additive expansion.** Retrieve `k_final` seeds, add 1-hop neighbours to the pool, let the reranker (or score, for `rerank=none`) select `k_final`. Expansion never evicts a seed on its own. | `retrieve.expansion: additive` (old: `evict`) | `evict` with `k_seed 5 < k_final 8` threw away seeds ranked 6–8 unconditionally; A1 went 100 % → 0 %. |
 | **Seed normalisation on** | `retrieve.linkrag.normalise_seeds: true` (old: `false`) | Under additive expansion "select by score" is degenerate on raw RRF scores (~0.03 vs `seed×link×decay`). Consequence, inspected per measurement rule 1: `linkrag/none` is identical to `baseline/none` by construction — neighbours enter the final set only through the reranker. |
-| **Separate judge** | `eval.judge` (model ≠ `models.llm`) | Self-grading is lenient. Judge/answerer agreement measured: κ = 0.85 on unit verdicts, 20/25 type labels (`reports/gold_verified_pilot01.md`). The intended default is a local model; this machine (8 GB, no Ollama) uses a different hosted family instead. Since 2026-09-23 the judge defaults to Groq's free tier (`eval.judge.backend: groq`; see Zero-cost operating mode and finding 11). The stored verdicts above came from gpt-4.1-mini. |
+| **Separate judge** | `eval.judge` (model ≠ `models.llm`) | Self-grading is lenient. Judge/answerer agreement measured: κ = 0.85 on unit verdicts, 20/25 type labels (`reports/gold_verified_pilot01.md`). The intended default is a local model; this machine (8 GB, no Ollama) uses a different hosted family instead. The judge is gpt-4.1-mini (cheap tier; see *Cost policy*), which is also where the stored verdicts above came from. The batch answerer is a different cheap model. |
 | **Per-type reporting** | `compare_retrieval.py` always emits it | The all-questions mean hides that 21 of 25 questions are single-source. From now on the by-type table is the one that matters. |
 | **Cost accounting** | `linkrag.costs`, `reports/llm_ledger.jsonl` | Every LLM-touching run prints per-run and cumulative spend; exact tokens from `usage`, cache replays free, backfilled rows flagged *estimated*. |
 | **Colab backend for Phase 8** | backend `colab` (`LINKRAG_LLM_BACKEND` / `LINKRAG_JUDGE_BACKEND`), URL from `LINKRAG_COLAB_BASE_URL` | Reported Phase 8 numbers come from an open model served from Colab (Ollama/vLLM) on the same code path. `notebooks/colab_serve.ipynb` serves it; as judge only after `scripts/eval/judge_agreement.py --judge colab` has measured it. Setup in `scripts/README.md`. |
@@ -269,37 +301,31 @@ the previous behaviour, and each was applied once, before re-measuring.
 | **Relatedness gate (file pairs)** | `align.relatedness_z` (2.0) | Before any cross-file link is emitted, the penalised DP objective must beat 5 shuffled-slide-order alignments by z std devs; cross-document semantic figure_text uses a word-shuffle null. Negative control (pilot01 audio × unrelated deck): 0 cross-file links; false-rejection on 20 related MaViLS pairs: 15 % at 30 s windows, 40 % at sentence level (`reports/relatedness_gate.md`). Unrelated pairs fall back to plain hybrid retrieval. |
 | **Sampled redundancy (2026-09-23)** | `redundancy.py --sample N`, `dataset.intake.redundancy_sample` (0 = census), `sample_seed` | Redundancy is an estimate for a gate. N sentences per direction, stratified by reading position, fixed recorded seed; each fraction gets a Wilson 95 % CI. **Rule:** KEEP if the CI's upper bound of deck→transcript < 0.65, REJECT if its lower bound > 0.65, otherwise BORDERLINE (exit 3) and the census decides. On pilot01's stored LLM verdicts all four full-run fractions lie inside the sampled CIs at N = 150 and at N = 50; a real N = 150 run (cache replay, $0) reproduced the simulated counts exactly. N = 150 saves only 8 % of judge calls on pilot01 (15 % on pilot01-w1) because a deck has ~52 sentences; N = 50 saves 54–58 % and still decides both (deck→transcript CI lower bound 83.8 % / 76.2 %). Evidence is two lectures, replayed — direction only. |
 
-## Zero-cost operating mode (since 2026-09-23)
+## Cost policy (binding from 2026-09-23)
 
-Hosted credit is reserved. Nothing bills unless a run is explicitly given a budget.
+Hosted credit is limited, about $10 for the rest of the project. Spend goes to the cheap
+tier, and nothing bills without an explicit budget.
 
-**Free:**
-- **Budget guard.** Every LLM script takes `--max-cost` (default **0**; `cost.max_usd: 0`).
-  The spend guard prices each request *before* sending it and refuses anything that could
-  bill: a metered model with no price row, or a call that would exceed the budget.
-  whisper-1 is priced from the file's duration before the first upload.
-- **Judge:** Groq free tier (`openai/gpt-oss-120b`, `eval.judge.backend: groq`, `GROQ_API_KEY`).
-  The client-side limiter is 28 rpm / 7,500 tpm. The free tier caps requests per day, so a
-  full gold verification (~900 judge calls) does not fit in one day. A missing key stops
-  the run in one line; it never falls back to the metered judge.
-- **Answerer:** replies already in the cache replay at $0. Colab-served open models
-  (Ollama / vLLM) and Google AI Studio are the free backends for new calls
-  (`models.llm_backends`, all `billing: free`, rate-limited).
-- **ASR:** local faster-whisper. Intake runs `scripts/dataset/candidate.py --device cuda`
-  on a Colab GPU (`scripts/dataset/README.md`); transcripts are frozen on first run and
-  reused.
-- **NLI entailment:** local and free, **ablation only** (finding 11).
-
-**Not free** (each needs an explicit `--max-cost` / `cost.max_usd` above 0):
-- the OpenAI answerer (gpt-5.4) on any uncached prompt;
-- the OpenAI judge (gpt-4.1-mini, `LINKRAG_JUDGE_BACKEND=default`);
-- whisper-1 ASR ($0.006/min, `--asr openai`);
-- any backend declared `billing: metered`.
-
-**Comparability.** A number is comparable only to numbers produced by the same judge and
-answerer. The stored pilot01 verdicts are from gpt-4.1-mini / gpt-5.4, so a
-Groq-judged run is a new condition until its agreement has been measured. Google's free
-tier may use prompts for training: use it for public lecture material only.
+- **`--max-cost` is required** on every batch script (`verify_gold`, `compare_retrieval`,
+  `run_regression`, `redundancy`, `candidate`, `propose_questions`, `lectqa_vid`,
+  `gate_links`, `judge_agreement`). `0` allows only cache replays and free backends. The
+  spend guard prices each request before sending it and refuses anything that could
+  exceed the budget.
+- **Judge:** gpt-4.1-mini (`eval.judge`), the model behind the stored verdicts.
+- **Batch answerer:** a different cheap model (gpt-5.4-mini). It must not be the judge
+  (*Separate judge*).
+- **Strong model** (gpt-5.4, the answerer of every stored pilot01 run): refused in batch
+  runs unless `models.llm.allow_strong_in_batch: true`. It is for a final reference row
+  and the demo only. A cache-only replay of its stored answers is allowed, because it
+  cannot spend.
+- **Free backends** (`billing: free`): Colab-served open models (`notebooks/colab_serve.ipynb`,
+  backend `colab`), Groq and Google AI Studio. Always allowed. As judge, only after
+  `scripts/eval/judge_agreement.py` has measured them.
+- **Free by construction:** reply-cache replays, local faster-whisper ASR, and the NLI
+  ablation.
+- **Comparability.** A number is comparable only to numbers produced by the same judge
+  and answerer. Moving the batch answerer from gpt-5.4 to gpt-5.4-mini makes new runs a
+  new condition against the stored gpt-5.4 rows; say which answerer produced each row.
 
 ## Our three novel components
 
@@ -434,6 +460,8 @@ reading the output — not just checking the exit code.
 
 ## Pilot corpus (pilot01) — pinned
 
+**Development lecture only (dataset policy, 2026-09-23): it never appears in a reported table.**
+
 `data/processed/transcripts/hsieh.frozen.json` (guided-v2 transcript) is the
 default for every pilot01 run; `ingest.frozen_transcript_dir` makes whisper skip.
 **Do not re-transcribe pilot01 unless explicitly instructed.** Regression gold is
@@ -452,7 +480,7 @@ the bugs they surfaced: `docs/pilot01_history.md`.
    verified unit ids and types, stamped `2f3b35f27e86caf8`. Regenerate with
    `scripts/eval/verify_gold.py` whenever the corpus or the proposals change; never
    hand-edit. Re-run every phase with
-   `python scripts/run_regression.py --phase "<label>"`, which appends to
+   `python scripts/run_regression.py --max-cost <USD> --phase "<label>"`, which appends to
    `reports/regression.md`. Gold evidence is matched by **file+page / file+time
    overlap, never by unit id** — audio ids are regenerated whenever ASR or chunking
    settings change, so an id-keyed gold set would go stale silently.
@@ -489,14 +517,13 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   scores it, so human agreement is unknown.
 - **(e) n = 25 questions, 4 cross-modal.** Enough to run the harness, not enough to
   claim a cross-modal result; see Findings and `reports/redundancy_pilot01.md`.
-- **(f) The Groq judge is not validated.** It has been the default judge since 2026-09-23
-  (finding 11) but has made no real call yet. Its agreement with the stored judges is
-  unmeasured. Until `scripts/eval/compare_entailment.py` has measured it on pilot01, a
-  Groq-judged gold set or intake verdict is **provisional**. The NLI result shows that a
-  judge swap alone can flip an intake REJECT to KEEP. The free tier caps requests per day,
-  and one candidate's redundancy pass (pilot01-w1) took 1,422 judge calls, so intake spans
-  more than one day (the reply cache makes re-runs resume). Also unverified:
-  `gpt-oss-120b` is a reasoning model, and `max_tokens: 1024` may truncate its JSON reply.
+- **(f) Free judges are not validated.** Groq and Colab-served models have made no real
+  judge call yet, and their agreement with the stored judges is unmeasured
+  (`scripts/eval/judge_agreement.py` measures it). Until then they may not decide gold or
+  intake; the NLI result shows that a judge swap alone can flip a verdict. The Groq free
+  tier caps requests per day. `gpt-oss-120b` is a reasoning model, and `max_tokens: 1024`
+  may truncate its JSON reply (unverified). The batch answerer gpt-5.4-mini is not yet
+  verified against this account's model list.
 - **(g) Gold counts — reconciled 2026-09-23.** The stored gold (`reports/gold_verified_pilot01.md`,
   `tests/regression/pilot01_questions.jsonl`, judge gpt-4.1-mini, verified 2026-09-21) is
   the reference: 25 questions, 69 gold locators, 4 cross-modal (3 split + 1 deictic).

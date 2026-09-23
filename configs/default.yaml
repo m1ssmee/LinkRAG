@@ -12,11 +12,15 @@ models:
     # Ollama speaks the OpenAI /v1/chat/completions shape, so both providers use
     # one code path; `provider` only picks a default base_url.
     provider: openai             # ollama | openai | any OpenAI-compatible server
-    # Verified against this account's GET /v1/models on 2026-09-06. Dated
-    # snapshot, not a floating alias, so pilot numbers stay reproducible.
+    # Batch answerer: cheap tier (dataset policy, 2026-09-23). It must differ from the
+    # judge (gpt-4.1-mini, DESIGN.md "Separate judge"). NOT yet verified against this
+    # account's GET /v1/models -- pin the dated snapshot once it is.
+    # The strong model gpt-5.4-2026-03-05 answered every stored pilot01 run; batch
+    # scripts refuse it unless allow_strong_in_batch is true (reference row / demo only).
     # gpt-5.5 was rejected: it only accepts its default temperature (1), and a
     # non-deterministic baseline is not usable as a paper comparison point.
-    model: gpt-5.4-2026-03-05
+    model: gpt-5.4-mini
+    allow_strong_in_batch: false
     base_url: https://api.openai.com/v1
     api_key_env: OPENAI_API_KEY  # read from the environment; never commit the key
     temperature: 0.0             # deterministic: this is an eval harness (null = omit)
@@ -26,6 +30,10 @@ models:
     # Active backend: "default" = the block above (OpenAI, the working backend).
     # Set to a key of llm_backends below, or export LINKRAG_LLM_BACKEND=<key>.
     backend: default
+
+  # Cheap tier: models a batch run may use without allow_strong_in_batch (prefix match,
+  # so dated snapshots count). Free backends (billing: free) are always allowed.
+  cheap_tier: [gpt-4.1-mini, gpt-4.1-nano, gpt-5-mini, gpt-5-nano, gpt-5.4-mini, gpt-5.4-nano]
 
   # Alternative answerer backends, same OpenAI-compatible code path. Selecting one
   # overlays its keys onto models.llm (see core.load_config).
@@ -331,10 +339,10 @@ datasets:
     repo: data/raw/mavils          # clone of github.com/andererka/MaViLS
 
 cost:
-  # Zero-cost operating mode (2026-09-23): the default budget for EVERY LLM call is
-  # $0. Free-tier/self-hosted backends (`billing: free`) and local NLI entailment run;
-  # anything that would bill is refused before the request is sent. Raise per run
-  # with a script's --max-cost.
+  # Cost policy (DESIGN.md, 2026-09-23): the budget for every LLM call defaults to $0,
+  # and batch scripts require an explicit --max-cost. Free backends (`billing: free`),
+  # cache replays and local NLI always run; anything that would bill past the budget is
+  # refused before the request is sent.
   max_usd: 0.0
 
 generation:
@@ -380,14 +388,13 @@ eval:
   entailment:
     backend: llm
     device: cpu              # nli backend only
-  # Zero-cost judge: eval.judge.backend picks an entry from models.llm_backends and
-  # overlays it (LINKRAG_JUDGE_BACKEND overrides; "default" = the OpenAI block below).
-  # groq (openai/gpt-oss-120b, free tier) needs GROQ_API_KEY in the environment; if it
-  # is missing, every judge-dependent run stops with one line -- it never falls back
-  # to the metered OpenAI block. Its agreement with the stored judges is not yet
-  # measured: measure it (scripts/eval/compare_entailment.py) before reporting.
+  # Judge: the cheap OpenAI tier, gpt-4.1-mini -- the model the stored pilot01 verdicts
+  # came from (dataset policy, 2026-09-23). eval.judge.backend / LINKRAG_JUDGE_BACKEND
+  # can select a free backend (groq, colab) instead, but only after
+  # scripts/eval/judge_agreement.py has measured it against the stored verdicts.
+  # A selected backend with a missing key/URL stops with one line; no fallback.
   judge:
-    backend: groq
+    backend: default
     provider: openai
     billing: metered
     model: gpt-4.1-mini-2025-04-14   # gpt-4.1 has a 30k TPM cap on this account

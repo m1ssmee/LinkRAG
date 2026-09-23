@@ -15,7 +15,7 @@ import argparse
 import json
 from pathlib import Path
 
-from linkrag.core import load_config, set_max_cost, setup_logging
+from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
 from linkrag.eval.verify_gold import (dump_json, entailment_opts, refuse_nli_decisions, verified_gold_rows, verifier_label,
                                      verify_gold, write_gold, write_report)
@@ -39,7 +39,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--reports-dir", default="reports",
                     help="where the .md/.json go (scratch dir for a cost backfill replay)")
     ap.add_argument("--only", default=None, help="comma-separated qids (debugging)")
-    ap.add_argument("--max-cost", type=float, default=0.0, help="stop when uncached spend exceeds this")
+    ap.add_argument("--max-cost", type=float, required=True,
+                    help="USD budget for this run (required; 0 = cache replays and free backends only)")
+    ap.add_argument("--answerer-model", default=None,
+                    help="override models.llm.model (e.g. replay the stored gpt-5.4 answers)")
     ap.add_argument("--answerer-cache-only", action="store_true",
                     help="replay stored answerer replies only; a miss is an error, never a call")
     ap.add_argument("--judge-cache-only", action="store_true",
@@ -48,7 +51,10 @@ def main(argv: list[str] | None = None) -> int:
 
     setup_logging()
     cfg = load_config(args.config)
+    if args.answerer_model:
+        cfg["models"]["llm"]["model"] = args.answerer_model
     set_max_cost(cfg, args.max_cost)
+    refuse_strong_in_batch(cfg, answerer_cache_only=args.answerer_cache_only)
     index = Index.load(args.index or cfg["index"]["store_dir"])
     manifest = load_manifest(Path(args.index or cfg["index"]["store_dir"]).parent / MANIFEST_NAME) or {}
     mhash = manifest.get("hash", "unstamped")

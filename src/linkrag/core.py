@@ -115,6 +115,24 @@ def load_config(path: str | Path = "configs/default.yaml") -> dict[str, Any]:
     return cfg
 
 
+def refuse_strong_in_batch(cfg: dict[str, Any], *, answerer_cache_only: bool = False) -> None:
+    """Batch runs use the cheap tier (`models.cheap_tier`) or a free backend. Any other
+    metered model -- the strong gpt-5.4 -- needs `models.llm.allow_strong_in_batch: true`
+    (a final reference row or the demo, never a batch). A cache-only answerer cannot
+    spend, so it is exempt. Stops with one line."""
+    cheap = [str(c) for c in (cfg.get("models", {}).get("cheap_tier") or [])]
+    allow = bool(cfg["models"]["llm"].get("allow_strong_in_batch"))
+    blocks = [("models.llm", cfg["models"]["llm"], answerer_cache_only),
+              ("eval.judge", (cfg.get("eval") or {}).get("judge") or {}, False)]
+    for where, block, exempt in blocks:
+        model = str(block.get("model", ""))
+        if exempt or allow or not model or block.get("billing") == "free":
+            continue
+        if not any(model == c or model.startswith(c + "-") for c in cheap):
+            raise SystemExit(f"{where}.model {model!r} is not on the cheap tier (models.cheap_tier); batch runs "
+                             f"refuse it unless models.llm.allow_strong_in_batch: true")
+
+
 def set_max_cost(cfg: dict[str, Any], usd: float) -> None:
     """Raise (or lower) the run budget: every LLM block, and `cost.max_usd`, which the
     whisper-1 pre-upload check reads."""

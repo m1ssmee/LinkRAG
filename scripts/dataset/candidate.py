@@ -18,7 +18,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from linkrag.core import load_config, set_max_cost, setup_logging
+from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
 from linkrag.eval.redundancy import DEFAULT_PAIRS, dump_json, intake_gate, redundancy, role_of, summarise, write_report
 from linkrag.eval.verify_gold import entailment_opts
@@ -34,8 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--deck", required=True)
     ap.add_argument("--notes", default=None, help="optional paper / lecture notes PDF")
     ap.add_argument("--config", default="configs/default.yaml")
-    ap.add_argument("--max-cost", type=float, default=0.0,
-                        help="USD budget for LLM calls this run; 0 = zero-cost mode (refuse anything that bills)")
+    ap.add_argument("--max-cost", type=float, required=True,
+                    help="USD budget for this run (required; 0 = cache replays and free backends only)")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--device", choices=["cpu", "cuda", "mps"], default="cuda",
                     help="ASR/embedder device; intake runs on a Colab GPU by default (scripts/dataset/README.md)")
@@ -49,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging()
     cfg = load_config(args.config)
     set_max_cost(cfg, args.max_cost)
+    refuse_strong_in_batch(cfg)
     intake = cfg.get("dataset", {}).get("intake", {})
     threshold = float(intake.get("max_deck_to_transcript", 0.65))
     root = Path("data/processed/candidates") / args.name

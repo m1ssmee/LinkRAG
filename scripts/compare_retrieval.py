@@ -20,7 +20,7 @@ import statistics
 import time
 from pathlib import Path
 
-from linkrag.core import load_config, set_max_cost, setup_logging
+from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import record_run
 from linkrag.eval import matches_locator
 from linkrag.generate.answer import answer_json, http_completer, judge_completer
@@ -126,8 +126,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--questions", default="tests/regression/pilot01_questions.jsonl")
     ap.add_argument("--config", default="configs/default.yaml")
-    ap.add_argument("--max-cost", type=float, default=0.0,
-                        help="USD budget for LLM calls this run; 0 = zero-cost mode (refuse anything that bills)")
+    ap.add_argument("--max-cost", type=float, required=True,
+                    help="USD budget for this run (required; 0 = cache replays and free backends only)")
     ap.add_argument("--index", default=None)
     ap.add_argument("--links", default=None)
     ap.add_argument("--k", type=int, default=None)
@@ -148,6 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging()
     cfg = load_config(args.config)
     set_max_cost(cfg, args.max_cost)
+    refuse_strong_in_batch(cfg)
     lcfg, rcfg = cfg["retrieve"]["linkrag"], cfg["retrieve"]["rerank"]
     llm = cfg["models"]["llm"]
     k = args.k or lcfg["k_final"]

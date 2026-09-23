@@ -124,9 +124,10 @@ def test_rate_limiter_waits_out_the_minute(monkeypatch):
     assert RateLimiter.for_backend("u", "m2", 5, None) is RateLimiter.for_backend("u", "m2", 5, None)
 
 
-def test_verifier_defaults_to_the_llm_judge_on_groq_and_never_falls_back(monkeypatch):
-    """DESIGN.md finding 11: gold/intake verification is LLM-based; the zero-cost judge is
-    Groq; a missing key stops the run in one line and sends nothing anywhere."""
+def test_verifier_defaults_to_the_cheap_tier_llm_judge_and_never_falls_back(monkeypatch):
+    """Dataset policy (2026-09-23): the judge is gpt-4.1-mini (cheap tier, the stored
+    reference) and the batch answerer a different cheap model. A free judge backend
+    selected without its key stops the run in one line and sends nothing anywhere."""
     import pytest
     import requests
     from linkrag.core import load_config
@@ -134,23 +135,44 @@ def test_verifier_defaults_to_the_llm_judge_on_groq_and_never_falls_back(monkeyp
     from linkrag.generate.answer import MissingApiKey, http_completer, judge_completer
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     monkeypatch.delenv("LINKRAG_JUDGE_BACKEND", raising=False)
+    monkeypatch.delenv("LINKRAG_LLM_BACKEND", raising=False)
     monkeypatch.setattr(requests, "post", lambda *a, **k: pytest.fail("no request may be sent"))
     cfg = load_config("configs/default.yaml")
     assert entailment_opts(cfg)["backend"] == "llm" and entailment_opts({})["backend"] == "llm"
-    judge = cfg["eval"]["judge"]
-    assert (judge["backend"], judge["api_key_env"], judge["billing"]) == ("groq", "GROQ_API_KEY", "free")
+    judge, llm = cfg["eval"]["judge"], cfg["models"]["llm"]
+    assert judge["model"].startswith("gpt-4.1-mini") and judge["api_key_env"] == "OPENAI_API_KEY"
+    assert llm["model"] != judge["model"]                       # separate judge (DESIGN.md)
+    monkeypatch.setenv("LINKRAG_JUDGE_BACKEND", "groq")
+    groq = load_config("configs/default.yaml")
     with pytest.raises(MissingApiKey) as err:
-        judge_completer(cfg, "llm")
-    msg = str(err.value)
-    assert "GROQ_API_KEY" in msg and "\n" not in msg
+        judge_completer(groq, "llm")
+    assert "GROQ_API_KEY" in str(err.value) and "\n" not in str(err.value)
     with pytest.raises(MissingApiKey):
-        http_completer(judge)
-    # the nli ablation needs no judge key, and a stray judge call is an error, not a fallback
-    stub = judge_completer(cfg, "nli")
+        http_completer(groq["eval"]["judge"])
+    stub = judge_completer(groq, "nli")                         # the nli ablation needs no judge key
     assert stub.usage["calls"] == 0
     with pytest.raises(RuntimeError, match="nli"):
         stub("s", "u")
 
+
+def test_batch_runs_refuse_the_strong_model_unless_allowed(monkeypatch):
+    import pytest
+    from linkrag.core import load_config, refuse_strong_in_batch
+    monkeypatch.delenv("LINKRAG_LLM_BACKEND", raising=False)
+    monkeypatch.delenv("LINKRAG_JUDGE_BACKEND", raising=False)
+    cfg = load_config("configs/default.yaml")
+    refuse_strong_in_batch(cfg)                                 # defaults are cheap tier
+    cfg["models"]["llm"]["model"] = "gpt-5.4-2026-03-05"
+    with pytest.raises(SystemExit, match="allow_strong_in_batch"):
+        refuse_strong_in_batch(cfg)
+    refuse_strong_in_batch(cfg, answerer_cache_only=True)       # a replay cannot spend
+    cfg["models"]["llm"]["allow_strong_in_batch"] = True
+    refuse_strong_in_batch(cfg)                                 # explicit reference-row opt-in
+    cfg["models"]["llm"].update(allow_strong_in_batch=False, model="gpt-5.4-mini-2026-03-17")
+    refuse_strong_in_batch(cfg)                                 # dated cheap snapshots count
+    cfg["eval"]["judge"]["model"] = "gpt-4.1"
+    with pytest.raises(SystemExit, match="eval.judge"):
+        refuse_strong_in_batch(cfg)
 
 def test_colab_backend_against_a_local_openai_compatible_server(monkeypatch, tmp_path):
     """backend colab: URL from LINKRAG_COLAB_BASE_URL, no key sent (not even the base

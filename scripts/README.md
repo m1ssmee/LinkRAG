@@ -23,24 +23,25 @@ flagged *estimated*).
 | `adapters/mavils.py` | target T2: their 20 lectures, their micro-F1, transcript + PDF only | no |
 | `adapters/lectqa_vid.py` | target T1: fetch / prepare / run on their QA pairs and levels | answerer |
 
-## Zero-cost mode (default)
+## Cost policy (DESIGN.md *Cost policy*)
 
-Nothing bills unless a run says so.
+Nothing bills without an explicit budget, and spend goes to the cheap tier.
 
-- **Budget.** `cost.max_usd: 0` in the config; every LLM script takes `--max-cost USD`
-  (default 0). The spend guard prices each request *before* sending it and refuses
-  (`BillingRefused`) when it could exceed the budget. A metered model with no price
-  row is refused outright at $0. whisper-1 is priced on the file's duration before
-  the first upload.
+- **Budget.** Every batch script **requires** `--max-cost USD`. `0` allows only cache
+  replays and free backends. The spend guard prices each request *before* sending it and
+  refuses (`BillingRefused`) anything that could exceed the budget. A metered model with
+  no price row is refused outright at $0. whisper-1 is priced on the file's duration
+  before the first upload.
+- **Cheap tier.** Judge gpt-4.1-mini, batch answerer gpt-5.4-mini (they must differ). Any
+  other metered model (the strong gpt-5.4) is refused in a batch run unless
+  `models.llm.allow_strong_in_batch: true`, which is for the final reference row and the
+  demo only.
 - **Free backends pass.** A backend with `billing: free` (below), or a local server
-  (provider `ollama`, or a `localhost` base URL), is never refused.
-- **The judge is free, not local.** Gold verification, claim verification and
-  redundancy use the LLM judge (`eval.entailment.backend: llm`), and the judge defaults
-  to Groq's free tier (`eval.judge.backend: groq`, needs `GROQ_API_KEY`). Without the key,
-  a judge-dependent run stops with one line; it never falls back to the metered OpenAI
-  judge (`LINKRAG_JUDGE_BACKEND=default` selects that one explicitly). Local NLI
-  (`--entailment nli`) is an **ablation only**: on pilot01 it agrees with the LLM judges
-  at kappa 0.31/0.36, where they agree with each other at 0.85
+  (provider `ollama`, or a `localhost` base URL), is never refused. A free judge (`groq`,
+  `colab`) is used only after `scripts/eval/judge_agreement.py --judge <name>` has measured
+  it. Without its key or URL, a run stops with one line and never falls back.
+- **NLI** (`--entailment nli`) is an **ablation only**: on pilot01 it agrees with the LLM
+  judges at kappa 0.31/0.36, where they agree with each other at 0.85
   (`results/nli_vs_llm_pilot01.md`, DESIGN.md finding 11).
 - **ASR is local.** faster-whisper; `ingest.py --device cuda` / `candidate.py` on a
   Colab GPU (`scripts/dataset/README.md`). whisper-1 is `--asr openai`.
@@ -92,7 +93,7 @@ without an account. Same code path as every other backend (`/v1/chat/completions
    line; it never falls back to a paid backend. Cost is recorded as $0 with `backend: colab`
    in `reports/llm_ledger.jsonl`. The rate limit is `rate_limit_rpm` in the `colab` block.
 3. **Measure before trusting it as judge:**
-   `python scripts/eval/judge_agreement.py --judge colab` writes
+   `python scripts/eval/judge_agreement.py --judge colab --max-cost 0` writes
    `results/judge_agreement_colab.md` (kappa vs the stored gpt-4.1-mini and gpt-5.4 verdicts).
    It must come close to the LLM-LLM 0.85 before it decides gold or intake (DESIGN.md finding 11).
 4. **Disconnects:** free sessions end after a few hours. Re-run the notebook, export the new

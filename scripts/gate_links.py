@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from linkrag.core import load_config, set_max_cost, setup_logging
+from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index
@@ -25,8 +25,8 @@ from linkrag.manifest import MANIFEST_NAME, load_manifest
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="configs/default.yaml")
-    ap.add_argument("--max-cost", type=float, default=0.0,
-                        help="USD budget for LLM calls this run; 0 = zero-cost mode (refuse anything that bills)")
+    ap.add_argument("--max-cost", type=float, required=True,
+                    help="USD budget for this run (required; 0 = cache replays and free backends only)")
     ap.add_argument("--index", default=None)
     ap.add_argument("--links", default=None)
     ap.add_argument("--corpus", default="pilot01")
@@ -38,6 +38,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging()
     cfg = load_config(args.config)
     set_max_cost(cfg, args.max_cost)
+    refuse_strong_in_batch(cfg)
     rcfg = cfg["link"].get("relatedness", {})
     index_dir = Path(args.index or cfg["index"]["store_dir"])
     index = Index.load(index_dir)

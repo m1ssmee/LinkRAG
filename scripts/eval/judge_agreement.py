@@ -13,8 +13,8 @@ go to `results/judge_agreement_<backend>/`, and `scripts/eval/compare_entailment
 writes `results/judge_agreement_<backend>.md` in the NLI report's layout: unit-level
 kappa vs gpt-4.1-mini and vs gpt-5.4, type-label agreement, and per-question differences.
 
-A judge that bills (`billing: metered`) is refused unless `--max-cost` or
-`--judge-cache-only` is given. Free backends run at $0 (DESIGN.md, zero-cost mode).
+`--max-cost` is required. With `--max-cost 0`, a judge that bills (`billing: metered`) is
+refused unless `--judge-cache-only` is also given. Free backends run at $0.
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+STORED_ANSWERER = "gpt-5.4-2026-03-05"      # answered every stored pilot01 verification
 STORED = [("reports/gold_verified_pilot01.json", "llm:gpt-4.1-mini"),
           ("reports/gold_verified_pilot01.judge-gpt54.json", "llm:gpt-5.4")]
 
@@ -50,7 +51,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--judge", required=True, help="a models.llm_backends name (colab, groq, ...) or 'default'")
     ap.add_argument("--config", default="configs/default.yaml")
-    ap.add_argument("--max-cost", type=float, default=0.0)
+    ap.add_argument("--max-cost", type=float, required=True,
+                    help="USD budget for this run (required; 0 = cache replays and free backends only)")
     ap.add_argument("--judge-cache-only", action="store_true")
     ap.add_argument("--only", default=None, help="comma-separated qids (a smoke run; kappa is then not comparable)")
     ap.add_argument("--out-dir", default="results")
@@ -65,6 +67,7 @@ def main(argv: list[str] | None = None) -> int:
 
     import verify_gold as vg                           # scripts/eval/verify_gold.py
     argv_vg = ["--config", args.config, "--entailment", "llm", "--answerer-cache-only",
+               "--answerer-model", STORED_ANSWERER,
                "--max-cost", str(args.max_cost), "--reports-dir", str(raw), "--out", str(raw / "pilot01_questions.jsonl")]
     if args.judge_cache_only:
         argv_vg.append("--judge-cache-only")

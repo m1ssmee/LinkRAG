@@ -16,7 +16,7 @@ import argparse
 from collections import defaultdict
 from pathlib import Path
 
-from linkrag.core import load_config, set_max_cost, setup_logging
+from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
 from linkrag.eval.redundancy import DEFAULT_PAIRS, dump_json, redundancy, role_of, write_report
 from linkrag.eval.verify_gold import entailment_opts, refuse_nli_decisions, verifier_label
@@ -30,8 +30,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--index", default=None)
     ap.add_argument("--corpus", default="pilot01")
     ap.add_argument("--config", default="configs/default.yaml")
-    ap.add_argument("--max-cost", type=float, default=0.0,
-                        help="USD budget for LLM calls this run; 0 = zero-cost mode (refuse anything that bills)")
+    ap.add_argument("--max-cost", type=float, required=True,
+                    help="USD budget for this run (required; 0 = cache replays and free backends only)")
     ap.add_argument("--deck", action="append", default=[], help="file name(s) to treat as deck")
     ap.add_argument("--paper", action="append", default=[], help="file name(s) to treat as paper")
     ap.add_argument("--pairs", default=",".join(f"{a}->{b}" for a, b in DEFAULT_PAIRS))
@@ -52,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging()
     cfg = load_config(args.config)
     set_max_cost(cfg, args.max_cost)
+    refuse_strong_in_batch(cfg)
     index_dir = Path(args.index or cfg["index"]["store_dir"])
     index = Index.load(index_dir)
     manifest = load_manifest(index_dir.parent / MANIFEST_NAME) or {}
