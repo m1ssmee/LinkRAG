@@ -318,6 +318,54 @@ explicit instruction.
      known) to add anything; that would be T1's signal again, not a contribution. Answer
      quality with frame slides awaits new LLM calls.
 
+13. **On LectQA-Vid the whole transcript beats retrieval, T1's and ours, and the MCQ half
+   measures neither retrieval nor the video.** (`results/external/lectqa_audit.md`,
+   `lectqa_mcq_shuffled.md`, `lectqa_open_modes.md`, `lectqa_faithfulness.md`, 2026-09-23/24.
+   95 of 100 videos; answerer gpt-5.4-mini-2026-03-17 at temperature 0; judge
+   gpt-4.1-mini-2025-04-14; $4.24 in total.)
+   - **Caveats first.** The open-ended comparison covers a stratified subset of 300
+     questions (100 per difficulty, recorded seed) on 93 videos, with 3 repeats. The single
+     run on the other 1,118 questions was not made: $7.43 was estimated against a $3.50 cap.
+     The T1 baseline is our replica of §4.2–4.4. M, L, the merge gap, the cross-encoder
+     (MS MARCO MiniLM), per-video search and tesseract OCR in place of Gemini captions are our
+     choices where the paper is silent. Its eq. 22 filter reads the question's gold
+     timestamps (an oracle), usable on 160 of the 300. T1's answerer is unnamed, so absolute
+     numbers are not comparable with Table 4: our F1 is higher and our similarity lower.
+     Faithfulness used one judge run per check (3 runs did not fit the cap), so it is
+     *direction only*. Their split and 1,000-pair subset are unpublished.
+   - **Audit (LLM-free).** A constant-"A" answerer scores 99.7 % on the MCQs. The gold is
+     also the unique longest option in 94.6 % of them (100 % of *very hard*). Only 1,598 of
+     2,832 questions have usable timestamps. By the stated slide-rate rule, the videos are
+     19 slide talks, 29 mixed and 47 animated explainers. Transcripts run 140–1,544 o200k
+     tokens (median 780), so every one fits in 2k.
+   - **MCQ with shuffled options** (1,414 questions, one run): 95.33 % (simple 90.11, hard
+     96.38, very hard 99.57) against their 53.43. The answers were identical over 3 repeats
+     on 100 of 100. A no-video picker of the longest option scores 94.4 % on the same
+     questions, and accuracy follows the longest-option share by difficulty. Shuffling
+     removes the position confound but not the length confound (known issue (i)).
+   - **Open-ended**, overall token F1, mean ± std over 3 repeats: **full_context 38.74 ± 0.23,
+     iterative 36.70 ± 0.16, T1 replica 31.23 ± 0.06**. The MiniLM similarity ranks them the
+     same way (66.88 / 65.79 / 57.32). Paired bootstrap over questions: full_context −
+     iterative **+2.04 F1 [+1.14, +2.99]**, iterative − replica +5.47 [+3.80, +7.24]. Every
+     difficulty level's interval excludes 0.
+   - **T1's temporal filter hurts its own pipeline here.** On the questions where eq. 22
+     applies, the replica scores 27.54 F1, against 35.71 for iterative and 36.76 for
+     full_context on the same questions. Where it does not apply, the replica scores 35.45
+     (37.92, 41.49). So the replica loses about 5 points more than the controls, and the
+     filter leaves 34 of 160 questions with no context. Their Table 7 reports the opposite
+     (F1 falls to 11.40 without the filter).
+   - **Faithfulness** (unsupported / claims): replica 4.6 %, iterative 5.4 %, full_context
+     5.6 %, on 647–796 claims per mode. The differences sit inside the ~1.1-point standard
+     error of a difference, so no mode is distinguishable. The full transcript's gain is not
+     paid for in unsupported claims.
+   - **Consequence.** LectQA-Vid lectures are 2–5 minutes long, and every transcript fits in
+     the answerer's context. Retrieval can only lose information here, and no retrieval
+     method can show a benefit over reading everything. LinkRAG's cross-file linking is also
+     inactive on one video (the v2 caption). What LectQA-Vid can support is the audit, the
+     replication (our retrieval beats a T1 replica by 5.5 F1 without reading timestamps), and
+     the full-context ceiling. A retrieval claim needs material that does not fit in the
+     context.
+
 ### Design changes recorded against the verified-gold result (2026-09-21)
 
 Recorded as design changes, not retunes: each has a config switch that reproduces
@@ -575,9 +623,12 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   `scripts/adapters/lectqa_vid.py`): **1,598 of 2,832** questions. By video range: 1–35: 828
   usable, 36–63: 595, 64–100: only 175. The first-run and v2 localisation scored everything,
   so they are understated (dated note in `results/external/lectqa_v2.md`).
-- **(i) LectQA-Vid MCQ answers are position-confounded.** The correct option is A in 1,484
-  of 1,489 published MCQs. MCQ accuracy with options in stored order is therefore not
-  reportable. A re-run with options shuffled under a fixed seed (new LLM calls) is needed.
+- **(i) LectQA-Vid MCQ answers are position- and length-confounded.** The correct option is
+  A in 1,484 of 1,489 published MCQs. It is also the unique longest option in 1,409
+  (94.6 %; every *very hard* MCQ). The shuffled re-run (finding 13, 95.33 %) removes the
+  position confound. The length confound remains: a no-video longest-option picker scores
+  94.4 %. LectQA-Vid MCQ accuracy is therefore not reportable as a retrieval or
+  video-understanding result in any option order.
 
 ## Environment decisions worth not re-litigating
 
