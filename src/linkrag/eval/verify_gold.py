@@ -218,10 +218,36 @@ def full_contexts(units: Sequence[EvidenceUnit], deck_files: set[str]) -> dict[s
 
 # ----------------------------------------------------------------- checks
 
+def entailment_opts(cfg: dict[str, Any], backend: str | None = None) -> dict[str, str]:
+    """`backend` and `device` for every entailment call, from `eval.entailment` --
+    one place, so a script that forgets to pass them cannot fall back to a default
+    the config does not say."""
+    ecfg = (cfg.get("eval") or {}).get("entailment") or {}
+    return {"backend": backend or str(ecfg.get("backend", "nli")),
+            "device": str(ecfg.get("device", cfg.get("device", "cpu")))}
+
+
 def entail_unit(question: str, expected: str, unit: EvidenceUnit, complete: Completer,
-                runs: int) -> UnitVerdict:
-    """Majority over `runs` judge calls. A run counts as yes only if at least one fact it
-    marks supported comes with a span that is actually quotable from the unit."""
+                runs: int, backend: str = "nli", device: str = "cpu") -> UnitVerdict:
+    """Does this unit state at least one fact of the reference answer?
+
+    One code path, two backends (`eval.entailment.backend`):
+      nli -- `cross-encoder/nli-deberta-v3-base` locally. Deterministic, so a single
+             run; free; the winning premise sentence is the span.
+      llm -- the judge model, `runs` calls, majority, quotable span required.
+    """
+    if backend == "nli":
+        from linkrag.eval import nli as _nli
+        # claim verification passes the claim as both; only a real question conditions
+        fs = _nli.facts(expected, question if question != expected else "")
+        ok, span, flags = _nli.entails_any(unit.content, fs, device=device)
+        return UnitVerdict(unit_id=unit.id, kept=bool(ok), votes=["yes" if ok else "no"],
+                           span=span if ok else "",
+                           reason=("nli: entails " + ("a reference fact" if ok else "no reference fact")
+                                   + f" ({sum(flags)}/{len(flags)} facts)"),
+                           location=locator_str(unit), modality=unit.modality, text=unit.content)
+    if backend != "llm":
+        raise ValueError(f"unknown entailment backend {backend!r}: use 'nli' or 'llm'")
     votes, spans = [], []
     prompt = ENTAIL_PROMPT.format(question=question, expected=expected, text=unit.content)
     for _ in range(runs):
@@ -249,7 +275,17 @@ def entail_unit(question: str, expected: str, unit: EvidenceUnit, complete: Comp
 
 
 def grade(question: str, expected: str, candidate: str, complete: Completer,
-          runs: int) -> tuple[bool, list[str], str, list[str]]:
+          runs: int, backend: str = "nli", device: str = "cpu") -> tuple[bool, list[str], str, list[str]]:
+    """Does the candidate answer state every required fact? Same two backends."""
+    if backend == "nli":
+        from linkrag.eval import nli as _nli
+        fs = _nli.facts(expected, question)
+        ok, flags = _nli.entails_all(candidate, fs, device=device)
+        missing_facts = [f for f, got in zip(fs, flags) if not got]
+        return (bool(ok), ["PASS" if ok else "FAIL"],
+                ("nli: all reference facts entailed" if ok
+                 else f"nli: {len(missing_facts)} of {len(fs)} reference facts not entailed"),
+                missing_facts)
     votes, reasons, missing = [], [], []
     prompt = GRADE_PROMPT.format(question=question, expected=expected, candidate=candidate)
     for _ in range(runs):
@@ -266,7 +302,8 @@ def grade(question: str, expected: str, candidate: str, complete: Completer,
 
 
 def source_run(source: str, question: str, expected: str, context: str,
-               complete: Completer, runs: int, judge: Completer | None = None) -> SourceRun:
+               complete: Completer, runs: int, judge: Completer | None = None,
+               backend: str = "nli", device: str = "cpu") -> SourceRun:
     judge = judge or complete
     if not context.strip():
         return SourceRun(source, "NOT ANSWERABLE (empty source)", False, ["FAIL"] * runs,
@@ -277,7 +314,7 @@ def source_run(source: str, question: str, expected: str, context: str,
              "all": "transcript + deck + paper"}[source]
     answer = complete(ANSWER_SYSTEM, ANSWER_PROMPT.format(label=label, context=context,
                                                            question=question)).strip()
-    passed, votes, reason, missing = grade(question, expected, answer, judge, runs)
+    passed, votes, reason, missing = grade(question, expected, answer, judge, runs, backend, device)
     return SourceRun(source, answer, passed, votes, reason, missing)
 
 
@@ -304,15 +341,16 @@ def relabel(original_type: str, runs: dict[str, SourceRun]) -> tuple[str | None,
 
 def verify_question(row: dict[str, Any], units: Sequence[EvidenceUnit],
                     contexts: dict[str, str], complete: Completer, *, runs: int,
-                    workers: int, judge: Completer) -> QuestionVerdict:
+                    workers: int, judge: Completer, backend: str = "nli",
+                    device: str = "cpu") -> QuestionVerdict:
     question, expected = row["question"], row["expected_answer"]
     candidates = [u for u in units
                   if any(matches_locator(u, loc) for loc in row["gold_units"])]
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        unit_futures = [ex.submit(entail_unit, question, expected, u, judge, runs)
+        unit_futures = [ex.submit(entail_unit, question, expected, u, judge, runs, backend, device)
                         for u in candidates]
         run_futures = {s: ex.submit(source_run, s, question, expected, contexts[s],
-                                    complete, runs, judge) for s in (*SOURCES, "all")}
+                                    complete, runs, judge, backend, device) for s in (*SOURCES, "all")}
         unit_verdicts = [f.result() for f in unit_futures]
         source_runs = {s: f.result() for s, f in run_futures.items()}
 
@@ -329,7 +367,7 @@ def verify_question(row: dict[str, Any], units: Sequence[EvidenceUnit],
 
 def verify_gold(rows: Sequence[dict[str, Any]], units: Sequence[EvidenceUnit],
                 complete: Completer, *, judge: Completer, deck_files: set[str],
-                runs: int = 3, workers: int = 6,
+                runs: int = 3, workers: int = 6, backend: str = "nli", device: str = "cpu",
                 progress: Callable[[str], None] | None = None) -> list[QuestionVerdict]:
     """`complete` answers (models.llm); `judge` grades and checks entailment
     (eval.judge). Pass the same callable for both only in a test."""
@@ -337,7 +375,7 @@ def verify_gold(rows: Sequence[dict[str, Any]], units: Sequence[EvidenceUnit],
     out = []
     for row in rows:
         v = verify_question(row, units, contexts, complete, runs=runs, workers=workers,
-                            judge=judge)
+                            judge=judge, backend=backend, device=device)
         if progress:
             kept = sum(u.kept for u in v.units)
             progress(f"{v.qid:<4} {v.original_type:<20} -> {v.verified_type or 'DROPPED':<20} "

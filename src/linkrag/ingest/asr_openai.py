@@ -212,6 +212,14 @@ def transcribe(path: str | Path, cfg: dict[str, Any], *, prompt: str | None = No
     path = Path(path)
     acfg = cfg.get("ingest", {}).get("asr_openai", {}) or {}
     work_dir = work_dir or Path("data/processed/asr_chunks")
+    # zero-cost mode: price the whole file before the first upload
+    from linkrag.costs import BillingRefused, price_for
+    price = price_for(str(acfg.get("model", "whisper-1")), cfg.get("models", {}).get("pricing")) or {}
+    est = audio_duration(path) / 60.0 * float(price.get("per_minute", 0.006))
+    budget = float((cfg.get("cost") or {}).get("max_usd", 0.0) or 0.0)
+    if est > budget:
+        raise BillingRefused(f"whisper-1 on {path.name} would cost ~${est:.2f}; budget ${budget:.2f} "
+                             f"(cost.max_usd). Use asr_backend: local (free) or raise the budget.")
     with stage_timer("ingest.asr_openai", file=path.name) as t:
         chunks = split_audio(path, work_dir, max_upload_mb=int(acfg.get("max_upload_mb", 20)),
                              search_s=float(acfg.get("chunk_search_s", 30.0)))

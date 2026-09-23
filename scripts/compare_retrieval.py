@@ -20,10 +20,11 @@ import statistics
 import time
 from pathlib import Path
 
-from linkrag.core import load_config, setup_logging
+from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import record_run
 from linkrag.eval import matches_locator
 from linkrag.generate.answer import answer_json, http_completer
+from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
 from linkrag.index import Index, default_encoder
 from linkrag.link.align import load_links
@@ -125,6 +126,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--questions", default="tests/regression/pilot01_questions.jsonl")
     ap.add_argument("--config", default="configs/default.yaml")
+    ap.add_argument("--max-cost", type=float, default=0.0,
+                        help="USD budget for LLM calls this run; 0 = zero-cost mode (refuse anything that bills)")
     ap.add_argument("--index", default=None)
     ap.add_argument("--links", default=None)
     ap.add_argument("--k", type=int, default=None)
@@ -132,6 +135,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-llm", action="store_true", help="skip modes that call an LLM")
     ap.add_argument("--grounding", action="store_true",
                     help="also generate and verify an answer per cell: hallucination rate and citation correctness")
+    ap.add_argument("--entailment", choices=["nli", "llm"], default=None,
+                    help="claim-verification backend (default: eval.entailment.backend)")
     ap.add_argument("--modality-gate", action="store_true",
                     help="run complementarity with the modality-need gate (retrieve.rerank.modality_gate)")
     ap.add_argument("--rerank", default=",".join(METHODS),
@@ -142,6 +147,7 @@ def main(argv: list[str] | None = None) -> int:
 
     setup_logging()
     cfg = load_config(args.config)
+    set_max_cost(cfg, args.max_cost)
     lcfg, rcfg = cfg["retrieve"]["linkrag"], cfg["retrieve"]["rerank"]
     llm = cfg["models"]["llm"]
     k = args.k or lcfg["k_final"]
@@ -213,7 +219,8 @@ def main(argv: list[str] | None = None) -> int:
                         a_ = answer_json(row["question"], [r.unit for r in picked], cfg, mode="linkrag" if "linkrag" in mode else "baseline", complete=complete)
                         if not a_.malformed:
                             v_ = verify_answer(a_, [r.unit for r in picked], judge,
-                                               runs=int(gcfg.get("verify_runs", 3)), strict=gcfg.get("strict", False))
+                                               runs=int(gcfg.get("verify_runs", 3)), strict=gcfg.get("strict", False),
+                                               **entailment_opts(cfg, args.entailment))
                             v_["gold_units"] = row["gold_units"]
                             grounding.setdefault((mode, method), []).append(v_)
                     per_q_full.setdefault((row["qid"], mode, method), []).append(

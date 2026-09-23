@@ -85,7 +85,7 @@ def test_q3_false_author_claim_is_caught_by_claim_level_verification():
                  claims=[Claim(claim="The poster number is 47.", unit_ids=["hsieh:a42"]),
                          Claim(claim="Saurabh Bakshi from Purdue is an author of Focus.", unit_ids=["hsieh:a42"])])
     judge = _judge(lambda prompt: "poster number is 47" in prompt)
-    out = verify_answer(ans, units, judge, runs=3)
+    out = verify_answer(ans, units, judge, runs=3, backend="llm")
     verdicts = {c["claim"]: c["verdict"] for c in out["claims"]}
     assert verdicts["The poster number is 47."] == "supported"
     assert verdicts["Saurabh Bakshi from Purdue is an author of Focus."] == "unsupported"
@@ -98,17 +98,17 @@ def test_strict_hides_unsupported_claims_and_abstains_when_none_survive():
     units = [_audio()]
     ans = Answer(answer="Saurabh Bakshi is an author.", raw="",
                  claims=[Claim(claim="Saurabh Bakshi is an author of Focus.", unit_ids=["hsieh:a42"])])
-    out = verify_answer(ans, units, _judge(lambda p: False), runs=3, strict=True)
+    out = verify_answer(ans, units, _judge(lambda p: False), runs=3, strict=True, backend="llm")
     assert out["answer"] == ABSTENTION and out["abstained"] and out["hallucination_rate"] == 1.0
     ans2 = Answer(answer="The poster is number 47.", raw="",
                   claims=[Claim(claim="The poster number is 47.", unit_ids=["hsieh:a42"])])
-    out2 = verify_answer(ans2, units, _judge(lambda p: True), runs=3, strict=True)
+    out2 = verify_answer(ans2, units, _judge(lambda p: True), runs=3, strict=True, backend="llm")
     assert out2["answer"] == "The poster is number 47." and not out2["abstained"]
 
 
 def test_a_claim_with_no_citation_is_weak_not_supported():
     out = verify_answer(Answer(answer="x", raw="", claims=[Claim(claim="unsourced", unit_ids=[])]),
-                        [_audio()], _judge(lambda p: True), runs=3)
+                        [_audio()], _judge(lambda p: True), runs=3, backend="llm")
     assert out["claims"][0]["verdict"] == "weak" and out["unsupported"] == 0
 
 
@@ -187,3 +187,32 @@ def test_compare_retrieval_grounding_table_renders_without_an_api_key():
     row = [line for line in out if line.startswith("| linkrag |")][0]
     assert "50.0%" in row and "100.0%" in row        # 1 of 2 claims unsupported; both citations on gold
     assert m.grounding_table({}, units) == []
+
+
+# ------------------------------------------------ local NLI backend (zero-cost mode)
+
+def test_nli_backend_catches_the_q3_case_without_an_llm():
+    """The same named case, decided by cross-encoder/nli-deberta-v3-base on the CPU:
+    no API key, no judge calls, deterministic."""
+    units = [_audio()]
+    ans = Answer(answer="...", raw="",
+                 claims=[Claim(claim="The poster number is 47.", unit_ids=["hsieh:a42"]),
+                         Claim(claim="Saurabh Bakshi from Purdue is an author of Focus.", unit_ids=["hsieh:a42"])])
+    def exploding_judge(system, prompt):
+        raise AssertionError("the nli backend must not call the judge")
+    out = verify_answer(ans, units, exploding_judge, backend="nli")
+    verdicts = {c["claim"]: c["verdict"] for c in out["claims"]}
+    assert verdicts["The poster number is 47."] == "supported"
+    assert verdicts["Saurabh Bakshi from Purdue is an author of Focus."] == "unsupported"
+    assert out["claims"][0]["votes"] == ["yes"], "deterministic: one run, not a majority"
+    assert out["claims"][0]["span"], "the winning premise sentence is the span"
+
+
+def test_nli_fact_splitting_and_any_all_rules():
+    from linkrag.eval import nli
+    assert nli.facts("Poster 47; Section 4.2.") == ["Poster 47", "Section 4.2."]
+    premise = "Our poster is number 47. Focus is 57 times cheaper than ingest-heavy."
+    ok, span, flags = nli.entails_any(premise, ["The poster number is 47.", "The sky is green."])
+    assert ok and flags == [True, False] and "47" in span
+    assert nli.entails_all(premise, ["The poster number is 47.", "The sky is green."])[0] is False
+    assert nli.entails_all(premise, ["The poster number is 47."])[0] is True

@@ -49,7 +49,8 @@ def test_redundancy_majority_and_summary():
         ok = "fifty seven" in prompt
         return json.dumps({"entailed": ok, "span": "57x cheaper" if ok else ""})
 
-    v = redundancy(units, encoder, judge, pairs=[("transcript", "deck")], k=2, runs=3, workers=2)
+    v = redundancy(units, encoder, judge, pairs=[("transcript", "deck")], k=2, runs=3, workers=2,
+                   backend="llm")
     assert [x.entailed for x in v] == [True, False]
     assert v[0].votes == ["yes", "yes", "yes"] and len(calls) == 6
     s = summarise(v)
@@ -61,5 +62,22 @@ def test_unquotable_yes_counts_as_no():
              _u("d1", "text", "• Focus is 57x cheaper than Ingest-heavy", deck=True, page=1)]
     encoder = lambda texts: np.ones((len(texts), 4), dtype=np.float32)
     judge = lambda s, p: json.dumps({"entailed": True, "span": "not in any passage"})
-    v = redundancy(units, encoder, judge, pairs=[("transcript", "deck")], k=1, runs=3, workers=1)
+    v = redundancy(units, encoder, judge, pairs=[("transcript", "deck")], k=1, runs=3, workers=1,
+                   backend="llm")
     assert not v[0].entailed and v[0].votes == ["yes-unquoted"] * 3
+
+
+def test_nli_backend_scores_redundancy_without_a_judge():
+    """Zero-cost default: the local cross-encoder decides, deterministically."""
+    units = [_u("a0", "audio", "Focus is fifty seven times cheaper than the ingest-heavy baseline.", start=0),
+             _u("a1", "audio", "Our poster is number forty seven, please come by.", start=10),
+             _u("d1", "text", "Focus is 57x cheaper than Ingest-heavy.", deck=True, page=1)]
+    encoder = lambda texts: np.ones((len(texts), 4), dtype=np.float32)
+
+    def exploding(system, prompt):
+        raise AssertionError("the nli backend must not call the judge")
+
+    v = redundancy(units, encoder, exploding, pairs=[("transcript", "deck")], k=2, workers=1)
+    by_sentence = {x.sentence.split()[1]: x.entailed for x in v}   # "Focus" / "poster"
+    assert by_sentence["is"] is True and by_sentence["poster"] is False
+    assert all(x.votes in (["yes"], ["no"]) for x in v), "one deterministic run"

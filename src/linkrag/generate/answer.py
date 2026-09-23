@@ -87,9 +87,17 @@ def cited_ids(answer_text: str) -> list[str]:
     return list(seen)
 
 
-def http_completer(llm_cfg: dict[str, Any]) -> Completer:
-    """OpenAI-compatible /chat/completions. Works for Ollama, vLLM, OpenAI, etc."""
+def http_completer(llm_cfg: dict[str, Any], pricing: dict[str, Any] | None = None) -> Completer:
+    """OpenAI-compatible /chat/completions. Works for Ollama, vLLM, OpenAI, Groq,
+    Google AI Studio, etc.
+
+    Every request passes two gates first: the spend guard (`linkrag.costs.SpendGuard`
+    -- zero-cost mode refuses anything that would bill past `max_cost_usd`, default 0)
+    and, when the backend declares `rate_limit_rpm` / `rate_limit_tpm`, a shared
+    one-minute rate limiter."""
     import os
+
+    from linkrag.costs import RateLimiter, SpendGuard
 
     provider = llm_cfg.get("provider", "ollama")
     base_url = (llm_cfg.get("base_url") or PROVIDER_BASE_URLS.get(provider, "")).rstrip("/")
@@ -115,6 +123,9 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
     # the families change faster than any prefix list survives -- so discover it
     # once from the server's own error and remember the answer.
     token_param = "max_tokens"
+    guard = SpendGuard(llm_cfg, pricing if pricing is not None else llm_cfg.get("_pricing"))
+    limiter = RateLimiter.for_backend(base_url, str(model), llm_cfg.get("rate_limit_rpm"),
+                                      llm_cfg.get("rate_limit_tpm"))
 
     def post(payload: dict[str, Any]):
         return requests.post(
@@ -126,6 +137,10 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
 
     def complete(system: str, user: str) -> str:
         nonlocal token_param
+        est_prompt = (len(system) + len(user)) // 4 + 8
+        guard.check(est_prompt, int(limit))            # refuse BEFORE anything is sent
+        if limiter is not None:
+            limiter.acquire(est_prompt + int(limit))
         payload: dict[str, Any] = {
             "model": model,
             "messages": [
@@ -198,6 +213,7 @@ def http_completer(llm_cfg: dict[str, Any]) -> Completer:
         usage["calls"] += 1
         usage["prompt_tokens"] += last["prompt_tokens"]
         usage["completion_tokens"] += last["completion_tokens"]
+        guard.add(last["prompt_tokens"], last["completion_tokens"])
         return body["choices"][0]["message"]["content"]
 
     complete.usage = usage        # type: ignore[attr-defined]

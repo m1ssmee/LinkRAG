@@ -187,7 +187,7 @@ def test_completer_retries_with_max_completion_tokens(monkeypatch) -> None:
     """Newer OpenAI models reject max_tokens. Model names are not a usable signal
     for which, so the parameter is discovered from the server's own 400."""
     sent = _capture(monkeypatch, [REJECT, _Resp(200, OK)])
-    complete = http_completer({"provider": "openai", "model": "gpt-5.4", "max_tokens": 64,
+    complete = http_completer({"provider": "openai", "billing": "free", "model": "gpt-5.4", "max_tokens": 64,
                                "base_url": "https://api.openai.com/v1"})
     assert complete("sys", "user") == "Blue [n:p1:t0]."
     assert "max_tokens" in sent[0] and "max_completion_tokens" not in sent[0]
@@ -196,7 +196,7 @@ def test_completer_retries_with_max_completion_tokens(monkeypatch) -> None:
 
 def test_completer_remembers_the_parameter_after_one_probe(monkeypatch) -> None:
     sent = _capture(monkeypatch, [REJECT, _Resp(200, OK), _Resp(200, OK)])
-    complete = http_completer({"provider": "openai", "model": "gpt-5.4", "max_tokens": 64,
+    complete = http_completer({"provider": "openai", "billing": "free", "model": "gpt-5.4", "max_tokens": 64,
                                "base_url": "https://api.openai.com/v1"})
     complete("s", "u")
     complete("s", "u")
@@ -208,14 +208,14 @@ def test_completer_omits_a_null_temperature(monkeypatch) -> None:
     """Some models allow only their default temperature. Omitting is correct;
     silently substituting one would break determinism the eval depends on."""
     sent = _capture(monkeypatch, [_Resp(200, OK)])
-    http_completer({"provider": "openai", "model": "m", "temperature": None,
+    http_completer({"provider": "openai", "billing": "free", "model": "m", "temperature": None,
                     "base_url": "https://x/v1"})("s", "u")
     assert "temperature" not in sent[0]
 
 
 def test_completer_sends_an_explicit_temperature(monkeypatch) -> None:
     sent = _capture(monkeypatch, [_Resp(200, OK)])
-    http_completer({"provider": "openai", "model": "m", "temperature": 0.0,
+    http_completer({"provider": "openai", "billing": "free", "model": "m", "temperature": 0.0,
                     "base_url": "https://x/v1"})("s", "u")
     assert sent[0]["temperature"] == 0.0
 
@@ -224,7 +224,7 @@ def test_completer_surfaces_a_non_token_400(monkeypatch) -> None:
     """A temperature rejection must fail loudly, not get retried into silence."""
     _capture(monkeypatch, [_Resp(400, {"error": {"param": "temperature"}},
                                  "'temperature' does not support 0.0 with this model")])
-    complete = http_completer({"provider": "openai", "model": "gpt-5.5", "temperature": 0.0,
+    complete = http_completer({"provider": "openai", "billing": "free", "model": "gpt-5.5", "temperature": 0.0,
                                "base_url": "https://api.openai.com/v1"})
     with pytest.raises(RuntimeError, match="temperature"):
         complete("s", "u")
@@ -247,7 +247,7 @@ def test_completer_reports_a_read_timeout_not_just_a_refused_connection(monkeypa
         return original(*a, **k)
 
     monkeypatch.setattr(requests, "post", counting)
-    complete = http_completer({"provider": "openai", "model": "m",
+    complete = http_completer({"provider": "openai", "billing": "free", "model": "m",
                                "base_url": "https://api.openai.com/v1", "timeout_retries": 1})
     with pytest.raises(RuntimeError, match="ReadTimeout"):
         complete("sys", "user")
@@ -260,7 +260,7 @@ def test_request_body_carries_temperature_and_seed(monkeypatch) -> None:
     """The measurement rule requires deterministic settings to be *in the outgoing
     request*, not merely present in a config file nobody threads through."""
     sent = _capture(monkeypatch, [_Resp(200, OK)])
-    http_completer({"provider": "openai", "model": "m", "temperature": 0.0,
+    http_completer({"provider": "openai", "billing": "free", "model": "m", "temperature": 0.0,
                     "seed": 20260910, "base_url": "https://x/v1"})("s", "u")
     body = sent[0]
     assert body["temperature"] == 0.0, "temperature must be sent, not assumed"
@@ -270,7 +270,7 @@ def test_request_body_carries_temperature_and_seed(monkeypatch) -> None:
 
 def test_seed_is_omitted_when_unset(monkeypatch) -> None:
     sent = _capture(monkeypatch, [_Resp(200, OK)])
-    http_completer({"provider": "openai", "model": "m", "temperature": 0.0,
+    http_completer({"provider": "openai", "billing": "free", "model": "m", "temperature": 0.0,
                     "base_url": "https://x/v1"})("s", "u")
     assert "seed" not in sent[0]
 
@@ -278,7 +278,7 @@ def test_seed_is_omitted_when_unset(monkeypatch) -> None:
 def test_seed_survives_the_max_tokens_retry(monkeypatch) -> None:
     """The retry rebuilds the payload; determinism settings must not be dropped."""
     sent = _capture(monkeypatch, [REJECT, _Resp(200, OK)])
-    http_completer({"provider": "openai", "model": "gpt-5.4", "temperature": 0.0,
+    http_completer({"provider": "openai", "billing": "free", "model": "gpt-5.4", "temperature": 0.0,
                     "seed": 7, "max_tokens": 64,
                     "base_url": "https://api.openai.com/v1"})("s", "u")
     assert sent[1]["seed"] == 7 and sent[1]["temperature"] == 0.0

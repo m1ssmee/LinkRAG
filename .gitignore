@@ -20,3 +20,7 @@ data/processed/*
 
 # Generated at test time by tests/conftest.py
 tests/fixtures/
+
+# OS / editor droppings
+.DS_Store
+~$*

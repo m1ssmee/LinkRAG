@@ -34,7 +34,8 @@ Completer = Callable[[str, str], str]
 ABSTENTION = "not found in the provided material"
 
 
-def verify_claim(claim: Claim, units: dict[str, EvidenceUnit], judge: Completer, *, runs: int = 3) -> Claim:
+def verify_claim(claim: Claim, units: dict[str, EvidenceUnit], judge: Completer, *, runs: int = 3,
+                 backend: str = "nli", device: str = "cpu") -> Claim:
     """Entailment of one claim against each unit it cites; first supporting unit wins."""
     if not claim.unit_ids:
         claim.verdict = "weak"
@@ -43,7 +44,7 @@ def verify_claim(claim: Claim, units: dict[str, EvidenceUnit], judge: Completer,
         unit = units.get(uid)
         if unit is None:                       # id not in the evidence set
             continue
-        v = entail_unit(claim.claim, claim.claim, unit, judge, runs)
+        v = entail_unit(claim.claim, claim.claim, unit, judge, runs, backend, device)
         claim.votes = v.votes
         if v.kept:
             claim.verdict, claim.span = "supported", v.span
@@ -53,7 +54,8 @@ def verify_claim(claim: Claim, units: dict[str, EvidenceUnit], judge: Completer,
 
 
 def verify_answer(ans: Answer, units: Sequence[EvidenceUnit], judge: Completer, *,
-                  runs: int = 3, workers: int = 4, strict: bool = False) -> dict[str, Any]:
+                  runs: int = 3, workers: int = 4, strict: bool = False,
+                  backend: str = "nli", device: str = "cpu") -> dict[str, Any]:
     """Verify every claim; returns the claim verdicts and the text to show.
 
     `strict` removes unsupported claims from the displayed answer and abstains when
@@ -63,7 +65,8 @@ def verify_answer(ans: Answer, units: Sequence[EvidenceUnit], judge: Completer, 
     with stage_timer("generate.verify", claims=len(ans.claims), strict=int(strict)) as t:
         if ans.claims:
             with ThreadPoolExecutor(max_workers=workers) as ex:
-                ans.claims = list(ex.map(lambda c: verify_claim(c, by_id, judge, runs=runs), ans.claims))
+                ans.claims = list(ex.map(lambda c: verify_claim(c, by_id, judge, runs=runs,
+                                                                backend=backend, device=device), ans.claims))
         counts = {v: sum(c.verdict == v for c in ans.claims) for v in ("supported", "weak", "unsupported")}
         t.update({k: v for k, v in counts.items()})
 

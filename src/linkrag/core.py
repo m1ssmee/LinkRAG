@@ -84,15 +84,36 @@ def load_config(path: str | Path = "configs/default.yaml") -> dict[str, Any]:
     import os
 
     cfg = yaml.safe_load(Path(path).read_text())
-    llm = cfg.get("models", {}).get("llm") or {}
-    name = os.environ.get("LINKRAG_LLM_BACKEND") or llm.get("backend")
-    if name and name != "default":
-        backends = cfg.get("models", {}).get("llm_backends") or {}
-        if name not in backends:
-            raise KeyError(f"models.llm_backends has no entry {name!r} "
-                           f"(have: {sorted(backends)})")
-        cfg["models"]["llm"] = {**llm, **backends[name], "backend": name}
+    backends = cfg.get("models", {}).get("llm_backends") or {}
+    # the judge can sit on a backend too (e.g. Groq judging a Colab answerer): the
+    # zero-cost route for `eval.entailment.backend: llm`
+    for parent, key, env in ((cfg.get("models", {}), "llm", "LINKRAG_LLM_BACKEND"),
+                             (cfg.get("eval") or {}, "judge", "LINKRAG_JUDGE_BACKEND")):
+        block = parent.get(key) or {}
+        name = os.environ.get(env) or block.get("backend")
+        if name and name != "default":
+            if name not in backends:
+                raise KeyError(f"models.llm_backends has no entry {name!r} "
+                               f"(have: {sorted(backends)})")
+            parent[key] = {**block, **backends[name], "backend": name}
+    # Zero-cost mode: every completer built from this config is budgeted at
+    # `cost.max_usd` (default 0 -- refuse anything that would bill). A script's
+    # --max-cost raises it via `set_max_cost`. Pricing rides along so the guard can
+    # price a call without the caller threading it through.
+    budget = float((cfg.get("cost") or {}).get("max_usd", 0.0) or 0.0)
+    pricing = cfg.get("models", {}).get("pricing") or {}
+    for block in (cfg.get("models", {}).get("llm"), (cfg.get("eval") or {}).get("judge")):
+        if isinstance(block, dict):
+            block.setdefault("max_cost_usd", budget)
+            block["_pricing"] = pricing
     return cfg
+
+
+def set_max_cost(cfg: dict[str, Any], usd: float) -> None:
+    """Raise (or lower) the run budget on every LLM block of a loaded config."""
+    for block in (cfg.get("models", {}).get("llm"), (cfg.get("eval") or {}).get("judge")):
+        if isinstance(block, dict):
+            block["max_cost_usd"] = float(usd)
 
 
 # ---------------------------------------------------------------- timing

@@ -72,7 +72,13 @@ def test_word_timestamps_are_offset_by_the_chunk_start(monkeypatch, tmp_path):
         A.Chunk(path=tmp_path / "y.m4a", offset_s=10.0, duration_s=10.0)])
     (tmp_path / "x.m4a").write_bytes(b"0")
     (tmp_path / "y.m4a").write_bytes(b"0")
-    words, meta = A.transcribe(tmp_path / "src.mp3", {"models": {"llm": {}}}, work_dir=tmp_path)
+    monkeypatch.setattr(A, "audio_duration", lambda p: 1200.0)       # 20 min = $0.12
+    import pytest
+    from linkrag.costs import BillingRefused
+    with pytest.raises(BillingRefused, match="0.12"):                  # zero-cost default: nothing sent
+        A.transcribe(tmp_path / "src.mp3", {"models": {"llm": {}}}, work_dir=tmp_path)
+    words, meta = A.transcribe(tmp_path / "src.mp3", {"models": {"llm": {}}, "cost": {"max_usd": 0.5}},
+                               work_dir=tmp_path)
     assert [(w.start, w.text) for w in words] == [(0.0, "first"), (10.5, "second")]
     assert meta["audio_seconds"] == 20.0 and meta["model"] == "whisper-1" and meta["requested_utc"]
 

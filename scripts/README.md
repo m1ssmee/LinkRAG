@@ -21,6 +21,41 @@ flagged *estimated*).
 | `adapters/mavils.py` | target T2: their 20 lectures, their micro-F1, transcript + PDF only | no |
 | `adapters/lectqa_vid.py` | target T1: fetch / prepare / run on their QA pairs and levels | answerer |
 
+## Zero-cost mode (default)
+
+Nothing bills unless a run says so.
+
+- **Budget.** `cost.max_usd: 0` in the config; every LLM script takes `--max-cost USD`
+  (default 0). The spend guard prices each request *before* sending it and refuses
+  (`BillingRefused`) when it could exceed the budget. A metered model with no price
+  row is refused outright at $0. whisper-1 is priced on the file's duration before
+  the first upload.
+- **Free backends pass.** A backend with `billing: free` (below), or a local server
+  (provider `ollama`, or a `localhost` base URL), is never refused.
+- **Entailment is local.** Gold verification, claim verification and redundancy use
+  `eval.entailment.backend: nli` (cross-encoder/nli-deberta-v3-base on the CPU,
+  deterministic, one run). `--entailment llm` or `backend: llm` uses the judge
+  instead. **Read `results/nli_vs_llm_pilot01.md` first:** on pilot01 the two agree
+  far less than two LLM judges agree with each other. The free way to keep the LLM
+  judge is to put it on a free backend: `LINKRAG_JUDGE_BACKEND=groq` (or
+  `eval.judge.backend: groq`).
+- **ASR is local.** faster-whisper; `ingest.py --device cuda` / `candidate.py` on a
+  Colab GPU (`scripts/dataset/README.md`). whisper-1 is `--asr openai`.
+
+Keys go in `~/.zshenv` (never in the repo): `export GROQ_API_KEY=...`,
+`export GEMINI_API_KEY=...`, `export COLAB_LLM_KEY=...`.
+
+| backend | select with | model | free-tier limit (enforced client-side) |
+|---|---|---|---|
+| `colab_ollama` | `LINKRAG_LLM_BACKEND=colab_ollama` | qwen2.5:7b-instruct | 60 rpm (one GPU) |
+| `colab_vllm` | `LINKRAG_LLM_BACKEND=colab_vllm` | Qwen/Qwen2.5-7B-Instruct | 120 rpm |
+| `groq` | `LINKRAG_LLM_BACKEND=groq` or `LINKRAG_JUDGE_BACKEND=groq` | openai/gpt-oss-120b | 28 rpm, 7,500 tpm, 1,000 req/day |
+| `google_ai_studio` | `LINKRAG_LLM_BACKEND=google_ai_studio` | gemini-2.5-flash | 10 rpm |
+
+The judge must stay a different model from the answerer (e.g. Gemini answers, Groq
+judges). The rate limiter is one sliding minute per (base URL, model), shared across
+threads, so a batch waits rather than hitting 429s.
+
 ## LLM backends
 
 Two roles, two config blocks:

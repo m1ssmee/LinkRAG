@@ -39,7 +39,7 @@ from pathlib import Path
 
 import numpy as np
 
-from linkrag.core import EvidenceUnit, Link, Location, load_config, setup_logging
+from linkrag.core import EvidenceUnit, Link, Location, load_config, set_max_cost, setup_logging
 from linkrag.costs import CacheMiss, cached_completer, price_for, record_run
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, build_index, default_encoder
@@ -602,10 +602,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--out", default="reports/lectqa_vid_first_run.md")
     ap.add_argument("--allow-new-calls", action="store_true", help="v2: let iterative modes call the LLM on cache misses")
-    ap.add_argument("--max-cost", type=float, default=1.0, help="stop when uncached spend in this run exceeds this many USD")
+    ap.add_argument("--max-cost", type=float, default=0.0, help="stop when uncached spend in this run exceeds this many USD")
     args = ap.parse_args(argv)
     setup_logging()
     cfg = load_config(args.config)
+    set_max_cost(cfg, args.max_cost)
     dcfg = cfg.get("datasets", {}).get("lectqa_vid", {"audio_segment_seconds": 15, "frame_interval_s": 5, "top_k": 4})
     ids = video_ids(args.videos, args.only)
     if args.step == "fetch":

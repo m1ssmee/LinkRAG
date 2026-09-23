@@ -18,9 +18,10 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from linkrag.core import load_config, setup_logging
+from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
 from linkrag.eval.redundancy import DEFAULT_PAIRS, dump_json, redundancy, role_of, summarise, write_report
+from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, load_manifest
@@ -33,12 +34,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--deck", required=True)
     ap.add_argument("--notes", default=None, help="optional paper / lecture notes PDF")
     ap.add_argument("--config", default="configs/default.yaml")
+    ap.add_argument("--max-cost", type=float, default=0.0,
+                        help="USD budget for LLM calls this run; 0 = zero-cost mode (refuse anything that bills)")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--device", choices=["cpu", "cuda", "mps"], default="cuda",
+                    help="ASR/embedder device; intake runs on a Colab GPU by default (scripts/dataset/README.md)")
+    ap.add_argument("--asr", choices=["local", "openai"], default="local",
+                    help="local = faster-whisper (free, default); openai = whisper-1 ($0.006/min)")
     ap.add_argument("--reingest", action="store_true", help="rebuild the scratch index")
     args = ap.parse_args(argv)
 
     setup_logging()
     cfg = load_config(args.config)
+    set_max_cost(cfg, args.max_cost)
     intake = cfg.get("dataset", {}).get("intake", {})
     threshold = float(intake.get("max_deck_to_transcript", 0.65))
     root = Path("data/processed/candidates") / args.name
@@ -52,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.reingest or not index_dir.exists():
         print(f"ingesting {len(files)} file(s) -> {index_dir}")
         rc = subprocess.call([sys.executable, "scripts/ingest.py", *files, "--config", args.config,
-                              "--out", str(index_dir)])
+                              "--out", str(index_dir), "--device", args.device, "--asr", args.asr])
         if rc not in (0, 2):
             return rc
 
@@ -73,8 +81,11 @@ def main(argv: list[str] | None = None) -> int:
             roles[role_of(u)].append(n)
     print(f"{args.name}: {len(units)} units · " + ", ".join(f"{r}={v}" for r, v in roles.items()))
 
+    ent = entailment_opts(cfg)
+    print(f"entailment backend: {ent['backend']}")
     verdicts = redundancy(units, encoder, judge, pairs=pairs, k=int(intake.get("redundancy_k", 8)),
-                          runs=int(intake.get("redundancy_runs", 3)), workers=args.workers, progress=print)
+                          runs=int(intake.get("redundancy_runs", 3)),
+                          workers=1 if ent["backend"] == "nli" else args.workers, **ent, progress=print)
     summ = summarise(verdicts)
     out_md = Path("reports") / f"redundancy_{args.name}.md"
     write_report(verdicts, out_md, corpus=args.name, manifest_hash=manifest.get("hash", "?"),

@@ -22,10 +22,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--config", default="configs/default.yaml")
     parser.add_argument("--mode", choices=["baseline", "linkrag"], default="baseline")
     parser.add_argument("--out", default=None, help="index dir (default: index.store_dir from config)")
+    parser.add_argument("--device", choices=["cpu", "cuda", "mps"], default=None,
+                        help="override config `device` (whisper + embedder); cuda switches whisper to float16")
+    parser.add_argument("--asr", choices=["local", "openai"], default=None,
+                        help="override ingest.asr_backend; openai (whisper-1) bills and needs --max-cost")
     args = parser.parse_args(argv)
 
     setup_logging()
     cfg = load_config(args.config)
+    if args.device:
+        cfg["device"] = args.device
+        if args.device == "cuda":
+            cfg["models"]["whisper_compute_type"] = "float16"
+    if args.asr:
+        cfg["ingest"]["asr_backend"] = args.asr
     out = args.out or cfg["index"]["store_dir"]
 
     with stage_timer("ingest.total", files=len(args.files)) as t:

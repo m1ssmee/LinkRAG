@@ -204,3 +204,96 @@ def cumulative(ledger: Path = LEDGER) -> dict[str, Any]:
         else:
             out["cost_usd"] += float(r["cost_usd"])
     return out
+
+
+# ----------------------------------------------------------------- zero-cost guard
+
+class BillingRefused(RuntimeError):
+    """A call would bill and the budget for this run is exhausted (default budget: $0)."""
+
+
+class SpendGuard:
+    """Per-completer budget, checked BEFORE every request.
+
+    `max_cost_usd` is the run's budget (config `cost.max_usd`, default 0, or a
+    script's `--max-cost`). A backend declared `billing: free` (a free-tier key:
+    Groq, Google AI Studio, a Colab-served open model) always passes, as does a
+    local server (provider ollama or a localhost base_url) that declares nothing. Anything else
+    is priced from `models.pricing`; with no price row it is treated as billing,
+    because a $0 budget must not be spent on an unknown price.
+    """
+
+    def __init__(self, llm_cfg: dict[str, Any], pricing: dict[str, Any] | None):
+        self.cfg = llm_cfg
+        # a local server (ollama, or anything on localhost) cannot bill; say so explicitly
+        # with `billing:` to override
+        local = llm_cfg.get("provider") == "ollama" or any(
+            h in str(llm_cfg.get("base_url", "")) for h in ("://localhost", "://127.0.0.1"))
+        self.free = str(llm_cfg.get("billing", "free" if local else "metered")) == "free"
+        self.price = None if self.free else price_for(str(llm_cfg.get("model", "")), pricing)
+        self.spent = 0.0
+        self.lock = threading.Lock()
+
+    @property
+    def budget(self) -> float:
+        return float(self.cfg.get("max_cost_usd", 0.0) or 0.0)   # read live: a script may raise it
+
+    def check(self, est_prompt_tokens: int, max_out_tokens: int) -> None:
+        if self.free:
+            return
+        if self.price is None:
+            if self.budget <= 0:
+                raise BillingRefused(f"{self.cfg.get('model')}: no price row and a $0 budget; "
+                                     f"declare `billing: free` for a free-tier key or pass --max-cost")
+            return
+        worst = usage_cost({"prompt_tokens": est_prompt_tokens, "completion_tokens": max_out_tokens}, self.price) or 0.0
+        with self.lock:
+            if self.spent + worst > self.budget:
+                raise BillingRefused(f"{self.cfg.get('model')}: this call could cost ${worst:.4f}; "
+                                     f"${self.spent:.4f} of the ${self.budget:.2f} budget is spent "
+                                     f"(cost.max_usd / --max-cost; zero-cost mode defaults to $0)")
+
+    def add(self, prompt_tokens: int, completion_tokens: int) -> None:
+        if self.free or self.price is None:
+            return
+        with self.lock:
+            self.spent += usage_cost({"prompt_tokens": prompt_tokens,
+                                      "completion_tokens": completion_tokens}, self.price) or 0.0
+
+
+class RateLimiter:
+    """Sliding one-minute window on requests and (estimated) tokens, shared by every
+    completer that talks to the same (base_url, model) in this process. Free tiers
+    429 hard when exceeded; waiting is cheaper than a retry storm."""
+
+    _shared: dict[tuple[str, str], "RateLimiter"] = {}
+    _shared_lock = threading.Lock()
+
+    def __init__(self, rpm: int | None, tpm: int | None):
+        self.rpm, self.tpm = rpm, tpm
+        self.events: list[tuple[float, int]] = []
+        self.lock = threading.Lock()
+
+    @classmethod
+    def for_backend(cls, base_url: str, model: str, rpm: int | None, tpm: int | None) -> "RateLimiter | None":
+        if not rpm and not tpm:
+            return None
+        key = (base_url, model)
+        with cls._shared_lock:
+            if key not in cls._shared:
+                cls._shared[key] = cls(rpm, tpm)
+            return cls._shared[key]
+
+    def acquire(self, tokens: int) -> None:
+        import time
+        while True:
+            with self.lock:
+                now = time.monotonic()
+                self.events = [(t, n) for t, n in self.events if now - t < 60.0]
+                reqs, toks = len(self.events), sum(n for _, n in self.events)
+                ok = (not self.rpm or reqs < self.rpm) and (not self.tpm or toks + tokens <= self.tpm or not self.events)
+                if ok:
+                    self.events.append((now, tokens))
+                    return
+                wait = 60.0 - (now - self.events[0][0]) + 0.05
+            time.sleep(max(wait, 0.05))

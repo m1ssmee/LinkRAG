@@ -15,10 +15,11 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from linkrag.core import load_config, setup_logging
+from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import record_run
 from linkrag.eval import describe_locator, format_modality_distribution, gold_coverage, gold_hits
 from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer
+from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
 from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, check_gold_manifest, load_manifest
@@ -63,6 +64,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--phase", required=True, help='label for this run, e.g. "phase2 alignment"')
     ap.add_argument("--config", default="configs/default.yaml")
+    ap.add_argument("--max-cost", type=float, default=0.0,
+                        help="USD budget for LLM calls this run; 0 = zero-cost mode (refuse anything that bills)")
     ap.add_argument("--index", default=None)
     ap.add_argument("--mode", choices=["baseline", "linkrag"], default="baseline")
     ap.add_argument("--questions", default=str(QUESTIONS))
@@ -76,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
 
     setup_logging()
     cfg = load_config(args.config)
+    set_max_cost(cfg, args.max_cost)
     index = Index.load(args.index or cfg["index"]["store_dir"])
     encoder = default_encoder(index.embedding_model, cfg["device"], index.normalize)
     encoder([""])
@@ -119,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
             ans = answer_json(row["question"], units, cfg, mode=args.mode, complete=complete)
             if judge is not None and not ans.malformed:
                 verdict = verify_answer(ans, units, judge, runs=int(gcfg.get("verify_runs", 3)),
-                                        strict=args.strict or gcfg.get("strict", False))
+                                        strict=args.strict or gcfg.get("strict", False), **entailment_opts(cfg))
                 verdict["gold_units"] = row["gold_units"]
                 verified.append(verdict)
                 text = verdict["answer"]

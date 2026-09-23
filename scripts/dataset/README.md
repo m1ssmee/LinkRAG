@@ -1,8 +1,10 @@
 # Extended-dataset intake (priority vi)
 
 Who this is for: the teammate collecting lectures. You need Python set up
-(`make setup`), the judge key exported (`OPENAI_API_KEY`, or the Colab backend — see
-`scripts/README.md`), and ~10 minutes of machine time per lecture.
+(`make setup`) and a GPU for the transcription (a free Colab T4 is the standard route,
+below). No API key is needed: redundancy runs on the local NLI model by default
+(`eval.entailment.backend`; read `results/nli_vs_llm_pilot01.md` before trusting a
+verdict near the bar).
 
 ## What we are looking for
 
@@ -43,12 +45,34 @@ Exit code 0 = KEEP, 1 = REJECT, 2 = a file was missing. The number is written to
 report either way; a REJECT that is close to the bar with a diagram-heavy deck is
 worth flagging rather than discarding.
 
-Transcription: set `ingest.asr_backend: openai` for intake (whisper-1, ~15× realtime,
-about **$0.36 per hour of audio**, and better terminology — see
-`reports/asr_openai_pilot01.md`). The local CPU backend is free but ~3× realtime, so a
-60-minute lecture costs ~20 minutes of machine time. Either way the transcript is
-frozen to `data/processed/transcripts/<stem>.frozen.json` on the first run and reused
-after that; re-runs reuse the scratch index unless `--reingest`.
+### Transcription — the Colab batch is the standard route
+
+Intake transcribes with **local faster-whisper on a GPU** (`candidate.py --device cuda
+--asr local`, the defaults). It costs nothing and does not touch the frozen pilot01
+transcript. A laptop CPU runs at ~3× realtime (a 60-minute lecture takes ~20 minutes);
+a free Colab T4 is much faster, so batch intake runs there:
+
+```python
+# Colab, Runtime → Change runtime type → T4 GPU
+!git clone https://github.com/<you>/LinkRAG.git && cd LinkRAG && pip -q install -e .
+from google.colab import drive; drive.mount("/content/drive")   # lectures live in Drive
+!mkdir -p data/raw && ln -s /content/drive/MyDrive/linkrag_raw/* data/raw/
+# one line per lecture; --device cuda switches whisper to float16
+!python scripts/dataset/candidate.py --name mit_6006_l03 --device cuda \
+    --audio data/raw/mit_6006_l03/l03.mp3 --deck data/raw/mit_6006_l03/l03_slides.pdf
+# keep the frozen transcripts and reports: copy them back to Drive, commit from there
+!cp -r data/processed/transcripts reports /content/drive/MyDrive/linkrag_out/
+```
+
+The frozen transcript (`data/processed/transcripts/<stem>.frozen.json`) is written on
+the first run and reused after that, so the GPU is needed once per lecture; the
+redundancy step afterwards runs anywhere (`--device cpu`). Re-runs reuse the scratch
+index unless `--reingest`.
+
+**whisper-1 is kept as an option** (`--asr openai`): ~15× realtime, better
+terminology (`reports/asr_openai_pilot01.md`), **$0.36 per hour of audio**. It bills,
+so under zero-cost mode it is refused before the first upload unless the budget is
+raised (`cost.max_usd` in the config).
 
 ## Record every decision
 

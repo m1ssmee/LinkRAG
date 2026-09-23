@@ -9,11 +9,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from linkrag.core import load_config, setup_logging, stage_timer
+from linkrag.core import load_config, set_max_cost, setup_logging, stage_timer
 from linkrag.eval import format_modality_distribution
 from linkrag.costs import record_run
 from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer
 from linkrag.generate.citations import citations_for
+from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import verify_answer
 from linkrag.index import Index, default_encoder
 from linkrag.link.align import load_links
@@ -28,6 +29,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Question answering over an ingested corpus.")
     parser.add_argument("question")
     parser.add_argument("--config", default="configs/default.yaml")
+    parser.add_argument("--max-cost", type=float, default=0.0,
+                        help="USD budget for LLM calls this run; 0 = zero-cost mode (refuse anything that bills)")
     parser.add_argument("--mode", choices=["baseline", "linkrag"], default="baseline")
     parser.add_argument("--index", default=None)
     parser.add_argument("--top-k", type=int, default=None)
@@ -41,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
 
     setup_logging()
     cfg = load_config(args.config)
+    set_max_cost(cfg, args.max_cost)
     index_dir = args.index or cfg["index"]["store_dir"]
     if not Path(index_dir).exists():
         parser.error(f"no index at {index_dir} -- run scripts/ingest.py first")
@@ -120,7 +124,8 @@ def main(argv: list[str] | None = None) -> int:
         if gcfg.get("verify", True) and not ans.malformed:
             jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
             judge = http_completer(jcfg)
-            verdicts = verify_answer(ans, units, judge, runs=int(gcfg.get("verify_runs", 3)), strict=strict)
+            verdicts = verify_answer(ans, units, judge, runs=int(gcfg.get("verify_runs", 3)), strict=strict,
+                                     **entailment_opts(cfg))
             print(verdicts["answer"])
             print()
             mark = {"supported": "✓", "weak": "?", "unsupported": "✗", "unchecked": "·"}

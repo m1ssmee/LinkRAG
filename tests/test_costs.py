@@ -76,3 +76,49 @@ def test_cache_only_never_calls_and_cost_cap_stops(tmp_path):
     with pytest.raises(RuntimeError, match="cost cap"):
         capped("s", "u3")
     assert calls["n"] == 2
+
+
+def test_spend_guard_zero_cost_mode():
+    import pytest
+    from linkrag.costs import BillingRefused, SpendGuard
+    pricing = {"gpt-4.1-mini": {"input_per_m": 0.4, "output_per_m": 1.6}}
+    # free backend passes at $0
+    SpendGuard({"model": "openai/gpt-oss-120b", "billing": "free", "max_cost_usd": 0.0}, pricing).check(10_000, 1_000)
+    # a local server with nothing declared cannot bill
+    SpendGuard({"provider": "ollama", "model": "llama3.1:8b", "max_cost_usd": 0.0}, pricing).check(10, 10)
+    # metered, no price row, $0 budget: refused before sending
+    with pytest.raises(BillingRefused, match="no price row"):
+        SpendGuard({"model": "mystery-model", "max_cost_usd": 0.0}, pricing).check(10, 10)
+    # metered and priced: $0 refuses; a budget admits until the worst case would exceed it
+    cfg = {"model": "gpt-4.1-mini", "max_cost_usd": 0.0}
+    g = SpendGuard(cfg, pricing)
+    with pytest.raises(BillingRefused):
+        g.check(1000, 100)
+    cfg["max_cost_usd"] = 0.001                       # read live, as set_max_cost does
+    g.check(1000, 100)                                # worst 0.00056 fits
+    g.add(1000, 100)
+    with pytest.raises(BillingRefused, match="budget"):
+        g.check(1000, 100)                            # 0.00056 + 0.00056 > 0.001
+
+
+def test_set_max_cost_reaches_every_llm_block():
+    from linkrag.core import load_config, set_max_cost
+    cfg = load_config("configs/default.yaml")
+    assert cfg["models"]["llm"]["max_cost_usd"] == 0.0 and cfg["eval"]["judge"]["max_cost_usd"] == 0.0
+    set_max_cost(cfg, 3)
+    assert cfg["models"]["llm"]["max_cost_usd"] == 3.0 and cfg["eval"]["judge"]["max_cost_usd"] == 3.0
+
+
+def test_rate_limiter_waits_out_the_minute(monkeypatch):
+    import time
+    from linkrag.costs import RateLimiter
+    clock, slept = [1000.0], []
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(time, "sleep", lambda s: (slept.append(s), clock.__setitem__(0, clock[0] + s)))
+    assert RateLimiter.for_backend("u", "m", None, None) is None
+    lim = RateLimiter(rpm=2, tpm=None)
+    lim.acquire(1); lim.acquire(1)
+    assert not slept
+    lim.acquire(1)                                    # third in the same minute waits ~60 s
+    assert len(slept) == 1 and 59.9 < slept[0] < 60.2
+    assert RateLimiter.for_backend("u", "m2", 5, None) is RateLimiter.for_backend("u", "m2", 5, None)

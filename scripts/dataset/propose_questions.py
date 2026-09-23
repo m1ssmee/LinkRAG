@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-from linkrag.core import EvidenceUnit, load_config, setup_logging
+from linkrag.core import EvidenceUnit, load_config, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, price_for, record_run
 from linkrag.eval.redundancy import role_of
 from linkrag.eval.verify_gold import parse_json
@@ -102,12 +102,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--single-per-role", type=int, default=4)
     ap.add_argument("--cross-per-pair", type=int, default=4)
     ap.add_argument("--min-words", type=int, default=25, help="skip units shorter than this")
-    ap.add_argument("--max-cost", type=float, default=1.0)
+    ap.add_argument("--max-cost", type=float, default=0.0)
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
 
     setup_logging()
     cfg = load_config(args.config)
+    set_max_cost(cfg, args.max_cost)
     index = Index.load(args.index)
     units = [u for u in index.units if len(u.content.split()) >= args.min_words]
     manifest = load_manifest(Path(args.index).parent / MANIFEST_NAME) or {}

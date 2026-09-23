@@ -152,7 +152,20 @@ LABEL = {"transcript": "lecture transcript", "deck": "slide deck (text and figur
 
 
 def judge_sentence(sentence: str, unit_id: str, source: str, target: str,
-                   passages: Sequence[EvidenceUnit], judge: Completer, runs: int) -> SentenceVerdict:
+                   passages: Sequence[EvidenceUnit], judge: Completer, runs: int,
+                   backend: str = "nli", device: str = "cpu") -> SentenceVerdict:
+    """Is this sentence of A already stated by B's nearest passages?
+
+    `nli` (default): the same local cross-encoder the gold and claim checks use --
+    deterministic, free, one pass per passage with the best taken. `llm`: the judge
+    model, `runs` calls, majority, quotable span."""
+    if backend == "nli":
+        from linkrag.eval import nli as _nli
+        ok, span, _ = _nli.entails_any("\n".join(u.content for u in passages), [sentence], device=device)
+        return SentenceVerdict(source, target, sentence, unit_id, bool(ok),
+                               ["yes" if ok else "no"], span if ok else "", [u.id for u in passages])
+    if backend != "llm":
+        raise ValueError(f"unknown entailment backend {backend!r}: use 'nli' or 'llm'")
     prompt = ENTAIL_PROMPT.format(source_label=LABEL[source], target_label=LABEL[target],
                                   sentence=sentence, passages=passages_for(passages))
     votes, spans = [], []
@@ -173,7 +186,8 @@ def judge_sentence(sentence: str, unit_id: str, source: str, target: str,
 
 def redundancy(units: Sequence[EvidenceUnit], encoder: Encoder, judge: Completer, *,
                pairs: Sequence[tuple[str, str]] = DEFAULT_PAIRS, k: int = 8, runs: int = 3,
-               workers: int = 6, limit: int | None = None,
+               workers: int = 6, limit: int | None = None, backend: str = "nli",
+               device: str = "cpu",
                progress: Callable[[str], None] | None = None) -> list[SentenceVerdict]:
     by_role = sentences_by_role(units)
     targets = {role: TargetIndex([u for u in units if role_of(u) == role], encoder)
@@ -187,7 +201,8 @@ def redundancy(units: Sequence[EvidenceUnit], encoder: Encoder, judge: Completer
             continue
         with ThreadPoolExecutor(max_workers=workers) as ex:
             futures = [ex.submit(judge_sentence, s, uid, source, target,
-                                 targets[target].nearest(s, k), judge, runs) for s, uid in sents]
+                                 targets[target].nearest(s, k), judge, runs, backend, device)
+                       for s, uid in sents]
             verdicts = [f.result() for f in futures]
         out.extend(verdicts)
         if progress:

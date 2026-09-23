@@ -30,20 +30,82 @@ models:
   # Alternative answerer backends, same OpenAI-compatible code path. Selecting one
   # overlays its keys onto models.llm (see core.load_config).
   llm_backends:
-    # An open model served from a Colab GPU (Ollama or vLLM) behind a tunnel.
-    # THIS is the backend for Phase 8 reported numbers; see scripts/README.md for
-    # the setup and the checks to run before trusting a session.
-    colab_openai_compatible:
+    # Zero-cost backends. All speak /v1/chat/completions, so they share one code
+    # path. `billing: free` declares a free-tier / self-hosted key: the spend guard
+    # lets it through at a $0 budget. A paid key on the same service must say
+    # `billing: metered` and have a pricing row, or it is refused.
+    # `rate_limit_rpm` / `rate_limit_tpm` are enforced client-side (one minute,
+    # shared across threads) so a batch waits instead of 429-storming.
+
+    # An open model served from a Colab GPU behind a cloudflared tunnel -- the
+    # backend for Phase 8 reported numbers. Setup: scripts/README.md.
+    colab_ollama:
       provider: openai_compatible
-      model: qwen2.5:7b-instruct   # Ollama tag, or the HF id vLLM was started with
+      model: qwen2.5:7b-instruct   # Ollama tag
       base_url: https://REPLACE-ME.trycloudflare.com/v1
-      api_key_env: COLAB_LLM_KEY   # vLLM --api-key value; any non-empty string for Ollama
+      api_key_env: COLAB_LLM_KEY   # any non-empty string for Ollama
+      billing: free
+      rate_limit_rpm: 60           # one GPU; more only queues
       temperature: 0.0
       seed: 20260910
       max_tokens: 1024
       timeout_s: 300               # cold GPU + long context; the tunnel adds latency
+    colab_vllm:
+      provider: openai_compatible
+      model: Qwen/Qwen2.5-7B-Instruct   # the --model vLLM was started with
+      base_url: https://REPLACE-ME.trycloudflare.com/v1
+      api_key_env: COLAB_LLM_KEY   # the --api-key vLLM was started with
+      billing: free
+      rate_limit_rpm: 120          # vLLM batches concurrent requests
+      temperature: 0.0
+      seed: 20260910
+      max_tokens: 1024
+      timeout_s: 300
+    colab_openai_compatible:       # kept: alias of colab_ollama for existing notes
+      provider: openai_compatible
+      model: qwen2.5:7b-instruct
+      base_url: https://REPLACE-ME.trycloudflare.com/v1
+      api_key_env: COLAB_LLM_KEY
+      billing: free
+      rate_limit_rpm: 60
+      temperature: 0.0
+      seed: 20260910
+      max_tokens: 1024
+      timeout_s: 300
+    # Groq free tier (read 2026-09-23): 30 req/min, 8,000 tokens/min, 1,000 req/day
+    # per model. Llama 3.x was removed from free accounts on 2026-08-16; gpt-oss
+    # and Qwen remain. Daily cap: a 25-question matrix with 3 repeats fits; a full
+    # gold verification (~900 calls) does not in one day.
+    groq:
+      provider: openai_compatible
+      model: openai/gpt-oss-120b
+      base_url: https://api.groq.com/openai/v1
+      api_key_env: GROQ_API_KEY
+      billing: free
+      rate_limit_rpm: 28           # 30 minus headroom
+      rate_limit_tpm: 7500         # 8,000 minus headroom
+      temperature: 0.0
+      seed: 20260910
+      max_tokens: 1024
+      timeout_s: 120
+    # Google AI Studio free tier via the OpenAI-compatibility endpoint. Free-tier
+    # limits vary by model and change often; 10 RPM is a conservative floor.
+    # Free-tier prompts may be used by Google to improve products -- fine for public
+    # lecture material, not for anything private.
+    google_ai_studio:
+      provider: openai_compatible
+      model: gemini-2.5-flash
+      base_url: https://generativelanguage.googleapis.com/v1beta/openai
+      api_key_env: GEMINI_API_KEY
+      billing: free
+      rate_limit_rpm: 10
+      temperature: 0.0
+      max_tokens: 1024
+      timeout_s: 120
 
   # USD per 1M tokens, longest model-prefix match (linkrag.costs.price_for).
+  # Consulted only for `billing: metered` backends; a metered model with no row is
+  # refused at a $0 budget rather than assumed free.
   # Source: developers.openai.com/api/docs/pricing, read 2026-09-21. A model with
   # no row is reported as "price unknown", never silently as $0.
   pricing:
@@ -275,6 +337,13 @@ datasets:
   mavils:
     repo: data/raw/mavils          # clone of github.com/andererka/MaViLS
 
+cost:
+  # Zero-cost operating mode (2026-09-23): the default budget for EVERY LLM call is
+  # $0. Free-tier/self-hosted backends (`billing: free`) and local NLI entailment run;
+  # anything that would bill is refused before the request is sent. Raise per run
+  # with a script's --max-cost.
+  max_usd: 0.0
+
 generation:
   # Phase 6. JSON answers (answer + claims with cited unit ids), claim-level
   # entailment against the cited units (same prompt and 3-run majority as gold
@@ -304,8 +373,18 @@ eval:
   # default is a local model (e.g. provider: ollama, model: llama3.1:8b, with
   # models.llm on qwen2.5:7b); this machine (8 GB, no Ollama runtime) cannot host one,
   # so the judge is a different hosted family instead. Same OpenAI-compatible shape.
+  # Entailment decisions (gold verification, claim verification, redundancy).
+  #   nli -- cross-encoder/nli-deberta-v3-base on the CPU: free, deterministic,
+  #          one run. Default since 2026-09-23 (zero-cost mode).
+  #   llm -- the judge model below, `runs` calls, majority, quotable span.
+  # Agreement between the two on pilot01: results/nli_vs_llm_pilot01.md
+  entailment:
+    backend: nli
+    model: cross-encoder/nli-deberta-v3-base
+    device: cpu
   judge:
     provider: openai
+    billing: metered
     model: gpt-4.1-mini-2025-04-14   # gpt-4.1 has a 30k TPM cap on this account
     base_url: https://api.openai.com/v1
     api_key_env: OPENAI_API_KEY
