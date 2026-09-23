@@ -312,7 +312,7 @@ tier, and nothing bills without an explicit budget.
   spend guard prices each request before sending it and refuses anything that could
   exceed the budget.
 - **Judge:** gpt-4.1-mini (`eval.judge`), the model behind the stored verdicts.
-- **Batch answerer:** a different cheap model (gpt-5.4-mini). It must not be the judge
+- **Batch answerer:** a different cheap model (`gpt-5.4-mini-2026-03-17`, verified on this account's model list 2026-09-23). It must not be the judge
   (*Separate judge*).
 - **Strong model** (gpt-5.4, the answerer of every stored pilot01 run): refused in batch
   runs unless `models.llm.allow_strong_in_batch: true`. It is for a final reference row
@@ -522,8 +522,7 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   (`scripts/eval/judge_agreement.py` measures it). Until then they may not decide gold or
   intake; the NLI result shows that a judge swap alone can flip a verdict. The Groq free
   tier caps requests per day. `gpt-oss-120b` is a reasoning model, and `max_tokens: 1024`
-  may truncate its JSON reply (unverified). The batch answerer gpt-5.4-mini is not yet
-  verified against this account's model list.
+  may truncate its JSON reply (unverified).
 - **(g) Gold counts — reconciled 2026-09-23.** The stored gold (`reports/gold_verified_pilot01.md`,
   `tests/regression/pilot01_questions.jsonl`, judge gpt-4.1-mini, verified 2026-09-21) is
   the reference: 25 questions, 69 gold locators, 4 cross-modal (3 split + 1 deictic).

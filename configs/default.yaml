@@ -13,13 +13,13 @@ models:
     # one code path; `provider` only picks a default base_url.
     provider: openai             # ollama | openai | any OpenAI-compatible server
     # Batch answerer: cheap tier (dataset policy, 2026-09-23). It must differ from the
-    # judge (gpt-4.1-mini, DESIGN.md "Separate judge"). NOT yet verified against this
-    # account's GET /v1/models -- pin the dated snapshot once it is.
+    # judge (gpt-4.1-mini, DESIGN.md "Separate judge"). Dated snapshot, verified against
+    # this account's GET /v1/models on 2026-09-23.
     # The strong model gpt-5.4-2026-03-05 answered every stored pilot01 run; batch
     # scripts refuse it unless allow_strong_in_batch is true (reference row / demo only).
     # gpt-5.5 was rejected: it only accepts its default temperature (1), and a
     # non-deterministic baseline is not usable as a paper comparison point.
-    model: gpt-5.4-mini
+    model: gpt-5.4-mini-2026-03-17
     allow_strong_in_batch: false
     base_url: https://api.openai.com/v1
     api_key_env: OPENAI_API_KEY  # read from the environment; never commit the key
