@@ -978,6 +978,83 @@ def open_modes(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, max_cost: fl
                                   [(str(llm["model"]), complete.usage)], cfg["models"].get("pricing")))
 
 
+def faithfulness(cfg: dict, src: Path, out: Path, *, max_cost: float, dry_run: bool, runs: int) -> int:
+    """Claim-level verification (`linkrag.generate.verify`, judge `eval.judge`) of the subset's
+    repeat-0 answers, every mode: each claim against the units it cites."""
+    import tiktoken
+    from concurrent.futures import ThreadPoolExecutor
+    from linkrag.eval.verify_gold import ENTAIL_PROMPT, JUDGE_SYSTEM
+    from linkrag.generate.answer import Answer, Claim
+    from linkrag.generate.verify import hallucination_rate, verify_answer
+    rows = [r for r in map(json.loads, src.read_text().splitlines()) if r["subset"] and r["rep"] == 0]
+    ev = {}
+    for e in map(json.loads, EVIDENCE.read_text().splitlines()):
+        ev[(e["qi"], e["mode"])] = [EvidenceUnit(id=u["id"], modality=u["modality"], content=u["content"],
+                                                 source_file=u["source_file"],
+                                                 location=Location(start_s=u["start_s"], end_s=u["end_s"]))
+                                    for u in e["units"]]
+    judge = cfg["eval"]["judge"]
+    price = price_for(str(judge["model"]), cfg["models"].get("pricing"))
+    enc = tiktoken.get_encoding("o200k_base")
+    lo = hi = 0                                        # input tokens: first cited unit only / every cited unit
+    n_claims = 0
+    for r in rows:
+        by_id = {u.id: u for u in ev[(r["qi"], r["mode"])]}
+        for c in r["claims"]:
+            n_claims += 1
+            toks = [len(enc.encode(JUDGE_SYSTEM + ENTAIL_PROMPT.format(question=c["claim"], expected=c["claim"],
+                                                                      text=by_id[i].content))) + 8
+                    for i in c["unit_ids"] if i in by_id]
+            lo, hi = lo + (toks[0] if toks else 0), hi + sum(toks)
+    cost = lambda tin, calls: runs * (tin / 1e6 * price["input_per_m"] + calls * 120 / 1e6 * price["output_per_m"])
+    est_lo, est_hi = cost(lo, n_claims), cost(hi, n_claims * 2)
+    print(f"{len(rows)} answers · {n_claims} claims · judge `{judge['model']}` x {runs} runs · estimated "
+          f"${est_lo:.2f}-${est_hi:.2f} (cap ${max_cost:.2f})")
+    if dry_run:
+        return 0
+    if est_hi > max_cost:
+        raise SystemExit(f"upper estimate ${est_hi:.2f} exceeds --max-cost {max_cost}; nothing sent (lower --runs)")
+    complete = cached_completer(http_completer(judge), PROCESSED / "llm_cache" / f"{judge['model']}-faith",
+                                max_cost_usd=max_cost, price=price)
+
+    def check(r):
+        ans = Answer(answer=r["answer"], claims=[Claim(**c) for c in r["claims"]], raw="")
+        return {**{k: r[k] for k in ("vid", "qi", "level", "mode")},
+                **verify_answer(ans, ev[(r["qi"], r["mode"])], complete, runs=runs, workers=4)}
+
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        res = list(ex.map(check, rows))
+    out.with_suffix(".jsonl").write_text("\n".join(json.dumps(x) for x in res) + "\n")
+    answerer = str(cfg["models"]["llm"]["model"])
+    L = ["# LectQA-Vid — faithfulness per mode", "",
+         f"The {len(res)} repeat-0 answers of the open-ended subset (`lectqa_open_modes.md`: 100 questions per "
+         f"difficulty, seed `{OPEN_SEED}`, {len({x['vid'] for x in res})} videos) · answerer `{answerer}` · judge "
+         f"`{judge['model']}` temperature {judge.get('temperature')}, {runs} run(s) per check"
+         + (", majority" if runs > 1 else "") + " · `linkrag.generate.verify.verify_answer`: each claim against "
+         "the text of the units it cites; the first entailing unit wins, with a quotable span required.", "",
+         "**supported**: a cited unit entails the claim. **weak**: the claim cites no unit of the evidence. "
+         "**unsupported**: no cited unit entails it. **Hallucination rate** = unsupported / claims, pooled over "
+         "answers (`hallucination_rate`). Supported means the claim is stated in the cited evidence. It does "
+         "not mean the answer is correct.", "",
+         "| level | mode | answers | claims | supported | weak | unsupported | hallucination rate | answers with no claim |",
+         "|---|---|---:|---:|---:|---:|---:|---:|---:|"]
+    for level in (*LEVELS, "overall"):
+        for mode in OPEN_MODES:
+            sel = [x for x in res if x["mode"] == mode and (level == "overall" or x["level"] == level)]
+            if sel:
+                claims = sum(len(x["claims"]) for x in sel)
+                L.append(f"| {level} | {mode} | {len(sel)} | {claims} | {sum(x['supported'] for x in sel)} | "
+                         f"{sum(x['weak'] for x in sel)} | {sum(x['unsupported'] for x in sel)} | "
+                         f"{100 * hallucination_rate(sel):.1f} % | {sum(not x['claims'] for x in sel)} |")
+    tot = sum(len(x["claims"]) for x in res)
+    assert tot == sum(x[k] for x in res for k in ("supported", "weak", "unsupported")), "verdicts must sum to claims"
+    L += [""] + record_run("scripts/adapters/lectqa_vid.py", "lectqa_vid faithfulness per mode",
+                           [(str(judge["model"]), complete.usage)], cfg["models"].get("pricing"))
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 0
+
+
 METRICS = (("f1", "F1"), ("sim", "Sim"), ("bleu", "BLEU"), ("meteor", "METEOR"), ("rouge1", "R1"))
 
 
@@ -1464,7 +1541,8 @@ def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = T
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("step", choices=["fetch", "prepare", "run", "v2", "frameslides", "coverage", "audit", "mcq",
-                                     "open"])
+                                     "open", "faith"])
+    ap.add_argument("--runs", type=int, default=3, help="faith: judge runs per check (majority)")
     ap.add_argument("--rest", type=int, default=None, help="open: how many non-subset questions (seeded order)")
     ap.add_argument("--report-only", action="store_true", help="open: re-render the report from the stored answers")
     ap.add_argument("--dry-run", action="store_true", help="mcq/open: build prompts and estimate cost only")
@@ -1504,6 +1582,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.step == "open":
         return open_modes(ids, cfg, dcfg, Path("results/external/lectqa_open_modes.md"), max_cost=args.max_cost,
                           dry_run=args.dry_run, rest=args.rest)
+    if args.step == "faith":
+        return faithfulness(cfg, Path("results/external/lectqa_open_modes.jsonl"),
+                            Path("results/external/lectqa_faithfulness.md"), max_cost=args.max_cost,
+                            dry_run=args.dry_run, runs=args.runs)
     if args.step == "audit":
         return audit(Path("results/external/lectqa_audit.md"))
     if args.step == "coverage":
