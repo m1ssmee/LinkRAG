@@ -387,6 +387,22 @@ reported until it has been inspected.**
    `build_graph` was keying edges by `link_type` and silently dropping 19 of 41
    deictic links. The discrepancy was the only visible symptom.
 
+## Reporting convention (binding, from 2026-09-23)
+
+- **Every number carries its provenance:** dataset, split, n, corpus/config hash, the
+  models involved (answerer, judge), and how many runs. LLM-dependent cells run 3
+  times and report mean ± std. A single run, or a small n (e.g. the n = 4 cross-modal
+  cell), is labelled *direction only* / *not reportable*, never stated as a result.
+- **Thresholds and knobs are set only on a tune half or on external data,** then
+  applied once to the test half. Choosing a value after seeing evaluation numbers is a
+  **retune** and is reported as one, never as a result. A **design change** is a
+  mechanism with a config switch that reproduces the old behaviour, applied once
+  before re-measuring (see *Design changes*); a retune is not a design change.
+- **A report says what changed, then what was found, with caveats before headline
+  numbers.** Per-category counts sum to the stated total (*Measurement rules* §2).
+- **Corrections go in their own commit,** naming the number, what was wrong and the fix;
+  the corrected report keeps a dated note of the old value.
+
 ## Execution rule (binding)
 
 **Every new script or code path must be executed once for real — not mocked — before it
