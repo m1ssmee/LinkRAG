@@ -73,6 +73,9 @@ class Link:
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
+ENDPOINT_KEYS = ("provider", "base_url", "base_url_env", "api_key_env", "billing")
+
+
 def load_config(path: str | Path = "configs/default.yaml") -> dict[str, Any]:
     """YAML config with the active LLM backend resolved into `models.llm`.
 
@@ -95,7 +98,10 @@ def load_config(path: str | Path = "configs/default.yaml") -> dict[str, Any]:
             if name not in backends:
                 raise KeyError(f"models.llm_backends has no entry {name!r} "
                                f"(have: {sorted(backends)})")
-            parent[key] = {**block, **backends[name], "backend": name}
+            # Endpoint, credential and billing come only from the selected backend: never
+            # send the base block's key (e.g. OPENAI_API_KEY) to another backend's URL.
+            base = {k: v for k, v in block.items() if k not in ENDPOINT_KEYS}
+            parent[key] = {**base, **backends[name], "backend": name}
     # Zero-cost mode: every completer built from this config is budgeted at
     # `cost.max_usd` (default 0 -- refuse anything that would bill). A script's
     # --max-cost raises it via `set_max_cost`. Pricing rides along so the guard can

@@ -150,3 +150,58 @@ def test_verifier_defaults_to_the_llm_judge_on_groq_and_never_falls_back(monkeyp
     assert stub.usage["calls"] == 0
     with pytest.raises(RuntimeError, match="nli"):
         stub("s", "u")
+
+
+def test_colab_backend_against_a_local_openai_compatible_server(monkeypatch, tmp_path):
+    """backend colab: URL from LINKRAG_COLAB_BASE_URL, no key sent (not even the base
+    block's OPENAI_API_KEY), $0 in the ledger tagged backend=colab, one-line failure
+    when the URL is unset -- for both answerer and judge."""
+    import json
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    import pytest
+    from linkrag.core import load_config
+    from linkrag.costs import cached_completer, record_run
+    from linkrag.generate.answer import MissingApiKey, http_completer
+    seen = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            seen.append((self.path, self.headers.get("Authorization"), body))
+            out = json.dumps({"choices": [{"message": {"content": "ok"}}],
+                              "usage": {"prompt_tokens": 7, "completion_tokens": 1}}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(out)))
+            self.end_headers()
+            self.wfile.write(out)
+
+        def log_message(self, *a):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-must-not-leak")
+        monkeypatch.setenv("LINKRAG_LLM_BACKEND", "colab")
+        monkeypatch.setenv("LINKRAG_JUDGE_BACKEND", "colab")
+        monkeypatch.delenv("LINKRAG_COLAB_BASE_URL", raising=False)
+        cfg = load_config("configs/default.yaml")
+        for block in (cfg["models"]["llm"], cfg["eval"]["judge"]):
+            with pytest.raises(MissingApiKey, match="LINKRAG_COLAB_BASE_URL"):
+                http_completer(block)
+        assert not seen
+        monkeypatch.setenv("LINKRAG_COLAB_BASE_URL", f"http://127.0.0.1:{server.server_port}/v1")
+        for block in (cfg["models"]["llm"], cfg["eval"]["judge"]):
+            complete = cached_completer(http_completer(block), tmp_path / block["backend"] / str(len(seen)))
+            assert complete("sys", "user") == "ok"
+            path, auth, body = seen[-1]
+            assert path == "/v1/chat/completions" and auth is None
+            assert body["model"] == "qwen2.5:7b-instruct" and body["temperature"] == 0.0
+            ledger = tmp_path / "ledger.jsonl"
+            record_run("test", "colab", [(block["model"], complete.usage)], cfg["models"]["pricing"], ledger=ledger)
+            row = json.loads(ledger.read_text().splitlines()[-1])
+            assert row["backend"] == "colab" and row["cost_usd"] == 0.0 and row["calls"] == 1
+    finally:
+        server.shutdown()

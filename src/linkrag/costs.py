@@ -67,6 +67,8 @@ def cached_completer(inner: Completer, cache_dir: Path, *, cache_only: bool = Fa
     seen: Counter = Counter()
     lock = threading.Lock()
     usage = empty_usage()
+    if getattr(inner, "usage", {}).get("backend"):    # carried through to the ledger row
+        usage["backend"] = inner.usage["backend"]       # type: ignore[attr-defined]
 
     def complete(system: str, user: str) -> str:
         base = hashlib.sha256((system + "\x00" + user).encode()).hexdigest()
@@ -159,6 +161,7 @@ def record_run(script: str, label: str, parts: list[tuple[str, dict[str, Any]]],
         price = price_for(model, pricing)
         cost = usage_cost(usage, price, charge_cached)
         row = {"utc": stamp, "script": script, "label": label, "model": model,
+               **({"backend": usage["backend"]} if usage.get("backend") else {}),
                **{k: usage.get(k, 0) for k in USAGE_KEYS}, "cost_usd": cost}
         with ledger.open("a") as fh:
             fh.write(json.dumps(row) + "\n")

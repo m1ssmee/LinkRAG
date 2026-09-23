@@ -88,7 +88,8 @@ def cited_ids(answer_text: str) -> list[str]:
 
 
 class MissingApiKey(SystemExit):
-    """A backend's key is not in the environment. SystemExit, so a script stops with this
+    """A backend's key -- or, for `base_url_env` backends such as colab, its URL -- is
+    not in the environment. SystemExit, so a script stops with this
     one line on stderr (exit 1, no traceback). Nothing falls back to another backend --
     least of all a billing one."""
 
@@ -119,6 +120,14 @@ def http_completer(llm_cfg: dict[str, Any], pricing: dict[str, Any] | None = Non
     from linkrag.costs import RateLimiter, SpendGuard
 
     provider = llm_cfg.get("provider", "ollama")
+    backend = str(llm_cfg.get("backend") or provider)
+    url_env = llm_cfg.get("base_url_env")
+    if url_env:                       # e.g. colab: the tunnel URL changes every session
+        env_url = os.environ.get(url_env, "").strip()
+        if not env_url:
+            raise MissingApiKey(f"{url_env} is not set: backend {backend!r} needs the URL printed by "
+                                f"notebooks/colab_serve.ipynb (export {url_env}=https://.../v1). Not falling back.")
+        llm_cfg = {**llm_cfg, "base_url": env_url}
     base_url = (llm_cfg.get("base_url") or PROVIDER_BASE_URLS.get(provider, "")).rstrip("/")
     if not base_url:
         raise ValueError(f"no base_url for provider {provider!r}; set models.llm.base_url")
@@ -137,7 +146,7 @@ def http_completer(llm_cfg: dict[str, Any], pricing: dict[str, Any] | None = Non
 
     limit = llm_cfg.get("max_tokens", 1024)
     usage = {"calls": 0, "cached_calls": 0, "prompt_tokens": 0, "completion_tokens": 0,
-             "estimated_tokens": 0}
+             "estimated_tokens": 0, "backend": backend}
     # Older models take `max_tokens`; newer ones reject it and require
     # `max_completion_tokens`. Model *names* are not a usable signal for which --
     # the families change faster than any prefix list survives -- so discover it

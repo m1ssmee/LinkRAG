@@ -37,41 +37,29 @@ models:
     # `rate_limit_rpm` / `rate_limit_tpm` are enforced client-side (one minute,
     # shared across threads) so a batch waits instead of 429-storming.
 
-    # An open model served from a Colab GPU behind a cloudflared tunnel -- the
-    # backend for Phase 8 reported numbers. Setup: scripts/README.md.
-    colab_ollama:
+    # An open model served from a Colab GPU behind a cloudflared tunnel -- answerer and,
+    # once its agreement is measured (scripts/eval/judge_agreement.py), judge. Start
+    # notebooks/colab_serve.ipynb, then `export LINKRAG_COLAB_BASE_URL=<url>/v1` and select
+    # it with LINKRAG_LLM_BACKEND=colab / LINKRAG_JUDGE_BACKEND=colab. The URL is read at
+    # run time (it changes every session); unset -> one-line failure, never a fallback.
+    colab: &colab
       provider: openai_compatible
-      model: qwen2.5:7b-instruct   # Ollama tag
-      base_url: https://REPLACE-ME.trycloudflare.com/v1
-      api_key_env: COLAB_LLM_KEY   # any non-empty string for Ollama
-      billing: free
-      rate_limit_rpm: 60           # one GPU; more only queues
+      model: qwen2.5:7b-instruct   # Ollama tag; the notebook documents the 14B q4 option
+      base_url_env: LINKRAG_COLAB_BASE_URL
+      billing: free                # no API key: Ollama needs none
+      rate_limit_rpm: 60           # one GPU; more only queues. Raise for vLLM batching.
+      rate_limit_tpm: null
       temperature: 0.0
       seed: 20260910
       max_tokens: 1024
       timeout_s: 300               # cold GPU + long context; the tunnel adds latency
-    colab_vllm:
-      provider: openai_compatible
+    colab_ollama: *colab           # kept: older names for the same backend
+    colab_openai_compatible: *colab
+    colab_vllm:                    # vLLM instead of Ollama: needs its --api-key
+      <<: *colab
       model: Qwen/Qwen2.5-7B-Instruct   # the --model vLLM was started with
-      base_url: https://REPLACE-ME.trycloudflare.com/v1
-      api_key_env: COLAB_LLM_KEY   # the --api-key vLLM was started with
-      billing: free
-      rate_limit_rpm: 120          # vLLM batches concurrent requests
-      temperature: 0.0
-      seed: 20260910
-      max_tokens: 1024
-      timeout_s: 300
-    colab_openai_compatible:       # kept: alias of colab_ollama for existing notes
-      provider: openai_compatible
-      model: qwen2.5:7b-instruct
-      base_url: https://REPLACE-ME.trycloudflare.com/v1
       api_key_env: COLAB_LLM_KEY
-      billing: free
-      rate_limit_rpm: 60
-      temperature: 0.0
-      seed: 20260910
-      max_tokens: 1024
-      timeout_s: 300
+      rate_limit_rpm: 120          # vLLM batches concurrent requests
     # Groq free tier (read 2026-09-23): 30 req/min, 8,000 tokens/min, 1,000 req/day
     # per model. Llama 3.x was removed from free accounts on 2026-08-16; gpt-oss
     # and Qwen remain. Daily cap: a 25-question matrix with 3 repeats fits; a full
