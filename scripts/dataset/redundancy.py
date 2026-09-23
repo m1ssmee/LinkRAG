@@ -19,7 +19,7 @@ from pathlib import Path
 from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
 from linkrag.eval.redundancy import DEFAULT_PAIRS, dump_json, redundancy, role_of, write_report
-from linkrag.eval.verify_gold import entailment_opts
+from linkrag.eval.verify_gold import entailment_opts, refuse_nli_decisions, verifier_label
 from linkrag.generate.answer import http_completer, judge_completer
 from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, load_manifest
@@ -77,13 +77,15 @@ def main(argv: list[str] | None = None) -> int:
           + ", ".join(f"{r}={n}" for r, n in files.items()))
     print(f"judge {jcfg.get('model')} · k={args.k} · runs={args.runs} · pairs {args.pairs}\n")
 
+    refuse_nli_decisions(ent["backend"], args.reports_dir)
+    verifier, vruns = verifier_label(cfg, ent["backend"], args.runs)
     print(f"entailment backend: {ent['backend']}")
     verdicts = redundancy(units, encoder, judge, pairs=pairs, k=args.k, runs=args.runs,
                           workers=1 if ent["backend"] == "nli" else args.workers, limit=args.limit,
                           **ent, progress=print)
     out_md = Path(args.reports_dir) / f"redundancy_{args.corpus}.md"
     write_report(verdicts, out_md, corpus=args.corpus, manifest_hash=mhash,
-                 judge_model=str(jcfg.get("model")), k=args.k, runs=args.runs, files=dict(files))
+                 judge_model=verifier, k=args.k, runs=vruns, files=dict(files))
     dump_json(verdicts, out_md.with_suffix(".json"))
     footer = record_run("scripts/dataset/redundancy.py", f"{args.corpus} redundancy",
                         [(str(jcfg.get("model")), judge.usage)], cfg["models"].get("pricing"))

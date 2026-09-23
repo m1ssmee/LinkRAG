@@ -227,6 +227,26 @@ def entailment_opts(cfg: dict[str, Any], backend: str | None = None) -> dict[str
             "device": str(ecfg.get("device", cfg.get("device", "cpu")))}
 
 
+def verifier_label(cfg: dict[str, Any], backend: str, runs: int) -> tuple[str, int]:
+    """(verifier, runs) as they belong in a report header: the judge model under llm,
+    the NLI model -- one deterministic run -- under nli."""
+    if backend == "nli":
+        from linkrag.eval.nli import MODEL
+        return f"nli:{MODEL}", 1
+    judge = (cfg.get("eval") or {}).get("judge") or cfg["models"]["llm"]
+    return str(judge.get("model")), runs
+
+
+def refuse_nli_decisions(backend: str, *paths: str | Path) -> None:
+    """DESIGN.md finding 11: NLI is an ablation. It may not write gold or the stored
+    reports, so an nli run must be pointed at scratch paths explicitly."""
+    frozen = [p for p in paths if Path(p).resolve().is_relative_to(Path("tests/regression").resolve())
+              or Path(p).resolve() == Path("reports").resolve()]
+    if backend == "nli" and frozen:
+        raise SystemExit(f"--entailment nli is an ablation (DESIGN.md finding 11) and may not write "
+                         f"{', '.join(map(str, frozen))}; pass scratch --out/--reports-dir.")
+
+
 def entail_unit(question: str, expected: str, unit: EvidenceUnit, complete: Completer,
                 runs: int, backend: str = "llm", device: str = "cpu") -> UnitVerdict:
     """Does this unit state at least one fact of the reference answer?

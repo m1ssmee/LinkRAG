@@ -5,7 +5,11 @@ Who this is for: the teammate collecting lectures. You need Python set up
 below). Redundancy is judged by the LLM judge on Groq's free tier: export
 `GROQ_API_KEY` (free account) in `~/.zshenv`. Do not switch the intake to the local NLI
 backend: on pilot01 it moves deck→transcript from 94.2 % to 59.6 % and would flip a
-REJECT to KEEP (DESIGN.md finding 11).
+REJECT to KEEP (DESIGN.md finding 11). Until the Groq judge's agreement with the
+stored judges has been measured, treat its intake verdicts as provisional (DESIGN.md
+known issue (f)). The free tier caps requests per day and one lecture needs more than
+a thousand judge calls, so intake takes more than one day. Re-running resumes from the
+reply cache.
 
 ## What we are looking for
 

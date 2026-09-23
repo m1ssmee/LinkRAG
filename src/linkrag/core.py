@@ -110,7 +110,9 @@ def load_config(path: str | Path = "configs/default.yaml") -> dict[str, Any]:
 
 
 def set_max_cost(cfg: dict[str, Any], usd: float) -> None:
-    """Raise (or lower) the run budget on every LLM block of a loaded config."""
+    """Raise (or lower) the run budget: every LLM block, and `cost.max_usd`, which the
+    whisper-1 pre-upload check reads."""
+    cfg.setdefault("cost", {})["max_usd"] = float(usd)
     for block in (cfg.get("models", {}).get("llm"), (cfg.get("eval") or {}).get("judge")):
         if isinstance(block, dict):
             block["max_cost_usd"] = float(usd)

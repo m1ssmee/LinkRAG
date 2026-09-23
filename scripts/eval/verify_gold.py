@@ -17,7 +17,8 @@ from pathlib import Path
 
 from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
-from linkrag.eval.verify_gold import dump_json, entailment_opts, verified_gold_rows, verify_gold, write_gold, write_report
+from linkrag.eval.verify_gold import (dump_json, entailment_opts, refuse_nli_decisions, verified_gold_rows, verifier_label,
+                                     verify_gold, write_gold, write_report)
 from linkrag.generate.answer import http_completer, judge_completer
 from linkrag.index import Index
 from linkrag.manifest import MANIFEST_NAME, load_manifest
@@ -74,6 +75,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"answerer {llm.get('model')} · judge {jcfg.get('model')} @ temperature={jcfg.get('temperature')} "
           f"seed={jcfg.get('seed')} · {args.runs} runs\n")
 
+    refuse_nli_decisions(ent["backend"], args.out, args.reports_dir)
+    verifier, vruns = verifier_label(cfg, ent["backend"], args.runs)
     print(f"entailment backend: {ent['backend']}")
     verdicts = verify_gold(rows, list(index.units), complete, judge=judge, deck_files=deck_files,
                            runs=args.runs, workers=1 if ent["backend"] == "nli" else args.workers,
@@ -81,12 +84,12 @@ def main(argv: list[str] | None = None) -> int:
 
     reports = Path(args.reports_dir)
     md = write_report(verdicts, reports / f"gold_verified_{args.corpus}.md", corpus=args.corpus,
-                      manifest_hash=mhash, model=str(jcfg.get("model")), runs=args.runs,
+                      manifest_hash=mhash, model=verifier, runs=vruns,
                       n_units=len(index), answerer=str(llm.get("model")))
     js = dump_json(verdicts, reports / f"gold_verified_{args.corpus}.json")
     gold_rows = verified_gold_rows(verdicts, list(index.units))
-    gold = write_gold(gold_rows, args.out, manifest_hash=mhash, model=str(jcfg.get("model")),
-                      runs=args.runs, source=args.proposed, answerer=str(llm.get("model")))
+    gold = write_gold(gold_rows, args.out, manifest_hash=mhash, model=verifier,
+                      runs=vruns, source=args.proposed, answerer=str(llm.get("model")))
 
     kept = sum(v.verified_type is not None for v in verdicts)
     footer = record_run("scripts/eval/verify_gold.py", f"{args.corpus} gold verification",

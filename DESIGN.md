@@ -222,6 +222,12 @@ explicit instruction.
    (`results/nli_vs_llm_pilot01.md`, 2026-09-23; pilot01, corpus `2f3b35f27e86caf8`,
    `cross-encoder/nli-deberta-v3-base`, deterministic single run vs stored 3-run-majority
    LLM verdicts.)
+   - **Caveat first:** the NLI formulation (initials-safe splitting, a minimum premise
+     length, question conditioning: κ 0.22 → 0.27 → 0.31) is a **retune on the evaluation
+     pairs**, with no held-out set. The bias favours NLI, so the negative conclusion stands;
+     read 0.31 / 0.36 as an upper estimate. The large-model and formulation numbers come
+     from exploratory scratch runs with no committed raw verdicts, so they are *indicative,
+     not reportable*.
    - **Gold, unit level:** κ **0.31** vs gpt-4.1-mini and **0.36** vs gpt-5.4 over 147 unit
      pairs; the two LLM judges agree with each other at **0.85**.
    - **Question level:** type labels agree on 10/25; NLI drops **14/25** questions where
@@ -236,9 +242,6 @@ explicit instruction.
      correct answer does not restate the question: A5's "The baseline query took 4
      minutes, and the video was 6 hours long" is rejected. Deck bullets are fragments,
      not propositions, which is why the deck redundancy pairs sit at chance.
-   - **Caveat:** the NLI formulation (initials-safe splitting, a minimum premise
-     length, question conditioning: κ 0.22 → 0.27 → 0.31) was chosen on the same 147
-     evaluation pairs, with no held-out set. Read 0.31 / 0.36 as an upper estimate.
    - **Decision:** verification stays LLM-based (`eval.entailment.backend: llm`). The
      zero-cost judge is Groq's free tier (`eval.judge.backend: groq`). NLI remains
      selectable as an ablation (`--entailment nli`) and is never used for gold or intake
@@ -483,6 +486,19 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   scores it, so human agreement is unknown.
 - **(e) n = 25 questions, 4 cross-modal.** Enough to run the harness, not enough to
   claim a cross-modal result; see Findings and `reports/redundancy_pilot01.md`.
+- **(f) The Groq judge is not validated.** It has been the default judge since 2026-09-23
+  (finding 11) but has made no real call yet. Its agreement with the stored judges is
+  unmeasured. Until `scripts/eval/compare_entailment.py` has measured it on pilot01, a
+  Groq-judged gold set or intake verdict is **provisional**. The NLI result shows that a
+  judge swap alone can flip an intake REJECT to KEEP. The free tier caps requests per day,
+  and one candidate's redundancy pass (pilot01-w1) took 1,422 judge calls, so intake spans
+  more than one day (the reply cache makes re-runs resume). Also unverified:
+  `gpt-oss-120b` is a reasoning model, and `max_tokens: 1024` may truncate its JSON reply.
+- **(g) Gold counts disagree.** *Priority order* (i) and *Standing instruments* say
+  24 questions kept, 71 gold units, 5 cross-modal: those are the gpt-5.4-judged figures.
+  The stored gold (`reports/gold_verified_pilot01.md`, judge gpt-4.1-mini, and the
+  25-row `tests/regression/pilot01_questions.jsonl`) is 25 kept, 69 units, 4 cross-modal.
+  Not yet reconciled; cite the stored file's numbers.
 
 ## Environment decisions worth not re-litigating
 

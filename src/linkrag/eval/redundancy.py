@@ -156,7 +156,7 @@ def judge_sentence(sentence: str, unit_id: str, source: str, target: str,
                    backend: str = "llm", device: str = "cpu") -> SentenceVerdict:
     """Is this sentence of A already stated by B's nearest passages?
 
-    `nli` (default): the same local cross-encoder the gold and claim checks use --
+    `nli` (ablation only, DESIGN.md finding 11): the same local cross-encoder the gold and claim checks use --
     deterministic, free, one pass per passage with the best taken. `llm`: the judge
     model, `runs` calls, majority, quotable span."""
     if backend == "nli":

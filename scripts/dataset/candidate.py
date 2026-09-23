@@ -60,7 +60,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.reingest or not index_dir.exists():
         print(f"ingesting {len(files)} file(s) -> {index_dir}")
         rc = subprocess.call([sys.executable, "scripts/ingest.py", *files, "--config", args.config,
-                              "--out", str(index_dir), "--device", args.device, "--asr", args.asr])
+                              "--out", str(index_dir), "--device", args.device, "--asr", args.asr,
+                              "--max-cost", str(args.max_cost)])
         if rc not in (0, 2):
             return rc
 
@@ -71,6 +72,9 @@ def main(argv: list[str] | None = None) -> int:
     encoder([""])
     jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
     ent = entailment_opts(cfg)
+    if ent["backend"] != "llm":
+        raise SystemExit("intake is judged by the LLM judge only; eval.entailment.backend is "
+                         f"{ent['backend']!r} (DESIGN.md finding 11)")
     judge = cached_completer(judge_completer(cfg, ent["backend"]),
                              Path("data/processed/verify_cache") / manifest.get("hash", args.name) / str(jcfg.get("model")))
     pairs = [p for p in DEFAULT_PAIRS if args.notes or "paper" not in p]

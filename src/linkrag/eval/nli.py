@@ -1,22 +1,21 @@
-"""Local NLI entailment -- the zero-cost backend for verification.
+"""Local NLI entailment -- an ABLATION backend for verification, not the verifier.
 
 `cross-encoder/nli-deberta-v3-base` scores (premise, hypothesis) into
-contradiction / entailment / neutral. Everything this project judges is an
-entailment question, so the same model serves all three places that asked an LLM:
+contradiction / entailment / neutral. It can stand in for the LLM judge in all three
+places that ask an entailment question:
 
 * gold verification -- does this unit state a fact of the reference answer?
 * claim verification -- does the cited unit state this claim?
 * redundancy        -- does source B already state this sentence of source A?
 
-Why it can replace the judge. It is **deterministic** (one forward pass, no sampling),
-so the 3-run majority the LLM backend needs collapses to a single run; it is free; and
-it runs on the CPU at roughly 4 pairs/second, which is the same order as an API call
-without the money. What it gives up: no reasoning, no explanation, and a hard input
-limit -- a long unit is scored sentence by sentence and the best sentence wins, which
-is also what produces the quotable span the LLM backend returns.
+What it offers: deterministic (one forward pass, so the LLM's 3-run majority collapses
+to one run), free, local. What it gives up: no reasoning, no explanation, and a hard
+input limit -- a long unit is scored sentence by sentence and the best sentence wins,
+which is also what produces the quotable span.
 
-The switch is measured, not assumed: `results/nli_vs_llm_pilot01.md` reports unit-level
-agreement (Cohen's kappa) and type-label agreement against the stored LLM verdicts.
+Measured, and rejected as the gold / intake verifier (DESIGN.md finding 11,
+`results/nli_vs_llm_pilot01.md`): kappa 0.31/0.36 against LLM judges that agree with
+each other at 0.85. The scripts refuse to let it write gold or the stored reports.
 """
 
 from __future__ import annotations

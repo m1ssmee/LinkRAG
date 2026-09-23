@@ -10,7 +10,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from linkrag.core import load_config, setup_logging, stage_timer
+from linkrag.core import load_config, set_max_cost, setup_logging, stage_timer
 from linkrag.index import build_index, default_encoder
 from linkrag.ingest import ingest_files
 from linkrag.manifest import MANIFEST_NAME, build_manifest, write_manifest
@@ -24,12 +24,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", default=None, help="index dir (default: index.store_dir from config)")
     parser.add_argument("--device", choices=["cpu", "cuda", "mps"], default=None,
                         help="override config `device` (whisper + embedder); cuda switches whisper to float16")
+    parser.add_argument("--max-cost", type=float, default=0.0,
+                        help="USD budget; 0 = zero-cost mode (whisper-1 is refused before upload)")
     parser.add_argument("--asr", choices=["local", "openai"], default=None,
                         help="override ingest.asr_backend; openai (whisper-1) bills and needs --max-cost")
     args = parser.parse_args(argv)
 
     setup_logging()
     cfg = load_config(args.config)
+    set_max_cost(cfg, args.max_cost)
     if args.device:
         cfg["device"] = args.device
         if args.device == "cuda":

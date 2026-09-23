@@ -99,3 +99,21 @@ def test_audit_sampler_stratifies_with_minimum():
     from collections import Counter
     c = Counter(r["type"] for r in s)
     assert c == {"a": 10, "b": 3}
+
+
+def test_nli_is_an_ablation_that_cannot_write_gold_or_stored_reports(tmp_path):
+    """DESIGN.md finding 11: NLI never decides gold or intake, and its reports say what it is."""
+    import pytest
+    from linkrag.core import load_config, set_max_cost
+    from linkrag.eval.verify_gold import refuse_nli_decisions, verifier_label
+    with pytest.raises(SystemExit, match="ablation"):
+        refuse_nli_decisions("nli", "tests/regression/pilot01_questions.jsonl", tmp_path)
+    with pytest.raises(SystemExit, match="reports"):
+        refuse_nli_decisions("nli", "reports")
+    refuse_nli_decisions("nli", tmp_path / "g.jsonl", tmp_path)          # scratch paths are fine
+    refuse_nli_decisions("llm", "tests/regression/pilot01_questions.jsonl", "reports")
+    cfg = load_config("configs/default.yaml")
+    assert verifier_label(cfg, "nli", 3) == ("nli:cross-encoder/nli-deberta-v3-base", 1)
+    assert verifier_label(cfg, "llm", 3) == ("openai/gpt-oss-120b", 3)
+    set_max_cost(cfg, 0.5)                                                # reaches the whisper-1 check too
+    assert cfg["cost"]["max_usd"] == 0.5 and cfg["eval"]["judge"]["max_cost_usd"] == 0.5
