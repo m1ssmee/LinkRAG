@@ -6,6 +6,7 @@ setup:
 	uv venv --python 3.11 .venv || python3.11 -m venv .venv
 	uv pip install --python $(PY) -r requirements.txt -e . \
 	  || ($(PY) -m pip install -q --upgrade pip && $(PY) -m pip install -q -r requirements.txt -e .)
+	$(PY) -c "import nltk; nltk.download('wordnet', quiet=True)"   # METEOR synonym stage
 	@echo "ok: $$($(PY) --version), linkrag installed editable"
 
 test:

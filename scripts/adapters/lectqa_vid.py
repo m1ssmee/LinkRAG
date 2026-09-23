@@ -282,10 +282,13 @@ def mcq_choice(reply: str, options: list[str]) -> int | None:
     return None
 
 
-def run(ids: list[str], cfg: dict, dcfg: dict, modes: list[str], out: Path, repeats: int) -> int:
+def run(ids: list[str], cfg: dict, dcfg: dict, modes: list[str], out: Path, repeats: int,
+        metrics: str = "ours", cache_only: bool = False) -> int:
     qa = load_qa()
     llm = cfg["models"]["llm"]
-    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / str(llm.get("model")))
+    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / str(llm.get("model")),
+                                cache_only=cache_only)
+    misses = 0
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
     k = dcfg["top_k"]
@@ -321,24 +324,39 @@ def run(ids: list[str], cfg: dict, dcfg: dict, modes: list[str], out: Path, repe
                     ev = evidence_block(res)
                     if q["kind"] == "mcq":
                         opts = "\n".join(f"{'ABCD'[i]}. {o}" for i, o in enumerate(q["options"]))
-                        reply = complete(MCQ_SYSTEM, f"Evidence:\n{ev}\n\nQuestion: {q['question']}\n{opts}\n\nLetter:")
+                        try:
+                            reply = complete(MCQ_SYSTEM, f"Evidence:\n{ev}\n\nQuestion: {q['question']}\n{opts}\n\nLetter:")
+                        except CacheMiss:
+                            misses += 1
+                            continue
                         choice = mcq_choice(reply, q["options"])
                         gold = q["options"].index(q["answer"]) if q["answer"] in q["options"] else None
                         rows.append({"vid": vid, "kind": "mcq", "level": q["level"], "mode": mode, "rep": rep,
-                                     "correct": float(choice is not None and choice == gold), "reply": reply[:40]})
+                                     "correct": float(choice is not None and choice == gold), "reply": reply[:40],
+                                     "pred_label": None if choice is None else "ABCD"[choice],
+                                     "gold_label": None if gold is None else "ABCD"[gold]})
                     else:
-                        reply = complete(OPEN_SYSTEM, f"Evidence:\n{ev}\n\nQuestion: {q['question']}\n\nAnswer:")
+                        try:
+                            reply = complete(OPEN_SYSTEM, f"Evidence:\n{ev}\n\nQuestion: {q['question']}\n\nAnswer:")
+                        except CacheMiss:
+                            misses += 1
+                            continue
                         vec = np.asarray(encoder([reply, q["answer"]]), dtype=np.float32)
                         sim = float(vec[0] @ vec[1] / (np.linalg.norm(vec[0]) * np.linalg.norm(vec[1]) + 1e-9))
                         rows.append({"vid": vid, "kind": "open", "level": q["level"], "mode": mode, "rep": rep,
                                      "f1": token_f1(reply, q["answer"]), "rouge1": rouge1_raw(reply, q["answer"]),
-                                     "sim": sim, "reply": reply[:200]})
+                                     "sim": sim, "reply": reply if metrics == "theirs" else reply[:200],
+                                     "ref": q["answer"]})
         done = len({r["vid"] for r in rows})
         print(f"{vid}: {len(qa.get(vid, []))} QA · {done} videos done · {time.perf_counter() - t_start:.0f}s")
 
     if not rows:
         return 1
     out.parent.mkdir(parents=True, exist_ok=True)
+    if metrics == "theirs":
+        footer = record_run("scripts/adapters/lectqa_vid.py", f"lectqa_vid their metrics ({len({r['vid'] for r in rows})} videos)",
+                            [(str(llm.get("model")), complete.usage)], cfg["models"].get("pricing"))
+        return theirs_report(rows, ids, cfg, llm, modes, out, misses, footer)
     out.with_suffix(".jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
 
     def agg(kind, mode, level, key):
@@ -382,6 +400,64 @@ def run(ids: list[str], cfg: dict, dcfg: dict, modes: list[str], out: Path, repe
     out.write_text("\n".join(L) + "\n")
     print("\n".join(L[-12:]))
     print(f"wrote {out}")
+    return 0
+
+
+def theirs_report(rows: list[dict], ids: list[str], cfg: dict, llm: dict, modes: list[str], out: Path,
+                  misses: int, footer: list[str]) -> int:
+    """Their metric suite (eqs. 29-36, linkrag.eval.lectqa_metrics), per difficulty and overall,
+    next to their published Table 4 / Table 5 rows."""
+    from linkrag.eval import lectqa_metrics as LM
+    out.with_suffix(".jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+    n_videos = len({r["vid"] for r in rows})
+    L = [f"# LectQA-Vid — their metric suite (T1 eqs. 29–36)", "",
+         f"{n_videos} videos · answerer `{llm.get('model')}` (cache-only replay of stored answers; "
+         f"{misses} cache misses skipped) · metrics `linkrag.eval.lectqa_metrics`: set-based token P/R/F1, "
+         f"nltk BLEU-4 (no smoothing) and METEOR (alpha 0.9, beta 3, gamma 0.5), ROUGE-1 = unigram recall, "
+         f"similarity = all-MiniLM-L6-v2 cosine, all in %.", "",
+         "**Not a like-for-like comparison.** Their answering LLM is unnamed (§4.4.4). Ours is far "
+         "stronger, and their split and 1,000-pair evaluation subset are unpublished, so these are all "
+         "QA pairs of the videos processed. The baseline-vs-linkrag rows are the retrieval comparison.", "",
+         "## Open-ended (their Table 4)", "",
+         "| level | mode | n | F1 | Sim | BLEU | METEOR | R1 | token P | token R |",
+         "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    for level in (*LEVELS, "overall"):
+        for mode in modes:
+            sel = [r for r in rows if r["kind"] == "open" and r["mode"] == mode and (level == "overall" or r["level"] == level)]
+            if not sel:
+                continue
+            s = LM.score_open([r["reply"] for r in sel], [r["ref"] for r in sel], device=cfg["device"])
+            L.append(f"| {level} | {mode} | {s['n']} | {100*s['f1']:.2f} | {100*s['sim']:.2f} | {100*s['bleu']:.2f} | "
+                     f"{100*s['meteor']:.2f} | {100*s['rouge1']:.2f} | {100*s['precision']:.2f} | {100*s['recall']:.2f} |")
+        th = THEIRS["open"][level]
+        L.append(f"| {level} | **theirs (Table 4)** | — | {th['f1']:.2f} | {th['sim']:.2f} | {th['bleu']:.2f} | "
+                 f"{th['meteor']:.2f} | {th['rouge1']:.2f} | — | — |")
+    L += ["", "## MCQ (their Table 5)", "", "| level | mode | n | ACC | Precision | Recall | F1 |",
+          "|---|---|---:|---:|---:|---:|---:|"]
+    for level in (*LEVELS, "overall"):
+        for mode in modes:
+            sel = [r for r in rows if r["kind"] == "mcq" and r["mode"] == mode and (level == "overall" or r["level"] == level)]
+            if not sel:
+                continue
+            s = LM.score_mcq([r["pred_label"] for r in sel], [r["gold_label"] for r in sel])
+            L.append(f"| {level} | {mode} | {s['n']} | {100*s['accuracy']:.2f} | {100*s['precision']:.2f} | "
+                     f"{100*s['recall']:.2f} | {100*s['f1']:.2f} |")
+        L.append(f"| {level} | **theirs (Table 5)** | — | {THEIRS['mcq'][level]:.2f} | — | — | — |")
+    gold = collections.Counter(r["gold_label"] for r in rows if r["kind"] == "mcq")
+    top, top_n = gold.most_common(1)[0] if gold else (None, 0)
+    if gold and top_n / sum(gold.values()) > 0.9:
+        L += ["", f"**MCQ caveat: not reportable in this form.** The gold option is `{top}` for {top_n} of "
+              f"{sum(gold.values())} questions. The published file lists the correct answer first for 1,484 of "
+              "1,489 MCQs, and options were presented in that stored order, so accuracy rewards any preference "
+              "for the first option. Macro P/R/F1 are degenerate with one gold class. Their Table 5 P/R/F1 ≈ ACC "
+              "suggests shuffled options there; the paper does not say. The valid measurement is a re-run with "
+              "options shuffled under a fixed seed, which needs new LLM calls."]
+    n_by = collections.Counter((r["kind"], r["mode"]) for r in rows)
+    L += ["", "Counts: " + ", ".join(f"{k} {m} {n}" for (k, m), n in sorted(n_by.items()))
+          + f"; cache misses skipped: {misses}."]
+    L += footer
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
     return 0
 
 
@@ -651,13 +727,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--out", default="reports/lectqa_vid_first_run.md")
     ap.add_argument("--allow-new-calls", action="store_true", help="v2: let iterative modes call the LLM on cache misses")
+    ap.add_argument("--metrics", choices=["ours", "theirs"], default="ours",
+                    help="run: 'theirs' = T1's suite (token P/R/F1, BLEU, METEOR, ROUGE-1 recall, MiniLM sim, MCQ)")
+    ap.add_argument("--cache-only", action="store_true", help="run: replay stored answers only; a miss is skipped")
+    ap.add_argument("--answerer-model", default=None, help="override models.llm.model (e.g. the stored gpt-5.4)")
     ap.add_argument("--max-cost", type=float, required=True,
                     help="USD budget for this run (required; 0 = cache replays and free backends only)")
     args = ap.parse_args(argv)
     setup_logging()
     cfg = load_config(args.config)
     set_max_cost(cfg, args.max_cost)
-    refuse_strong_in_batch(cfg)
+    if args.answerer_model:
+        cfg["models"]["llm"]["model"] = args.answerer_model
+    refuse_strong_in_batch(cfg, answerer_cache_only=args.cache_only)
     dcfg = cfg.get("datasets", {}).get("lectqa_vid", {"audio_segment_seconds": 15, "frame_interval_s": 5, "top_k": 4})
     ids = video_ids(args.videos, args.only)
     if args.step == "fetch":
@@ -671,7 +753,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.step == "v2":
         return v2(ids, cfg, dcfg, Path("results/external/lectqa_v2.md"), cache_only=not args.allow_new_calls,
                   max_cost=args.max_cost)
-    return run(ids, cfg, dcfg, args.modes.split(","), Path(args.out), args.repeats)
+    return run(ids, cfg, dcfg, args.modes.split(","), Path(args.out), args.repeats,
+               metrics=args.metrics, cache_only=args.cache_only)
 
 
 if __name__ == "__main__":
