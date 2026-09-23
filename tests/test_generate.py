@@ -131,7 +131,8 @@ def test_http_completer_rejects_an_unknown_provider() -> None:
 
 def test_http_completer_requires_the_named_api_key(monkeypatch) -> None:
     monkeypatch.delenv("TEST_LLM_KEY", raising=False)
-    with pytest.raises(RuntimeError, match="TEST_LLM_KEY is not set"):
+    from linkrag.generate.answer import MissingApiKey
+    with pytest.raises(MissingApiKey, match="TEST_LLM_KEY is not set"):
         http_completer({"provider": "openai", "model": "m", "api_key_env": "TEST_LLM_KEY"})
 
 

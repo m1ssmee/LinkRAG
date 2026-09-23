@@ -122,3 +122,31 @@ def test_rate_limiter_waits_out_the_minute(monkeypatch):
     lim.acquire(1)                                    # third in the same minute waits ~60 s
     assert len(slept) == 1 and 59.9 < slept[0] < 60.2
     assert RateLimiter.for_backend("u", "m2", 5, None) is RateLimiter.for_backend("u", "m2", 5, None)
+
+
+def test_verifier_defaults_to_the_llm_judge_on_groq_and_never_falls_back(monkeypatch):
+    """DESIGN.md finding 11: gold/intake verification is LLM-based; the zero-cost judge is
+    Groq; a missing key stops the run in one line and sends nothing anywhere."""
+    import pytest
+    import requests
+    from linkrag.core import load_config
+    from linkrag.eval.verify_gold import entailment_opts
+    from linkrag.generate.answer import MissingApiKey, http_completer, judge_completer
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.delenv("LINKRAG_JUDGE_BACKEND", raising=False)
+    monkeypatch.setattr(requests, "post", lambda *a, **k: pytest.fail("no request may be sent"))
+    cfg = load_config("configs/default.yaml")
+    assert entailment_opts(cfg)["backend"] == "llm" and entailment_opts({})["backend"] == "llm"
+    judge = cfg["eval"]["judge"]
+    assert (judge["backend"], judge["api_key_env"], judge["billing"]) == ("groq", "GROQ_API_KEY", "free")
+    with pytest.raises(MissingApiKey) as err:
+        judge_completer(cfg, "llm")
+    msg = str(err.value)
+    assert "GROQ_API_KEY" in msg and "\n" not in msg
+    with pytest.raises(MissingApiKey):
+        http_completer(judge)
+    # the nli ablation needs no judge key, and a stray judge call is an error, not a fallback
+    stub = judge_completer(cfg, "nli")
+    assert stub.usage["calls"] == 0
+    with pytest.raises(RuntimeError, match="nli"):
+        stub("s", "u")

@@ -77,7 +77,7 @@ def test_nli_backend_scores_redundancy_without_a_judge():
     def exploding(system, prompt):
         raise AssertionError("the nli backend must not call the judge")
 
-    v = redundancy(units, encoder, exploding, pairs=[("transcript", "deck")], k=2, workers=1)
+    v = redundancy(units, encoder, exploding, pairs=[("transcript", "deck")], k=2, workers=1, backend="nli")
     by_sentence = {x.sentence.split()[1]: x.entailed for x in v}   # "Focus" / "poster"
     assert by_sentence["is"] is True and by_sentence["poster"] is False
     assert all(x.votes in (["yes"], ["no"]) for x in v), "one deterministic run"

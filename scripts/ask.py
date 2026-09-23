@@ -12,7 +12,7 @@ from pathlib import Path
 from linkrag.core import load_config, set_max_cost, setup_logging, stage_timer
 from linkrag.eval import format_modality_distribution
 from linkrag.costs import record_run
-from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer
+from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer, judge_completer
 from linkrag.generate.citations import citations_for
 from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import verify_answer
@@ -122,8 +122,7 @@ def main(argv: list[str] | None = None) -> int:
         if ans.malformed:
             print("WARNING: model did not return valid JSON after one retry; showing the raw reply")
         if gcfg.get("verify", True) and not ans.malformed:
-            jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
-            judge = http_completer(jcfg)
+            judge = judge_completer(cfg, entailment_opts(cfg)["backend"])
             verdicts = verify_answer(ans, units, judge, runs=int(gcfg.get("verify_runs", 3)), strict=strict,
                                      **entailment_opts(cfg))
             print(verdicts["answer"])

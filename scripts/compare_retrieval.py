@@ -23,7 +23,7 @@ from pathlib import Path
 from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import record_run
 from linkrag.eval import matches_locator
-from linkrag.generate.answer import answer_json, http_completer
+from linkrag.generate.answer import answer_json, http_completer, judge_completer
 from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
 from linkrag.index import Index, default_encoder
@@ -179,8 +179,7 @@ def main(argv: list[str] | None = None) -> int:
     grounding: dict[tuple[str, str], list[dict]] = {}
     judge = None
     if args.grounding and not args.no_llm:
-        jcfg = cfg.get("eval", {}).get("judge") or llm
-        judge = http_completer(jcfg)
+        judge = judge_completer(cfg, entailment_opts(cfg, args.entailment)["backend"])
     id_sets: dict[str, list[tuple]] = {}
     per_q: dict[tuple[str, str, str], list[float]] = {}   # (qid, mode, method) -> recall per run
     per_q_full: dict[tuple[str, str, str], list[dict]] = {}   # -> per-run {recall, prec, mods}

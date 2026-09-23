@@ -32,13 +32,14 @@ Nothing bills unless a run says so.
   the first upload.
 - **Free backends pass.** A backend with `billing: free` (below), or a local server
   (provider `ollama`, or a `localhost` base URL), is never refused.
-- **Entailment is local.** Gold verification, claim verification and redundancy use
-  `eval.entailment.backend: nli` (cross-encoder/nli-deberta-v3-base on the CPU,
-  deterministic, one run). `--entailment llm` or `backend: llm` uses the judge
-  instead. **Read `results/nli_vs_llm_pilot01.md` first:** on pilot01 the two agree
-  far less than two LLM judges agree with each other. The free way to keep the LLM
-  judge is to put it on a free backend: `LINKRAG_JUDGE_BACKEND=groq` (or
-  `eval.judge.backend: groq`).
+- **The judge is free, not local.** Gold verification, claim verification and
+  redundancy use the LLM judge (`eval.entailment.backend: llm`), and the judge defaults
+  to Groq's free tier (`eval.judge.backend: groq`, needs `GROQ_API_KEY`). Without the key,
+  a judge-dependent run stops with one line; it never falls back to the metered OpenAI
+  judge (`LINKRAG_JUDGE_BACKEND=default` selects that one explicitly). Local NLI
+  (`--entailment nli`) is an **ablation only**: on pilot01 it agrees with the LLM judges
+  at kappa 0.31/0.36, where they agree with each other at 0.85
+  (`results/nli_vs_llm_pilot01.md`, DESIGN.md finding 11).
 - **ASR is local.** faster-whisper; `ingest.py --device cuda` / `candidate.py` on a
   Colab GPU (`scripts/dataset/README.md`). whisper-1 is `--asr openai`.
 

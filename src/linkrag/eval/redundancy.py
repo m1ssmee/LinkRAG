@@ -153,7 +153,7 @@ LABEL = {"transcript": "lecture transcript", "deck": "slide deck (text and figur
 
 def judge_sentence(sentence: str, unit_id: str, source: str, target: str,
                    passages: Sequence[EvidenceUnit], judge: Completer, runs: int,
-                   backend: str = "nli", device: str = "cpu") -> SentenceVerdict:
+                   backend: str = "llm", device: str = "cpu") -> SentenceVerdict:
     """Is this sentence of A already stated by B's nearest passages?
 
     `nli` (default): the same local cross-encoder the gold and claim checks use --
@@ -186,7 +186,7 @@ def judge_sentence(sentence: str, unit_id: str, source: str, target: str,
 
 def redundancy(units: Sequence[EvidenceUnit], encoder: Encoder, judge: Completer, *,
                pairs: Sequence[tuple[str, str]] = DEFAULT_PAIRS, k: int = 8, runs: int = 3,
-               workers: int = 6, limit: int | None = None, backend: str = "nli",
+               workers: int = 6, limit: int | None = None, backend: str = "llm",
                device: str = "cpu",
                progress: Callable[[str], None] | None = None) -> list[SentenceVerdict]:
     by_role = sentences_by_role(units)

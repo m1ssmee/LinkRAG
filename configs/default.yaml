@@ -116,6 +116,11 @@ models:
     gpt-4.1-mini: {input_per_m: 0.40, output_per_m: 1.60}
     gpt-4.1:      {input_per_m: 2.00, output_per_m: 8.00}
     whisper-1:    {per_minute: 0.006}                      # audio, priced by duration not tokens
+    # Free-tier / self-hosted backends (billing: free): $0, so the ledger says $0, not "unknown".
+    openai/gpt-oss-120b: {input_per_m: 0, output_per_m: 0}   # groq free tier
+    gemini-2.5-flash:    {input_per_m: 0, output_per_m: 0}   # google_ai_studio free tier
+    qwen2.5:7b-instruct: {input_per_m: 0, output_per_m: 0}   # colab ollama
+    Qwen/Qwen2.5-7B-Instruct: {input_per_m: 0, output_per_m: 0}  # colab vllm
     qwen2.5:      {input_per_m: 0.0, output_per_m: 0.0}   # self-hosted on Colab: no per-token price
     llama3.1:     {input_per_m: 0.0, output_per_m: 0.0}
 
@@ -374,15 +379,22 @@ eval:
   # models.llm on qwen2.5:7b); this machine (8 GB, no Ollama runtime) cannot host one,
   # so the judge is a different hosted family instead. Same OpenAI-compatible shape.
   # Entailment decisions (gold verification, claim verification, redundancy).
-  #   nli -- cross-encoder/nli-deberta-v3-base on the CPU: free, deterministic,
-  #          one run. Default since 2026-09-23 (zero-cost mode).
-  #   llm -- the judge model below, `runs` calls, majority, quotable span.
-  # Agreement between the two on pilot01: results/nli_vs_llm_pilot01.md
+  #   llm -- the judge below, `runs` calls, majority, quotable span. DEFAULT: the
+  #          verifier for gold and the intake gate (DESIGN.md finding 11).
+  #   nli -- cross-encoder/nli-deberta-v3-base on the CPU: free, deterministic.
+  #          ABLATION ONLY -- kappa 0.31/0.36 vs the LLM judges, which agree at 0.85
+  #          (results/nli_vs_llm_pilot01.md). Select with --entailment nli.
   entailment:
-    backend: nli
-    model: cross-encoder/nli-deberta-v3-base
-    device: cpu
+    backend: llm
+    device: cpu              # nli backend only
+  # Zero-cost judge: eval.judge.backend picks an entry from models.llm_backends and
+  # overlays it (LINKRAG_JUDGE_BACKEND overrides; "default" = the OpenAI block below).
+  # groq (openai/gpt-oss-120b, free tier) needs GROQ_API_KEY in the environment; if it
+  # is missing, every judge-dependent run stops with one line -- it never falls back
+  # to the metered OpenAI block. Its agreement with the stored judges is not yet
+  # measured: measure it (scripts/eval/compare_entailment.py) before reporting.
   judge:
+    backend: groq
     provider: openai
     billing: metered
     model: gpt-4.1-mini-2025-04-14   # gpt-4.1 has a 30k TPM cap on this account

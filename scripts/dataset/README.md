@@ -2,9 +2,10 @@
 
 Who this is for: the teammate collecting lectures. You need Python set up
 (`make setup`) and a GPU for the transcription (a free Colab T4 is the standard route,
-below). No API key is needed: redundancy runs on the local NLI model by default
-(`eval.entailment.backend`; read `results/nli_vs_llm_pilot01.md` before trusting a
-verdict near the bar).
+below). Redundancy is judged by the LLM judge on Groq's free tier: export
+`GROQ_API_KEY` (free account) in `~/.zshenv`. Do not switch the intake to the local NLI
+backend: on pilot01 it moves deck→transcript from 94.2 % to 59.6 % and would flip a
+REJECT to KEEP (DESIGN.md finding 11).
 
 ## What we are looking for
 

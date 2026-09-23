@@ -18,7 +18,7 @@ from pathlib import Path
 from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import record_run
 from linkrag.eval import describe_locator, format_modality_distribution, gold_coverage, gold_hits
-from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer
+from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer, judge_completer
 from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
 from linkrag.index import Index, default_encoder
@@ -104,8 +104,7 @@ def main(argv: list[str] | None = None) -> int:
     structured = gcfg.get("structured", True) and not args.prose and complete is not None
     judge = None
     if structured and gcfg.get("verify", True):
-        jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
-        judge = http_completer(jcfg)
+        judge = judge_completer(cfg, entailment_opts(cfg)["backend"])
     verified: list[dict] = []
     results = []
     for row in rows:

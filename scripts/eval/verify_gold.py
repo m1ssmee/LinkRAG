@@ -18,7 +18,7 @@ from pathlib import Path
 from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
 from linkrag.eval.verify_gold import dump_json, entailment_opts, verified_gold_rows, verify_gold, write_gold, write_report
-from linkrag.generate.answer import http_completer
+from linkrag.generate.answer import http_completer, judge_completer
 from linkrag.index import Index
 from linkrag.manifest import MANIFEST_NAME, load_manifest
 
@@ -65,7 +65,8 @@ def main(argv: list[str] | None = None) -> int:
     complete = cached_completer(http_completer(llm), Path(args.cache) / mhash / str(llm.get("model")),
                                 max_cost_usd=args.max_cost,
                                 price=price_for(str(llm.get("model")), cfg["models"].get("pricing")))
-    judge = cached_completer(http_completer(jcfg), Path(args.cache) / mhash / str(jcfg.get("model")),
+    ent = entailment_opts(cfg, args.entailment)
+    judge = cached_completer(judge_completer(cfg, ent["backend"]), Path(args.cache) / mhash / str(jcfg.get("model")),
                              max_cost_usd=args.max_cost,
                              price=price_for(str(jcfg.get("model")), cfg["models"].get("pricing")))
     deck_files = {Path(u.source_file).name for u in index.units if u.metadata.get("slide_deck")}
@@ -73,7 +74,6 @@ def main(argv: list[str] | None = None) -> int:
     print(f"answerer {llm.get('model')} · judge {jcfg.get('model')} @ temperature={jcfg.get('temperature')} "
           f"seed={jcfg.get('seed')} · {args.runs} runs\n")
 
-    ent = entailment_opts(cfg, args.entailment)
     print(f"entailment backend: {ent['backend']}")
     verdicts = verify_gold(rows, list(index.units), complete, judge=judge, deck_files=deck_files,
                            runs=args.runs, workers=1 if ent["backend"] == "nli" else args.workers,

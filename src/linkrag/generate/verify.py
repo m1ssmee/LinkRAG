@@ -35,7 +35,7 @@ ABSTENTION = "not found in the provided material"
 
 
 def verify_claim(claim: Claim, units: dict[str, EvidenceUnit], judge: Completer, *, runs: int = 3,
-                 backend: str = "nli", device: str = "cpu") -> Claim:
+                 backend: str = "llm", device: str = "cpu") -> Claim:
     """Entailment of one claim against each unit it cites; first supporting unit wins."""
     if not claim.unit_ids:
         claim.verdict = "weak"
@@ -55,7 +55,7 @@ def verify_claim(claim: Claim, units: dict[str, EvidenceUnit], judge: Completer,
 
 def verify_answer(ans: Answer, units: Sequence[EvidenceUnit], judge: Completer, *,
                   runs: int = 3, workers: int = 4, strict: bool = False,
-                  backend: str = "nli", device: str = "cpu") -> dict[str, Any]:
+                  backend: str = "llm", device: str = "cpu") -> dict[str, Any]:
     """Verify every claim; returns the claim verdicts and the text to show.
 
     `strict` removes unsupported claims from the displayed answer and abstains when

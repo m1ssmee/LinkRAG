@@ -87,6 +87,25 @@ def cited_ids(answer_text: str) -> list[str]:
     return list(seen)
 
 
+class MissingApiKey(SystemExit):
+    """A backend's key is not in the environment. SystemExit, so a script stops with this
+    one line on stderr (exit 1, no traceback). Nothing falls back to another backend --
+    least of all a billing one."""
+
+
+def judge_completer(cfg: dict[str, Any], backend: str) -> Completer:
+    """`eval.judge` when entailment runs on the llm backend. Under nli (the ablation) the
+    judge is never called, so no key is demanded; a call anyway is a bug and raises."""
+    if backend == "llm":
+        return http_completer((cfg.get("eval") or {}).get("judge") or cfg["models"]["llm"])
+
+    def unused(system: str, user: str) -> str:
+        raise RuntimeError(f"judge called while eval.entailment.backend is {backend!r}")
+    unused.usage = {"calls": 0, "cached_calls": 0, "prompt_tokens": 0, "completion_tokens": 0,  # type: ignore[attr-defined]
+                    "estimated_tokens": 0}
+    return unused
+
+
 def http_completer(llm_cfg: dict[str, Any], pricing: dict[str, Any] | None = None) -> Completer:
     """OpenAI-compatible /chat/completions. Works for Ollama, vLLM, OpenAI, Groq,
     Google AI Studio, etc.
@@ -112,7 +131,8 @@ def http_completer(llm_cfg: dict[str, Any], pricing: dict[str, Any] | None = Non
     if key_env:
         key = os.environ.get(key_env)
         if not key:
-            raise RuntimeError(f"{key_env} is not set (models.llm.api_key_env)")
+            raise MissingApiKey(f"{key_env} is not set: backend {llm_cfg.get('backend', llm_cfg.get('provider'))!r} "
+                                f"({llm_cfg.get('model')}) needs it -- export it in ~/.zshenv. Not falling back.")
         headers["Authorization"] = f"Bearer {key}"
 
     limit = llm_cfg.get("max_tokens", 1024)

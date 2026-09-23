@@ -22,7 +22,7 @@ from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
 from linkrag.eval.redundancy import DEFAULT_PAIRS, dump_json, redundancy, role_of, summarise, write_report
 from linkrag.eval.verify_gold import entailment_opts
-from linkrag.generate.answer import http_completer
+from linkrag.generate.answer import http_completer, judge_completer
 from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, load_manifest
 
@@ -70,7 +70,8 @@ def main(argv: list[str] | None = None) -> int:
     encoder = default_encoder(index.embedding_model, cfg["device"], index.normalize)
     encoder([""])
     jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
-    judge = cached_completer(http_completer(jcfg),
+    ent = entailment_opts(cfg)
+    judge = cached_completer(judge_completer(cfg, ent["backend"]),
                              Path("data/processed/verify_cache") / manifest.get("hash", args.name) / str(jcfg.get("model")))
     pairs = [p for p in DEFAULT_PAIRS if args.notes or "paper" not in p]
 
@@ -81,7 +82,6 @@ def main(argv: list[str] | None = None) -> int:
             roles[role_of(u)].append(n)
     print(f"{args.name}: {len(units)} units · " + ", ".join(f"{r}={v}" for r, v in roles.items()))
 
-    ent = entailment_opts(cfg)
     print(f"entailment backend: {ent['backend']}")
     verdicts = redundancy(units, encoder, judge, pairs=pairs, k=int(intake.get("redundancy_k", 8)),
                           runs=int(intake.get("redundancy_runs", 3)),

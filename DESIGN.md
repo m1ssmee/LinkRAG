@@ -218,6 +218,33 @@ explicit instruction.
    (figures that carry facts the text does not), and **a speaker who points**
    (pointing windows exist; see `data/labels/pilot01/pilot01_pointing_windows.csv`
    for the labelling format).
+11. **Local NLI cross-encoders are unsuitable as the gold / intake verifier.**
+   (`results/nli_vs_llm_pilot01.md`, 2026-09-23; pilot01, corpus `2f3b35f27e86caf8`,
+   `cross-encoder/nli-deberta-v3-base`, deterministic single run vs stored 3-run-majority
+   LLM verdicts.)
+   - **Gold, unit level:** κ **0.31** vs gpt-4.1-mini and **0.36** vs gpt-5.4 over 147 unit
+     pairs; the two LLM judges agree with each other at **0.85**.
+   - **Question level:** type labels agree on 10/25; NLI drops **14/25** questions where
+     the LLM judges drop 0–1.
+   - **Redundancy:** overall κ 0.17. deck→transcript falls from **94.2 % to 59.6 %**
+     (n = 52 sentences), below the 0.65 intake bar, so pilot01 would flip from REJECT to KEEP.
+   - **A larger model does not help.** DeBERTa-v3-large (mnli-fever-anli-ling-wanli)
+     reaches κ **0.35 / 0.35**. It is slower, but its timing fails the measurement rules
+     (one run on a busy machine), so no speed ratio is claimed.
+   - **Mechanism.** 13 of the 15 type differences are the NLI *grader* failing a correct
+     full-corpus answer. The grader hypothesis is *question + reference fact*, and a
+     correct answer does not restate the question: A5's "The baseline query took 4
+     minutes, and the video was 6 hours long" is rejected. Deck bullets are fragments,
+     not propositions, which is why the deck redundancy pairs sit at chance.
+   - **Caveat:** the NLI formulation (initials-safe splitting, a minimum premise
+     length, question conditioning: κ 0.22 → 0.27 → 0.31) was chosen on the same 147
+     evaluation pairs, with no held-out set. Read 0.31 / 0.36 as an upper estimate.
+   - **Decision:** verification stays LLM-based (`eval.entailment.backend: llm`). The
+     zero-cost judge is Groq's free tier (`eval.judge.backend: groq`). NLI remains
+     selectable as an ablation (`--entailment nli`) and is never used for gold or intake
+     decisions. The Groq judge's agreement with the stored judges is **not yet measured**;
+     measure it with `scripts/eval/compare_entailment.py` before any Groq-judged number
+     is reported.
 
 ### Design changes recorded against the verified-gold result (2026-09-21)
 
@@ -228,13 +255,45 @@ the previous behaviour, and each was applied once, before re-measuring.
 |---|---|---|
 | **Additive expansion.** Retrieve `k_final` seeds, add 1-hop neighbours to the pool, let the reranker (or score, for `rerank=none`) select `k_final`. Expansion never evicts a seed on its own. | `retrieve.expansion: additive` (old: `evict`) | `evict` with `k_seed 5 < k_final 8` threw away seeds ranked 6–8 unconditionally; A1 went 100 % → 0 %. |
 | **Seed normalisation on** | `retrieve.linkrag.normalise_seeds: true` (old: `false`) | Under additive expansion "select by score" is degenerate on raw RRF scores (~0.03 vs `seed×link×decay`). Consequence, inspected per measurement rule 1: `linkrag/none` is identical to `baseline/none` by construction — neighbours enter the final set only through the reranker. |
-| **Separate judge** | `eval.judge` (model ≠ `models.llm`) | Self-grading is lenient. Judge/answerer agreement measured: κ = 0.85 on unit verdicts, 20/25 type labels (`reports/gold_verified_pilot01.md`). The intended default is a local model; this machine (8 GB, no Ollama) uses a different hosted family instead. |
+| **Separate judge** | `eval.judge` (model ≠ `models.llm`) | Self-grading is lenient. Judge/answerer agreement measured: κ = 0.85 on unit verdicts, 20/25 type labels (`reports/gold_verified_pilot01.md`). The intended default is a local model; this machine (8 GB, no Ollama) uses a different hosted family instead. Since 2026-09-23 the judge defaults to Groq's free tier (`eval.judge.backend: groq`; see Zero-cost operating mode and finding 11). The stored verdicts above came from gpt-4.1-mini. |
 | **Per-type reporting** | `compare_retrieval.py` always emits it | The all-questions mean hides that 21 of 25 questions are single-source. From now on the by-type table is the one that matters. |
 | **Cost accounting** | `linkrag.costs`, `reports/llm_ledger.jsonl` | Every LLM-touching run prints per-run and cumulative spend; exact tokens from `usage`, cache replays free, backfilled rows flagged *estimated*. |
 | **Colab backend for Phase 8** | `models.llm.backend: colab_openai_compatible` | Reported Phase 8 numbers come from an open model served from Colab (Ollama/vLLM) on the same code path; OpenAI stays the working backend. Setup in `scripts/README.md`. |
 | **Dataset intake** | `scripts/dataset/candidate.py`, `dataset.intake` | A candidate lecture is measured before it is ingested for real; deck→transcript ≥ 0.65 rejects. Procedure in `scripts/dataset/README.md`. |
 | **Relatedness gate (links)** | `link.relatedness.enabled`, `load_links(gated=...)` | Structural links are judged for shared content before they enter the graph; the per-type pass rate is the signal-strength number. Found the deictic file/page bug. |
 | **Relatedness gate (file pairs)** | `align.relatedness_z` (2.0) | Before any cross-file link is emitted, the penalised DP objective must beat 5 shuffled-slide-order alignments by z std devs; cross-document semantic figure_text uses a word-shuffle null. Negative control (pilot01 audio × unrelated deck): 0 cross-file links; false-rejection on 20 related MaViLS pairs: 15 % at 30 s windows, 40 % at sentence level (`reports/relatedness_gate.md`). Unrelated pairs fall back to plain hybrid retrieval. |
+
+## Zero-cost operating mode (since 2026-09-23)
+
+Hosted credit is reserved. Nothing bills unless a run is explicitly given a budget.
+
+**Free:**
+- **Budget guard.** Every LLM script takes `--max-cost` (default **0**; `cost.max_usd: 0`).
+  The spend guard prices each request *before* sending it and refuses anything that could
+  bill: a metered model with no price row, or a call that would exceed the budget.
+  whisper-1 is priced from the file's duration before the first upload.
+- **Judge:** Groq free tier (`openai/gpt-oss-120b`, `eval.judge.backend: groq`, `GROQ_API_KEY`).
+  The client-side limiter is 28 rpm / 7,500 tpm. The free tier caps requests per day, so a
+  full gold verification (~900 judge calls) does not fit in one day. A missing key stops
+  the run in one line; it never falls back to the metered judge.
+- **Answerer:** replies already in the cache replay at $0. Colab-served open models
+  (Ollama / vLLM) and Google AI Studio are the free backends for new calls
+  (`models.llm_backends`, all `billing: free`, rate-limited).
+- **ASR:** local faster-whisper. Intake runs `scripts/dataset/candidate.py --device cuda`
+  on a Colab GPU (`scripts/dataset/README.md`); transcripts are frozen on first run and
+  reused.
+- **NLI entailment:** local and free, **ablation only** (finding 11).
+
+**Not free** (each needs an explicit `--max-cost` / `cost.max_usd` above 0):
+- the OpenAI answerer (gpt-5.4) on any uncached prompt;
+- the OpenAI judge (gpt-4.1-mini, `LINKRAG_JUDGE_BACKEND=default`);
+- whisper-1 ASR ($0.006/min, `--asr openai`);
+- any backend declared `billing: metered`.
+
+**Comparability.** A number is comparable only to numbers produced by the same judge and
+answerer. The stored pilot01 verdicts are from gpt-4.1-mini / gpt-5.4, so a
+Groq-judged run is a new condition until its agreement has been measured. Google's free
+tier may use prompts for training: use it for public lecture material only.
 
 ## Our three novel components
 
@@ -399,8 +458,9 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   occurrences and 16 correct `top-K` (`reports/asr_openai_pilot01.md`), so it was a
   property of the local model, not of the prompt. pilot01 stays on the frozen local
   transcript -- switching it would invalidate every recorded alignment, deictic and
-  regression number -- but `ingest.asr_backend: openai` is the default for the
-  extended dataset.
+  regression number. For the extended dataset, zero-cost mode (2026-09-23) makes local
+  faster-whisper on a Colab GPU the default; whisper-1 remains `--asr openai`, and the
+  `type -k` risk comes back with the local model, so check new transcripts for it.
 - **(d) Gold is machine-verified, not human-verified.** Judge (gpt-4.1-mini) and
   answerer (gpt-5.4) are different models and agree at κ = 0.85 on unit verdicts;
   the sampled audit (`reports/audit_sheet_pilot01.csv`) is unfilled until someone

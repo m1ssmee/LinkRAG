@@ -223,12 +223,12 @@ def entailment_opts(cfg: dict[str, Any], backend: str | None = None) -> dict[str
     one place, so a script that forgets to pass them cannot fall back to a default
     the config does not say."""
     ecfg = (cfg.get("eval") or {}).get("entailment") or {}
-    return {"backend": backend or str(ecfg.get("backend", "nli")),
+    return {"backend": backend or str(ecfg.get("backend", "llm")),
             "device": str(ecfg.get("device", cfg.get("device", "cpu")))}
 
 
 def entail_unit(question: str, expected: str, unit: EvidenceUnit, complete: Completer,
-                runs: int, backend: str = "nli", device: str = "cpu") -> UnitVerdict:
+                runs: int, backend: str = "llm", device: str = "cpu") -> UnitVerdict:
     """Does this unit state at least one fact of the reference answer?
 
     One code path, two backends (`eval.entailment.backend`):
@@ -275,7 +275,7 @@ def entail_unit(question: str, expected: str, unit: EvidenceUnit, complete: Comp
 
 
 def grade(question: str, expected: str, candidate: str, complete: Completer,
-          runs: int, backend: str = "nli", device: str = "cpu") -> tuple[bool, list[str], str, list[str]]:
+          runs: int, backend: str = "llm", device: str = "cpu") -> tuple[bool, list[str], str, list[str]]:
     """Does the candidate answer state every required fact? Same two backends."""
     if backend == "nli":
         from linkrag.eval import nli as _nli
@@ -303,7 +303,7 @@ def grade(question: str, expected: str, candidate: str, complete: Completer,
 
 def source_run(source: str, question: str, expected: str, context: str,
                complete: Completer, runs: int, judge: Completer | None = None,
-               backend: str = "nli", device: str = "cpu") -> SourceRun:
+               backend: str = "llm", device: str = "cpu") -> SourceRun:
     judge = judge or complete
     if not context.strip():
         return SourceRun(source, "NOT ANSWERABLE (empty source)", False, ["FAIL"] * runs,
@@ -341,7 +341,7 @@ def relabel(original_type: str, runs: dict[str, SourceRun]) -> tuple[str | None,
 
 def verify_question(row: dict[str, Any], units: Sequence[EvidenceUnit],
                     contexts: dict[str, str], complete: Completer, *, runs: int,
-                    workers: int, judge: Completer, backend: str = "nli",
+                    workers: int, judge: Completer, backend: str = "llm",
                     device: str = "cpu") -> QuestionVerdict:
     question, expected = row["question"], row["expected_answer"]
     candidates = [u for u in units
@@ -367,7 +367,7 @@ def verify_question(row: dict[str, Any], units: Sequence[EvidenceUnit],
 
 def verify_gold(rows: Sequence[dict[str, Any]], units: Sequence[EvidenceUnit],
                 complete: Completer, *, judge: Completer, deck_files: set[str],
-                runs: int = 3, workers: int = 6, backend: str = "nli", device: str = "cpu",
+                runs: int = 3, workers: int = 6, backend: str = "llm", device: str = "cpu",
                 progress: Callable[[str], None] | None = None) -> list[QuestionVerdict]:
     """`complete` answers (models.llm); `judge` grades and checks entailment
     (eval.judge). Pass the same callable for both only in a test."""
