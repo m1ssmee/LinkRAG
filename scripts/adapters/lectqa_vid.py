@@ -587,31 +587,17 @@ def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index"
                   "gold": dict(excluded)}
 
 
-def gate_table(rows: list[dict], title: str) -> list[str]:
-    """rerank = none | complementarity | complementarity+gate, per difficulty."""
-    import statistics as st
-    L = [f"### {title}", "", "| level | n | mode | rerank | hit@1 | hit@3 | hit@8 | mean best IoU |",
-         "|---|---:|---|---|---:|---:|---:|---:|"]
-    for level in (*LEVELS, "overall"):
-        for mode in ("baseline", "linkrag", "iterative", "linkrag_iter"):
-            for method in ("none", "complementarity", "complementarity+gate"):
-                xs = [r for r in rows if r["mode"] == mode and r["rerank"] == method
-                      and (level == "overall" or r["level"] == level)]
-                if not xs:
-                    continue
-                m = lambda k: st.mean(r[k] for r in xs)
-                L.append(f"| {level} | {len(xs)} | {mode} | {method} | {m('hit@1'):.1%} | {m('hit@3'):.1%} | "
-                         f"{m('hit@8'):.1%} | {m('best_iou'):.3f} |")
-    return L
+WITH_GATE = ("none", "complementarity", "complementarity+gate")
 
 
-def localisation_table(rows: list[dict], title: str) -> list[str]:
+def localisation_table(rows: list[dict], title: str, methods: tuple[str, ...] = ("none", "complementarity")) -> list[str]:
+    """hit@k and mean best IoU per difficulty x mode x rerank method."""
     import statistics as st
     L = [f"### {title}", "",
          "| level | n | mode | rerank | hit@1 | hit@3 | hit@8 | mean best IoU |", "|---|---:|---|---|---:|---:|---:|---:|"]
     for level in (*LEVELS, "overall"):
         for mode in ("baseline", "linkrag", "iterative", "linkrag_iter"):
-            for method in ("none", "complementarity"):
+            for method in methods:
                 xs = [r for r in rows if r["mode"] == mode and r["rerank"] == method and (level == "overall" or r["level"] == level)]
                 if not xs:
                     continue
@@ -1475,7 +1461,7 @@ def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = T
          "for the follow-up query; **this run made no new LLM calls** — those cells are filled only where the call was already "
          f"cached, so their n is smaller (sentence pass: {u1['skipped_cells']} question-mode cells skipped; fixed pass: "
          f"{u2['skipped_cells']}). No answer is generated for this table.", ""]
-    L += gate_table(rows_sent, "Sentence-aware segmentation (`ingest.audio_segmentation: sentence`, the default) — per difficulty, all modes × rerank") + [""]
+    L += localisation_table(rows_sent, "Sentence-aware segmentation (`ingest.audio_segmentation: sentence`, the default) — per difficulty, all modes × rerank", WITH_GATE) + [""]
     conc = [r for r in rows_sent if r["rerank"] == "complementarity+gate" and r["gate"] == "concentrated"]
     L += [f"Modality-need gate: {len(conc)}/{len([r for r in rows_sent if r['rerank'] == 'complementarity+gate'])} "
           "query-mode cells were judged *concentrated* (alpha set to 0); the rest ran full complementarity.", ""]
@@ -1495,7 +1481,7 @@ def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = T
     for name_, rows, rate in (("sentence", rows_sent, st.mean(r[0] for r in rates)), ("fixed", rows_fixed, st.mean(r[1] for r in rates))):
         xs = [r for r in rows if r["mode"] == "baseline" and r["rerank"] == "none"]
         L.append(f"| {name_} | {rate:.1%} | {st.mean(r['hit@1'] for r in xs):.1%} | {st.mean(r['hit@8'] for r in xs):.1%} | {st.mean(r['best_iou'] for r in xs):.3f} |")
-    L += [""] + gate_table(rows_fixed, "Fixed windows (their configuration) — per difficulty, all modes × rerank") + [""]
+    L += [""] + localisation_table(rows_fixed, "Fixed windows (their configuration) — per difficulty, all modes × rerank", WITH_GATE) + [""]
     # 3. answer F1 vs their rows
     fr = Path("reports/lectqa_vid_first_run.jsonl")
     L += ["## 3. Answer token-F1 per difficulty vs their Table 4 (not directly comparable)", "",
