@@ -7,6 +7,9 @@ Subset: the 28 of the first 35 videos whose YouTube links were still available; 
 
 > *Corrected 2026-09-23:* the "their" columns below previously used values that do not match the published paper (Tables 4–5, read as images from the CMC full-text HTML). Old → published: open-ended F1 simple 31.15→29.47, hard 19.35→24.38, very hard 10.24→16.72; ROUGE-1 39.80→36.82, 24.60→30.94, 15.32→22.51; similarity 0.75/0.68/0.51/0.71 → 77.23/74.56/71.48/74.42 %; MCQ accuracy 68.40/56.30/44.20/56.30 → 57.29/52.34/50.67/53.43 %. Overall F1 23.52 and ROUGE-1 29.76 were right. Our own numbers are unchanged.
 
+
+> *Corrected 2026-09-23 (gold timestamps):* the localisation tables below scored all 840 QA pairs, but 119 of them have no usable gold interval: ambiguous format 86, beyond the fetched video's end 32, end before start 1. The published annotations mix timestamp conventions (e.g. `00:12:70` = 12.70 s, read here as 12 min 70 s), and some stamps end past the fetched video. Those questions could never be hit, so the hit@k and IoU below are understated. The filtered, all-video localisation is in `results/external/lectqa_frameslides.md` (`strict_seconds` / `gold_interval`).
+
 ## 1. Temporal localisation (primary metric; no answerer)
 
 **Their paper reports no localisation metric.** Its evaluation section lists token-level precision/recall/F1, BLEU, METEOR, ROUGE-1 and semantic similarity for open-ended questions and accuracy/precision/recall/F1 over option labels for MCQ (§5.2) — nothing about whether a retrieved segment matched the annotated interval, and it never states its top-K. **This table is therefore ours-on-their-data**, with their fixed-window configuration replicated as the `fixed` baseline row in §2 rather than a number copied from the paper.
