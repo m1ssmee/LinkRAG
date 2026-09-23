@@ -81,8 +81,10 @@ explicit instruction.
    `src/linkrag/eval/verify_gold.py`, `scripts/eval/verify_gold.py`,
    `scripts/eval/audit_sample.py`. Unit entailment (3 judge runs, majority,
    quotable span) + modality-only full-context answering decide gold and type
-   labels; the only human step is the sampled audit sheet. pilot01: 24 of 25
-   proposed questions kept, 71 gold units, **5 cross-modal** — see
+   labels; the only human step is the sampled audit sheet. pilot01 (judge
+   gpt-4.1-mini, 2026-09-21): **25 of 25** proposed questions kept, **69** gold
+   locators, **4 cross-modal**. The first run (2026-09-20, gpt-5.4 judging its own
+   answers) kept 24 / 71 / 5 and is superseded; see known issue (g). See
    `reports/gold_verified_pilot01.md`, including the run history. Rules learned:
    reference answers list only the asked facts; a unit stating *one* required
    fact is gold.
@@ -444,8 +446,8 @@ the bugs they surfaced: `docs/pilot01_history.md`.
    runner. A retrieval gain that only reshuffles within one modality is not the
    cross-modal gain this project claims — so the composition is reported, not just a score.
 2. **The pilot01 regression set.** `tests/regression/pilot01_questions.jsonl` holds
-   the 24 machine-verified questions (from the 25 proposed in
-   `pilot01_proposed.jsonl`; Q1–Q4 plus 20 of the 21 new ones) with gold locators,
+   the 25 machine-verified questions (all 25 proposed in `pilot01_proposed.jsonl`,
+   judge gpt-4.1-mini) with 69 gold locators,
    verified unit ids and types, stamped `2f3b35f27e86caf8`. Regenerate with
    `scripts/eval/verify_gold.py` whenever the corpus or the proposals change; never
    hand-edit. Re-run every phase with
@@ -494,11 +496,16 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   and one candidate's redundancy pass (pilot01-w1) took 1,422 judge calls, so intake spans
   more than one day (the reply cache makes re-runs resume). Also unverified:
   `gpt-oss-120b` is a reasoning model, and `max_tokens: 1024` may truncate its JSON reply.
-- **(g) Gold counts disagree.** *Priority order* (i) and *Standing instruments* say
-  24 questions kept, 71 gold units, 5 cross-modal: those are the gpt-5.4-judged figures.
-  The stored gold (`reports/gold_verified_pilot01.md`, judge gpt-4.1-mini, and the
-  25-row `tests/regression/pilot01_questions.jsonl`) is 25 kept, 69 units, 4 cross-modal.
-  Not yet reconciled; cite the stored file's numbers.
+- **(g) Gold counts — reconciled 2026-09-23.** The stored gold (`reports/gold_verified_pilot01.md`,
+  `tests/regression/pilot01_questions.jsonl`, judge gpt-4.1-mini, verified 2026-09-21) is
+  the reference: 25 questions, 69 gold locators, 4 cross-modal (3 split + 1 deictic).
+  DESIGN.md had said 24 / 71 / 5. Those figures come from the first verification (commit
+  03213ed, 2026-09-20), judged by gpt-5.4, the answerer itself. That run kept 76 gold
+  *units*, which collapse to 71 *locators* in the regression file because several units
+  share a page. The separate-judge change (commit 187fc27) regenerated the gold, but
+  *Priority order* (i) and *Standing instruments* were not updated. That is the drift.
+  Both are now corrected. Unit counts (report) and locator counts (regression file) are
+  different quantities; name which one a number is.
 
 ## Environment decisions worth not re-litigating
 
