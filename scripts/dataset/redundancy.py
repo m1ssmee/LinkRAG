@@ -39,6 +39,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--limit", type=int, default=None, help="sentences per pair (smoke test)")
+    ap.add_argument("--sample", type=int, default=0,
+                    help="sentences per direction, stratified by position (0 = all); fractions get a Wilson 95%% CI")
+    ap.add_argument("--seed", default=None, help="sampling seed (default dataset.intake.sample_seed)")
     ap.add_argument("--cache", default="data/processed/verify_cache")
     ap.add_argument("--entailment", choices=["nli", "llm"], default=None,
                     help="override eval.entailment.backend (nli = local, free, deterministic)")
@@ -65,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     encoder([""])
     jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
     ent = entailment_opts(cfg, args.entailment)
+    seed = str(args.seed or cfg.get("dataset", {}).get("intake", {}).get("sample_seed", 0))
     judge = cached_completer(judge_completer(cfg, ent["backend"]), Path(args.cache) / mhash / str(jcfg.get("model")))
     pairs = [tuple(p.split("->")) for p in args.pairs.split(",")]
 
@@ -82,10 +86,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"entailment backend: {ent['backend']}")
     verdicts = redundancy(units, encoder, judge, pairs=pairs, k=args.k, runs=args.runs,
                           workers=1 if ent["backend"] == "nli" else args.workers, limit=args.limit,
-                          **ent, progress=print)
+                          sample=args.sample, seed=seed, **ent, progress=print)
     out_md = Path(args.reports_dir) / f"redundancy_{args.corpus}.md"
     write_report(verdicts, out_md, corpus=args.corpus, manifest_hash=mhash,
-                 judge_model=verifier, k=args.k, runs=vruns, files=dict(files))
+                 judge_model=verifier, k=args.k, runs=vruns, files=dict(files),
+                 sampling=f"{args.sample} sentences per direction, stratified by position, seed {seed}" if args.sample else "")
     dump_json(verdicts, out_md.with_suffix(".json"))
     footer = record_run("scripts/dataset/redundancy.py", f"{args.corpus} redundancy",
                         [(str(jcfg.get("model")), judge.usage)], cfg["models"].get("pricing"))

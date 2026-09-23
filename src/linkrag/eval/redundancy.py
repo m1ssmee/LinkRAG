@@ -25,6 +25,8 @@ cross-modal questions collapse into single-source ones.
 from __future__ import annotations
 
 import json
+import math
+import random
 import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
@@ -145,6 +147,7 @@ class SentenceVerdict:
     votes: list[str]
     span: str
     passages: list[str]
+    population: int = 0           # sentences in this direction before sampling
 
 
 LABEL = {"transcript": "lecture transcript", "deck": "slide deck (text and figure OCR)",
@@ -187,7 +190,7 @@ def judge_sentence(sentence: str, unit_id: str, source: str, target: str,
 def redundancy(units: Sequence[EvidenceUnit], encoder: Encoder, judge: Completer, *,
                pairs: Sequence[tuple[str, str]] = DEFAULT_PAIRS, k: int = 8, runs: int = 3,
                workers: int = 6, limit: int | None = None, backend: str = "llm",
-               device: str = "cpu",
+               device: str = "cpu", sample: int = 0, seed: str = "0",
                progress: Callable[[str], None] | None = None) -> list[SentenceVerdict]:
     by_role = sentences_by_role(units)
     targets = {role: TargetIndex([u for u in units if role_of(u) == role], encoder)
@@ -195,6 +198,8 @@ def redundancy(units: Sequence[EvidenceUnit], encoder: Encoder, judge: Completer
     out: list[SentenceVerdict] = []
     for source, target in pairs:
         sents = by_role[source][:limit] if limit else by_role[source]
+        population = len(sents)
+        sents = [sents[i] for i in sample_positions(population, sample, f"{seed}:{source}->{target}")]
         if not sents or not targets[target].units:
             if progress:
                 progress(f"{source}->{target}: skipped (no sentences or no target units)")
@@ -204,6 +209,8 @@ def redundancy(units: Sequence[EvidenceUnit], encoder: Encoder, judge: Completer
                                  targets[target].nearest(s, k), judge, runs, backend, device)
                        for s, uid in sents]
             verdicts = [f.result() for f in futures]
+        for v in verdicts:
+            v.population = population
         out.extend(verdicts)
         if progress:
             n = sum(v.entailed for v in verdicts)
@@ -213,15 +220,57 @@ def redundancy(units: Sequence[EvidenceUnit], encoder: Encoder, judge: Completer
 
 # ----------------------------------------------------------------- reporting
 
+def sample_positions(total: int, n: int, seed: str) -> list[int]:
+    """Stratified by position: split reading order into n equal strata and draw one
+    sentence from each, so a sample cannot cluster in one part of the lecture.
+    n = 0 or n >= total means the full census."""
+    if not n or n >= total:
+        return list(range(total))
+    rng = random.Random(seed)                      # str seeds are stable across runs
+    edges = [round(i * total / n) for i in range(n + 1)]
+    return [rng.randrange(edges[i], edges[i + 1]) for i in range(n)]
+
+
+def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
+    """Wilson score interval for k successes in n draws. Note: ignores the finite-
+    population correction, so on a large sampling fraction it is conservative."""
+    if n == 0:
+        return 0.0, 1.0
+    p = k / n
+    d = 1 + z * z / n
+    centre = (p + z * z / (2 * n)) / d
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return max(0.0, centre - half), min(1.0, centre + half)
+
+
+def intake_gate(pair: dict[str, Any], threshold: float) -> str:
+    """KEEP / REJECT / BORDERLINE for a deck->transcript summary row. A census decides on
+    the fraction; a sample decides only when its 95% CI clears the threshold, otherwise
+    it is BORDERLINE and the full run decides."""
+    if not pair.get("sampled"):
+        return "KEEP" if pair["fraction"] < threshold else "REJECT"
+    lo, hi = pair["ci95"]
+    if hi < threshold:
+        return "KEEP"
+    if lo > threshold:
+        return "REJECT"
+    return "BORDERLINE"
+
+
 def summarise(verdicts: Sequence[SentenceVerdict]) -> dict[str, Any]:
     pairs: dict[str, dict[str, Any]] = {}
     for v in verdicts:
         key = f"{v.source}->{v.target}"
-        d = pairs.setdefault(key, {"source": v.source, "target": v.target, "n": 0, "entailed": 0})
+        d = pairs.setdefault(key, {"source": v.source, "target": v.target, "n": 0, "entailed": 0,
+                                   "population": 0})
         d["n"] += 1
         d["entailed"] += int(v.entailed)
+        d["population"] = max(d["population"], getattr(v, "population", 0) or 0)
     for d in pairs.values():
+        d["population"] = max(d["population"], d["n"])     # pre-sampling verdict files: a census
+        d["sampled"] = d["n"] < d["population"]
         d["fraction"] = d["entailed"] / d["n"] if d["n"] else float("nan")
+        d["ci95"] = wilson(d["entailed"], d["n"])
     n = sum(d["n"] for d in pairs.values())
     e = sum(d["entailed"] for d in pairs.values())
     return {"pairs": pairs, "overall": {"n": n, "entailed": e, "fraction": e / n if n else float("nan")}}
@@ -229,7 +278,7 @@ def summarise(verdicts: Sequence[SentenceVerdict]) -> dict[str, Any]:
 
 def write_report(verdicts: Sequence[SentenceVerdict], path: str | Path, *, corpus: str,
                  manifest_hash: str, judge_model: str, k: int, runs: int,
-                 files: dict[str, list[str]], sample: int = 8) -> Path:
+                 files: dict[str, list[str]], sample: int = 8, sampling: str = "") -> Path:
     summ = summarise(verdicts)
     L = [f"# Modality redundancy — {corpus}", "",
          f"Corpus `{manifest_hash}` · judge `{judge_model}` · temperature 0 · {runs} runs, "
@@ -241,11 +290,17 @@ def write_report(verdicts: Sequence[SentenceVerdict], path: str | Path, *, corpu
          "| role | files |", "|---|---|"]
     for role, names in files.items():
         L.append(f"| {role} | {', '.join(names) or '—'} |")
-    L += ["", "| pair | sentences | entailed | redundancy |", "|---|---:|---:|---:|"]
+    if sampling:
+        L += ["", f"**Sampled:** {sampling}. Each fraction carries a Wilson 95 % CI; the intake gate "
+              "decides only when the CI clears the threshold."]
+    L += ["", "| pair | sentences | entailed | redundancy | 95 % CI |", "|---|---:|---:|---:|---|"]
     for key, d in summ["pairs"].items():
-        L.append(f"| {key} | {d['n']} | {d['entailed']} | **{d['fraction']:.1%}** |")
+        n_of = f"{d['n']} of {d['population']}" if d["sampled"] else str(d["n"])
+        lo, hi = d["ci95"]
+        L.append(f"| {key} | {n_of} | {d['entailed']} | **{d['fraction']:.1%}** | "
+                 f"{lo:.1%}–{hi:.1%} |")
     o = summ["overall"]
-    L.append(f"| **overall** | {o['n']} | {o['entailed']} | **{o['fraction']:.1%}** |")
+    L.append(f"| **overall** | {o['n']} | {o['entailed']} | **{o['fraction']:.1%}** | |")
     L += ["", f"Counts per pair sum to the overall row (measurement rule 2): "
           f"{sum(d['n'] for d in summ['pairs'].values())} = {o['n']}.", ""]
     L += ["## What each source says that the others do not", "",

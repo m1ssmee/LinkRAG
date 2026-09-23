@@ -369,6 +369,11 @@ dataset:
     max_deck_to_transcript: 0.65
     redundancy_k: 8
     redundancy_runs: 3
+    # Sampled redundancy: sentences per direction, stratified by position (0 = census).
+    # A sampled deck->transcript decides only if its Wilson 95% CI clears the
+    # threshold; otherwise the verdict is BORDERLINE (exit 3) and the census decides.
+    redundancy_sample: 0
+    sample_seed: 20260923
 
 eval:
   metrics: [answer_accuracy, evidence_precision, evidence_recall, cross_modal_coverage, citation_faithfulness]

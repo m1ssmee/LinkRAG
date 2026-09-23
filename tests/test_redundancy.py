@@ -81,3 +81,37 @@ def test_nli_backend_scores_redundancy_without_a_judge():
     by_sentence = {x.sentence.split()[1]: x.entailed for x in v}   # "Focus" / "poster"
     assert by_sentence["is"] is True and by_sentence["poster"] is False
     assert all(x.votes in (["yes"], ["no"]) for x in v), "one deterministic run"
+
+
+def test_stratified_sample_and_wilson_ci():
+    from linkrag.eval.redundancy import intake_gate, sample_positions, wilson
+    idx = sample_positions(167, 50, "s:a->b")
+    assert len(idx) == 50 and len(set(idx)) == 50 and idx == sorted(idx)
+    assert idx == sample_positions(167, 50, "s:a->b")                    # seeded: reproducible
+    assert all(i * 167 // 50 - 4 <= x <= (i + 1) * 167 // 50 + 4 for i, x in enumerate(idx))  # one per stratum
+    assert sample_positions(52, 150, "x") == list(range(52))              # N >= population: census
+    lo, hi = wilson(49, 52)
+    assert 0.84 < lo < 0.85 and 0.97 < hi < 0.99
+    row = {"sampled": True, "fraction": 0.94, "ci95": (0.84, 0.98)}
+    assert intake_gate(row, 0.65) == "REJECT"
+    assert intake_gate({**row, "ci95": (0.40, 0.60)}, 0.65) == "KEEP"
+    assert intake_gate({**row, "ci95": (0.55, 0.75)}, 0.65) == "BORDERLINE"
+    assert intake_gate({"sampled": False, "fraction": 0.60}, 0.65) == "KEEP"
+
+
+def test_sampled_redundancy_agrees_with_the_full_run_on_pilot01_cached_verdicts():
+    """DESIGN.md design change (sampled redundancy): on the stored LLM verdicts, a
+    stratified sample puts the full-run fraction inside its 95% CI for every pair."""
+    import json
+    from collections import defaultdict
+    from pathlib import Path
+    from linkrag.eval.redundancy import sample_positions, wilson
+    by = defaultdict(list)
+    for v in json.loads(Path("reports/redundancy_pilot01.json").read_text()):
+        by[(v["source"], v["target"])].append(v["entailed"])
+    assert sum(len(x) for x in by.values()) == 438
+    for n in (150, 50):
+        for (s, t), xs in by.items():
+            idx = sample_positions(len(xs), n, f"20260923:{s}->{t}")
+            lo, hi = wilson(sum(xs[i] for i in idx), len(idx))
+            assert lo <= sum(xs) / len(xs) <= hi, (n, s, t)

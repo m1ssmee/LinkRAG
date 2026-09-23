@@ -5,7 +5,7 @@
         --audio raw/l03.mp3 --deck raw/l03_slides.pdf [--notes raw/l03_notes.pdf]
 
 Ingests the files to a scratch index under data/processed/candidates/<name>/, runs
-the modality-redundancy metric (judge = eval.judge) and prints KEEP / REJECT against
+the modality-redundancy metric (judge = eval.judge) and prints KEEP / REJECT / BORDERLINE against
 `dataset.intake` in the config. The number is reported either way; the verdict is
 advisory -- record it in scripts/dataset/README.md's table when you decide.
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 
 from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
-from linkrag.eval.redundancy import DEFAULT_PAIRS, dump_json, redundancy, role_of, summarise, write_report
+from linkrag.eval.redundancy import DEFAULT_PAIRS, dump_json, intake_gate, redundancy, role_of, summarise, write_report
 from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.answer import http_completer, judge_completer
 from linkrag.index import Index, default_encoder
@@ -42,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--asr", choices=["local", "openai"], default="local",
                     help="local = faster-whisper (free, default); openai = whisper-1 ($0.006/min)")
     ap.add_argument("--reingest", action="store_true", help="rebuild the scratch index")
+    ap.add_argument("--sample", type=int, default=None,
+                    help="redundancy sentences per direction (default dataset.intake.redundancy_sample; 0 = all)")
     args = ap.parse_args(argv)
 
     setup_logging()
@@ -87,31 +89,38 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{args.name}: {len(units)} units · " + ", ".join(f"{r}={v}" for r, v in roles.items()))
 
     print(f"entailment backend: {ent['backend']}")
+    sample = int(args.sample if args.sample is not None else intake.get("redundancy_sample", 0))
+    seed = str(intake.get("sample_seed", 0))
     verdicts = redundancy(units, encoder, judge, pairs=pairs, k=int(intake.get("redundancy_k", 8)),
                           runs=int(intake.get("redundancy_runs", 3)),
-                          workers=1 if ent["backend"] == "nli" else args.workers, **ent, progress=print)
+                          workers=1 if ent["backend"] == "nli" else args.workers, sample=sample, seed=seed,
+                          **ent, progress=print)
     summ = summarise(verdicts)
     out_md = Path("reports") / f"redundancy_{args.name}.md"
     write_report(verdicts, out_md, corpus=args.name, manifest_hash=manifest.get("hash", "?"),
                  judge_model=str(jcfg.get("model")), k=int(intake.get("redundancy_k", 8)),
-                 runs=int(intake.get("redundancy_runs", 3)), files=dict(roles))
+                 runs=int(intake.get("redundancy_runs", 3)), files=dict(roles),
+                 sampling=f"{sample} sentences per direction, stratified by position, seed {seed}" if sample else "")
     dump_json(verdicts, out_md.with_suffix(".json"))
 
-    d2t = summ["pairs"].get("deck->transcript", {}).get("fraction")
-    keep = d2t is not None and d2t < threshold
-    verdict = "KEEP" if keep else "REJECT"
+    row = summ["pairs"].get("deck->transcript")
+    verdict = intake_gate(row, threshold) if row else "REJECT"
+    ci = (f", 95 % CI {row['ci95'][0]:.1%}–{row['ci95'][1]:.1%} from {row['n']} of {row['population']}"
+          if row and row["sampled"] else "")
     lines = ["", f"## Intake verdict: **{verdict}**", "",
-             f"deck→transcript = **{d2t:.1%}** vs threshold < {threshold:.0%} "
-             f"(pilot01: 94.2 %)" if d2t is not None else "deck→transcript could not be computed",
-             "", "| pair | redundancy |", "|---|---:|"]
-    lines += [f"| {k} | {v['fraction']:.1%} |" for k, v in summ["pairs"].items()]
+             f"deck→transcript = **{row['fraction']:.1%}**{ci} vs threshold < {threshold:.0%} "
+             f"(pilot01: 94.2 %)" if row else "deck→transcript could not be computed",
+             *(["", "The sample's CI straddles the threshold: run the full census (`--sample 0`) to decide."]
+               if verdict == "BORDERLINE" else []),
+             "", "| pair | redundancy | 95 % CI |", "|---|---:|---|"]
+    lines += [f"| {k} | {v['fraction']:.1%} | {v['ci95'][0]:.1%}–{v['ci95'][1]:.1%} |" for k, v in summ["pairs"].items()]
     footer = record_run("scripts/dataset/candidate.py", f"{args.name} intake",
                         [(str(jcfg.get("model")), judge.usage)], cfg["models"].get("pricing"))
     with out_md.open("a") as fh:
         fh.write("\n".join(lines + footer) + "\n")
     print("\n".join(lines + footer))
     print(f"\nwrote {out_md}")
-    return 0 if keep else 1
+    return {"KEEP": 0, "REJECT": 1, "BORDERLINE": 3}[verdict]
 
 
 if __name__ == "__main__":

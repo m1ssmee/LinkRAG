@@ -46,7 +46,8 @@ python scripts/dataset/candidate.py --name mit_6006_l03 \
 #    sentences future cross-modal questions will be built from.
 ```
 
-Exit code 0 = KEEP, 1 = REJECT, 2 = a file was missing. The number is written to the
+Exit code 0 = KEEP, 1 = REJECT, 2 = a file was missing, 3 = BORDERLINE (a sampled run,
+`--sample N`, whose 95 % CI straddles the bar: re-run with `--sample 0`). The number is written to the
 report either way; a REJECT that is close to the bar with a diagram-heavy deck is
 worth flagging rather than discarding.
 
