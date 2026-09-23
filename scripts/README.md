@@ -50,7 +50,7 @@ Keys go in `~/.zshenv` (never in the repo): `export GROQ_API_KEY=...`,
 
 | backend | select with | model | free-tier limit (enforced client-side) |
 |---|---|---|---|
-| `colab_ollama` | `LINKRAG_LLM_BACKEND=colab_ollama` | qwen2.5:7b-instruct | 60 rpm (one GPU) |
+| `colab` | `LINKRAG_LLM_BACKEND=colab` / `LINKRAG_JUDGE_BACKEND=colab` + `LINKRAG_COLAB_BASE_URL` | qwen2.5:7b-instruct | 60 rpm (one GPU) |
 | `colab_vllm` | `LINKRAG_LLM_BACKEND=colab_vllm` | Qwen/Qwen2.5-7B-Instruct | 120 rpm |
 | `groq` | `LINKRAG_LLM_BACKEND=groq` or `LINKRAG_JUDGE_BACKEND=groq` | openai/gpt-oss-120b | 28 rpm, 7,500 tpm, 1,000 req/day |
 | `google_ai_studio` | `LINKRAG_LLM_BACKEND=google_ai_studio` | gemini-2.5-flash | 10 rpm |
@@ -72,69 +72,39 @@ seed sent). Alternatives live under `models.llm_backends` and are selected with
 `models.llm.backend: <name>` or `LINKRAG_LLM_BACKEND=<name>`; the selected block is
 overlaid onto `models.llm`, so nothing else changes.
 
-### `colab_openai_compatible` — an open model served from a Colab GPU
+### `colab` — an open model served from a free Colab GPU
 
-This is the backend for **Phase 8 reported numbers**: an open-weights model whose
-weights and decoding are fixed, so a result can be reproduced without an account.
-The code path is identical to OpenAI's (`/v1/chat/completions`); only `base_url`,
-`model` and the key differ.
+The backend for Phase 8 reported numbers: open weights with fixed decoding, reproducible
+without an account. Same code path as every other backend (`/v1/chat/completions`).
 
-**A. Serve with Ollama (simplest).** In a Colab notebook with a GPU runtime:
+1. **Serve:** open `notebooks/colab_serve.ipynb` in Colab (T4 GPU runtime) and run it top
+   to bottom. It installs Ollama, pulls `qwen2.5:7b-instruct` (the quantised 14B option
+   and how to check VRAM are in the notebook), opens a Cloudflare quick tunnel, and
+   prints one line.
+2. **Point LinkRAG at it**, in the shell where LinkRAG runs:
+   ```bash
+   export LINKRAG_COLAB_BASE_URL=https://<random>.trycloudflare.com/v1   # the printed line
+   export LINKRAG_LLM_BACKEND=colab       # answerer
+   export LINKRAG_JUDGE_BACKEND=colab     # judge -- only after it passes step 3
+   ```
+   No key: Ollama needs none, and the colab backend sends none (a selected backend never
+   inherits another backend's key). Without `LINKRAG_COLAB_BASE_URL`, any run stops with one
+   line; it never falls back to a paid backend. Cost is recorded as $0 with `backend: colab`
+   in `reports/llm_ledger.jsonl`. The rate limit is `rate_limit_rpm` in the `colab` block.
+3. **Measure before trusting it as judge:**
+   `python scripts/eval/judge_agreement.py --judge colab` writes
+   `results/judge_agreement_colab.md` (kappa vs the stored gpt-4.1-mini and gpt-5.4 verdicts).
+   It must come close to the LLM-LLM 0.85 before it decides gold or intake (DESIGN.md finding 11).
+4. **Disconnects:** free sessions end after a few hours. Re-run the notebook, export the new
+   URL, and re-run the same command. Finished calls replay from the reply cache.
 
-```bash
-!curl -fsSL https://ollama.com/install.sh | sh
-# long contexts: the redundancy judge sends ~2k tokens, the modality-only
-# answerer up to ~30k. Ollama's default context is 4k -- raise it.
-!OLLAMA_HOST=0.0.0.0:11434 OLLAMA_CONTEXT_LENGTH=32768 nohup ollama serve > ollama.log 2>&1 &
-!ollama pull qwen2.5:7b-instruct        # answerer
-!ollama pull llama3.1:8b                # judge (a different family)
-# expose it: cloudflared needs no account
-!wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cloudflared && chmod +x cloudflared
-!nohup ./cloudflared tunnel --url http://localhost:11434 > tunnel.log 2>&1 &
-!sleep 5 && grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' tunnel.log
-```
-
-**B. Serve with vLLM (faster, exact `max_tokens`/`seed` semantics).**
-
-```bash
-!pip -q install vllm
-!nohup python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen2.5-7B-Instruct --dtype half --max-model-len 32768 \
-    --api-key colab-secret --port 8000 > vllm.log 2>&1 &
-# then the same cloudflared line with http://localhost:8000
-```
-
-**C. Point the config at it** (or export the env vars):
-
-```yaml
-models:
-  llm:
-    backend: colab_openai_compatible
-  llm_backends:
-    colab_openai_compatible:
-      model: qwen2.5:7b-instruct          # Ollama tag / vLLM --model value
-      base_url: https://<your-tunnel>.trycloudflare.com/v1
-      api_key_env: COLAB_LLM_KEY          # export COLAB_LLM_KEY=colab-secret (any string for Ollama)
-eval:
-  judge:
-    provider: openai_compatible
-    model: llama3.1:8b
-    base_url: https://<your-tunnel>.trycloudflare.com/v1
-    api_key_env: COLAB_LLM_KEY
-```
-
-**D. Checks before trusting a session** (the tunnel URL changes every runtime):
-
-```bash
-curl -s $BASE/v1/models -H "Authorization: Bearer $COLAB_LLM_KEY" | head -c 300
-python scripts/ask.py "what is the poster number?" --mode baseline      # one call, prints cost footer
-python scripts/eval/verify_gold.py --only A4 --reports-dir /tmp/x --out /tmp/x/g.jsonl
-```
+vLLM instead of Ollama: backend `colab_vllm` (start vLLM with `--api-key` and export that
+key as `COLAB_LLM_KEY`; same `LINKRAG_COLAB_BASE_URL`). The old names `colab_ollama` /
+`colab_openai_compatible` are aliases of `colab`.
 
 Rules that still apply: temperature 0 and a seed are sent; LLM-touching cells run
 3× and report mean ± std; a session's model tag, tunnel and date go in the report
-header (compare_retrieval prints them). Pricing for self-hosted tags is 0 in
-`models.pricing` — the ledger still counts tokens.
+header.
 
 ## Cost ledger
 
