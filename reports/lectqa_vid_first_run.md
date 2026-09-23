@@ -47,6 +47,7 @@ LLM cost (this run):
   their number, not above it, once n grows from 3 videos (40.6 %) to 28. The 3-video figure was a small-sample artefact.
 - **MCQ**: **96.2 %** vs their 53.43 % — mostly the answerer (gpt-5.4 vs their open model) and weak distractors; this column
   says little about retrieval.
+  *Corrected 2026-09-23:* the correct option is **A** in 1,484 of the 1,489 published MCQs, and options were shown in stored order, so this accuracy is confounded by answer position. It is not reportable until the MCQs are re-run with shuffled options (`results/external/lectqa_theirs_metrics.md`).
 - **linkrag is 2 points *below* baseline on open-ended** (24.2 % vs 26.4 %) at every level. On a single 2–5-minute video the only
   link is temporal co-occurrence, and expansion + complementarity admit frame-OCR units that displace transcript units the
   reference answers are worded from. This is the setting LinkRAG was not built for (no cross-file structure), reported as such.
