@@ -634,6 +634,127 @@ def localisation_table(rows: list[dict], title: str) -> list[str]:
     return L
 
 
+# ----------------------------------------------------------------- benchmark audit
+
+def audit(out: Path) -> int:
+    """LLM-free audit of the published benchmark and of what we could obtain from it."""
+    import av
+    import statistics as st
+    import tiktoken
+    enc = tiktoken.get_encoding("o200k_base")          # the GPT-4.1 / GPT-5 family encoding
+    mcq_raw = json.loads((RAW / "mcq_questions.json").read_text())
+    qa = load_qa()
+    status = json.loads((RAW / "fetch_status.json").read_text())
+    obtained = [v for v in video_ids(None, None) if status.get(v, {}).get("status") == "obtained"]
+    L = ["# LectQA-Vid — benchmark audit", "",
+         "LLM-free. Published files: `mcq_questions.json`, `open_ended_questions.json`, `video_links.docx` "
+         "(Mendeley doi:10.17632/yt4nmz9mcv.1). Obtained media: YouTube, 2026-09-23.", ""]
+
+    # (a) MCQ answer position
+    pos, by_level = collections.Counter(), collections.defaultdict(collections.Counter)
+    for vid, qs in mcq_raw.items():
+        for q in qs:
+            letter = "ABCD"[q["options"].index(q["answer"])] if q["answer"] in q["options"] else "not an option"
+            pos[letter] += 1
+            by_level[q["level"].replace("_", " ")][letter] += 1
+    n_mcq = sum(pos.values())
+    L += ["## (a) MCQ answer position", "",
+          f"All {n_mcq} published MCQs. The correct answer's position in the stored option list:", "",
+          "| position | count | share |", "|---|---:|---:|",
+          *[f"| {k} | {v} | {v / n_mcq:.1%} |" for k, v in sorted(pos.items())], "",
+          f"**A constant-\"A\" answerer scores {pos['A'] / n_mcq:.1%}** "
+          + "(" + ", ".join(f"{lv} {c['A'] / sum(c.values()):.1%}" for lv, c in sorted(by_level.items())) + "), "
+          "against their reported 53.43 %. Any MCQ run that keeps the stored order measures position "
+          "preference, not retrieval. Options must be shuffled.", ""]
+
+    # (b) timestamps
+    shapes, strict = collections.Counter(), collections.Counter()
+    for vid, qs in qa.items():
+        for q in qs:
+            for k in ("timestamp_start", "timestamp_end"):
+                t = str(q[k]).strip()
+                shapes[re.sub(r"\d", "9", t)] += 1
+                strict["unambiguous" if strict_seconds(t) is not None else "ambiguous"] += 1
+    reasons, by_range = collections.Counter(), collections.defaultdict(collections.Counter)
+    for vid in obtained:
+        n = int(vid.split("_")[1])
+        rng = "1–35" if n <= 35 else "36–63" if n <= 63 else "64–100"
+        for q in qa.get(vid, []):
+            why = gold_interval(vid, q)[1]
+            reasons[why] += 1
+            by_range[rng][why] += 1
+    n_q = sum(reasons.values())
+    L += ["## (b) Gold timestamps", "",
+          f"Every start/end stamp of all {sum(len(v) for v in qa.values())} published QA pairs, by digit shape "
+          "(9 = any digit):", "", "| shape | stamps |", "|---|---:|",
+          *[f"| `{k}` | {v} |" for k, v in shapes.most_common()], "",
+          f"Unambiguous by `strict_seconds` (HH:MM:SS / MM:SS with fields < 60, or plain seconds): "
+          f"{strict['unambiguous']} of {sum(strict.values())} stamps. `00:12:70` (= 12.70 s), `258:36` and "
+          "`01:91:60` also occur, and their meaning differs between videos.", "",
+          f"Gold intervals of the {n_q} QA pairs of the {len(obtained)} obtained videos: "
+          + ", ".join(f"{k} {v}" for k, v in sorted(reasons.items())) + ".", "",
+          "| videos | scorable | ambiguous | past the video's end | other |", "|---|---:|---:|---:|---:|"]
+    for rng in ("1–35", "36–63", "64–100"):
+        c = by_range[rng]
+        other = sum(v for k, v in c.items() if k not in ("ok", "ambiguous format", "beyond the fetched video's end"))
+        past = c["beyond the fetched video's end"]
+        L.append(f"| {rng} | {c['ok']} | {c['ambiguous format']} | {past} | {other} |")
+    L.append("")
+
+    # (c) links
+    dead = {v: s for v, s in status.items() if s.get("status") == "dead"}
+    L += ["## (c) Link availability", "",
+          f"{len(obtained)}/100 obtained, {len(dead)} dead. Mendeley ships no media or transcripts, so every video "
+          "comes from its YouTube link.", "", "| video | reason |", "|---|---|",
+          *[f"| {v} | {s.get('error', '')[:90]} |" for v, s in sorted(dead.items(), key=lambda kv: int(kv[0].split('_')[1]))], ""]
+
+    # (d) genre
+    rows, cls = [], collections.Counter()
+    for vid in obtained:
+        f = PROCESSED / vid / "index_frameslides" / "frameslides_stats.json"
+        if not f.exists():
+            continue
+        s = json.loads(f.read_text())
+        with av.open(str(RAW / "videos" / f"{vid}.m4a")) as c:
+            dur = float(c.duration) / 1e6
+        rate = s["slides"] / (dur / 60)
+        kind = "slide talk" if rate <= 3 else "animated explainer" if rate > 6 else "mixed"
+        gate = (s.get("gate") or {}).get("related")
+        cls[(kind, "accepted" if gate else "rejected")] += 1
+        rows.append(f"| {vid} | {dur:.0f} | {s['slides']} | {rate:.1f} | {'accepted' if gate else 'rejected'} | {kind} |")
+    L += ["## (d) Genre", "",
+          "**Rule, stated before looking at answers:** slide changes per minute from the frame-derived deck "
+          "(1 fps dHash segmentation). **≤ 3 per minute = slide talk** (a slide stays up ≥ 20 s), "
+          "**> 6 = animated explainer**, otherwise mixed. The relatedness-gate verdict (does the speech align "
+          "with the recovered deck) is reported next to it, not folded into the rule.", "",
+          "| class | gate accepted | gate rejected |", "|---|---:|---:|",
+          *[f"| {k} | {cls[(k, 'accepted')]} | {cls[(k, 'rejected')]} |" for k in ("slide talk", "mixed", "animated explainer")],
+          f"| **total** | {sum(v for (k, g), v in cls.items() if g == 'accepted')} | "
+          f"{sum(v for (k, g), v in cls.items() if g == 'rejected')} |", "",
+          "<details><summary>per video</summary>", "", "| video | duration s | slides | slides/min | gate | class |",
+          "|---|---:|---:|---:|---|---|", *rows, "", "</details>", ""]
+
+    # (e) context fit
+    toks = {}
+    for vid in obtained:
+        units = [u for u in Index.load(PROCESSED / vid / "index").units if u.modality == "audio"]
+        text = " ".join(u.content for u in sorted(units, key=lambda u: u.location.start_s or 0.0))
+        toks[vid] = len(enc.encode(text))
+    vals = sorted(toks.values())
+    L += ["## (e) Context fit", "",
+          f"Full transcript per obtained video, o200k tokens (GPT-4.1 / GPT-5 encoding), n = {len(vals)}: "
+          f"min {vals[0]}, median {st.median(vals):.0f}, max {vals[-1]}.", "",
+          "| window | videos whose whole transcript fits |", "|---|---:|",
+          *[f"| {w:,} | {sum(v <= w for v in vals)}/{len(vals)} |" for w in (2048, 4096, 8192, 32768)], "",
+          "The API does not report the answerer's (gpt-5.4-mini-2026-03-17) context window. The largest "
+          "transcript is far below any current OpenAI window, so a no-retrieval full-transcript answerer is a "
+          "valid baseline on this benchmark.", ""]
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 0
+
+
 # ----------------------------------------------------------------- coverage
 
 def coverage(out: Path) -> int:
@@ -881,7 +1002,7 @@ def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = T
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("step", choices=["fetch", "prepare", "run", "v2", "frameslides", "coverage"])
+    ap.add_argument("step", choices=["fetch", "prepare", "run", "v2", "frameslides", "coverage", "audit"])
     ap.add_argument("--videos", type=int, default=None, help="first N video ids")
     ap.add_argument("--only", default=None, help="comma-separated video ids")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -910,6 +1031,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.step == "prepare":
         prepare(ids, cfg, dcfg)
         return 0
+    if args.step == "audit":
+        return audit(Path("results/external/lectqa_audit.md"))
     if args.step == "coverage":
         return coverage(Path("results/external/lectqa_coverage.md"))
     if args.step == "frameslides":

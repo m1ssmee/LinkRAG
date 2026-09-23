@@ -36,3 +36,4 @@ reportlab==5.0.1                # generates the fixture PDF in tests/
 openpyxl==3.1.5          # MaViLS ground truth is xlsx
 yt-dlp==2026.8.19        # LectQA-Vid videos are YouTube links; audio-only progressive download
 nltk==3.10.3             # T1's BLEU-4 and METEOR (their eqs. 31-33); needs WordNet data (make setup)
+tiktoken==0.14.0         # exact o200k token counts (LectQA context-fit audit)
