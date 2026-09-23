@@ -73,7 +73,6 @@ def gold_section(runs: list[tuple[str, list]]) -> list[str]:
          "verdict. Question level: verified type and kept/dropped status.", "",
          "| A | B | unit pairs | unit agreement | unit κ | confusion (A/B) | type agreement | kept agreement |",
          "|---|---|---:|---:|---:|---|---:|---:|"]
-    diffs: list[str] = []
     for (na, ra), (nb, rb) in combinations(runs, 2):
         ua = {(q["qid"], u["unit_id"]): u["kept"] for q in ra for u in q["units"]}
         ub = {(q["qid"], u["unit_id"]): u["kept"] for q in rb for u in q["units"]}
@@ -86,13 +85,15 @@ def gold_section(runs: list[tuple[str, list]]) -> list[str]:
         agree = sum(x == y for x, y in zip(a, b))
         L.append(f"| {na} | {nb} | {len(keys)} | {agree}/{len(keys)} = {agree / max(len(keys), 1):.1%} | "
                  f"**{kappa(a, b):.2f}** | {confusion(a, b)} | {types}/{len(qids)} | {kept}/{len(qids)} |")
-        if "nli" in (na, nb) and not diffs:
-            rows = [q for q in qids if qa[q]["verified_type"] != qb[q]["verified_type"]]
-            diffs = ["", f"### Questions whose type differs ({na} vs {nb}): {len(rows)} of {len(qids)}", "",
-                     "Reason is read off the two runs: which full-context answers each grader passed, and how many "
-                     "proposed gold units each entailment check kept.", "",
-                     f"| qid | {na} | {nb} | reason |", "|---|---|---|---|",
-                     *[f"| {q} | {qa[q]['verified_type']} | {qb[q]['verified_type']} | {reason(qa[q], qb[q], na, nb)} |" for q in rows]]
+    (na, ra), (nb, rb) = runs[0], runs[-1]            # reference vs candidate (last)
+    qa, qb = {q["qid"]: q for q in ra}, {q["qid"]: q for q in rb}
+    qids = sorted(set(qa) & set(qb), key=lambda s: (len(s), s))
+    rows = [q for q in qids if qa[q]["verified_type"] != qb[q]["verified_type"]]
+    diffs = ["", f"### Questions whose type differs ({na} vs {nb}): {len(rows)} of {len(qids)}", "",
+             "Reason is read off the two runs: which full-context answers each grader passed, and how many "
+             "proposed gold units each entailment check kept.", "",
+             f"| qid | {na} | {nb} | reason |", "|---|---|---|---|",
+             *[f"| {q} | {qa[q]['verified_type']} | {qb[q]['verified_type']} | {reason(qa[q], qb[q], na, nb)} |" for q in rows]]
     for name, r in runs:
         c = Counter(str(q["verified_type"]) for q in r)
         L.append("")

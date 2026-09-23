@@ -14,6 +14,8 @@ flagged *estimated*).
 | `compare_retrieval.py` | mode × rerank matrix, per-type and per-question tables | answerer (iterative modes) |
 | `eval/verify_gold.py` | machine-verifies a proposed gold set; writes the stamped gold | answerer + judge |
 | `eval/audit_sample.py` | stratified human-audit sheet for the verification; `--score` | no |
+| `eval/judge_agreement.py` | a candidate judge (`--judge colab\|groq\|...`) vs the stored pilot01 verdicts: kappa report; refuses a billing judge without `--max-cost` | judge (answerer cache-only) |
+| `eval/compare_entailment.py` | agreement tables between stored verification / redundancy runs | no |
 | `dataset/redundancy.py` | modality redundancy of an ingested corpus | judge |
 | `dataset/candidate.py` | intake: ingest a candidate lecture, measure, keep/reject | judge |
 | `eval_alignment.py`, `eval_deictic.py` | alignment / deixis against ear labels | no |

@@ -40,6 +40,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="where the .md/.json go (scratch dir for a cost backfill replay)")
     ap.add_argument("--only", default=None, help="comma-separated qids (debugging)")
     ap.add_argument("--max-cost", type=float, default=0.0, help="stop when uncached spend exceeds this")
+    ap.add_argument("--answerer-cache-only", action="store_true",
+                    help="replay stored answerer replies only; a miss is an error, never a call")
+    ap.add_argument("--judge-cache-only", action="store_true",
+                    help="replay stored judge replies only (e.g. to re-derive a stored judge's verdicts)")
     args = ap.parse_args(argv)
 
     setup_logging()
@@ -64,11 +68,11 @@ def main(argv: list[str] | None = None) -> int:
         print("WARNING: eval.judge is the same model as models.llm -- self-grading is lenient")
     from linkrag.costs import price_for
     complete = cached_completer(http_completer(llm), Path(args.cache) / mhash / str(llm.get("model")),
-                                max_cost_usd=args.max_cost,
+                                max_cost_usd=args.max_cost, cache_only=args.answerer_cache_only,
                                 price=price_for(str(llm.get("model")), cfg["models"].get("pricing")))
     ent = entailment_opts(cfg, args.entailment)
     judge = cached_completer(judge_completer(cfg, ent["backend"]), Path(args.cache) / mhash / str(jcfg.get("model")),
-                             max_cost_usd=args.max_cost,
+                             max_cost_usd=args.max_cost, cache_only=args.judge_cache_only,
                              price=price_for(str(jcfg.get("model")), cfg["models"].get("pricing")))
     deck_files = {Path(u.source_file).name for u in index.units if u.metadata.get("slide_deck")}
     print(f"{len(rows)} questions · corpus {mhash} ({len(index)} units) · deck files {sorted(deck_files)}")
