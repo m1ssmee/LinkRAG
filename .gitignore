@@ -24,3 +24,6 @@ tests/fixtures/
 # OS / editor droppings
 .DS_Store
 ~$*
+
+# Grading material with student data: kept local, never published
+reports/LLL/
