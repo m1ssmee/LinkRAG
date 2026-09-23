@@ -14,6 +14,17 @@ All 1489 published MCQs. The correct answer's position in the stored option list
 
 **A constant-"A" answerer scores 99.7%** (hard 100.0%, simple 99.0%, very hard 100.0%), against their reported 53.43 %. Any MCQ run that keeps the stored order measures position preference, not retrieval. Options must be shuffled.
 
+**Shuffling is not enough: the answer is the longest option.** The gold is the unique longest of the four options in:
+
+| level | MCQs | gold = unique longest option |
+|---|---:|---:|
+| hard | 495 | 472 (95.4%) |
+| simple | 500 | 443 (88.6%) |
+| very hard | 494 | 494 (100.0%) |
+| **all** | 1489 | 1409 (94.6%) |
+
+So an answerer can score near these rates from the options alone, with no video, whatever the order.
+
 ## (b) Gold timestamps
 
 Every start/end stamp of all 2982 published QA pairs, by digit shape (9 = any digit):
