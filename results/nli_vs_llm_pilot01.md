@@ -36,8 +36,11 @@ there were 0 judge calls, and the run total was **$0.0000** (both runs append $0
      under NLI where the LLM judge REJECTs it.
 4. **A bigger NLI model does not close the gap.**
    `MoritzLaurer/DeBERTa-v3-large-mnli-fever-anli-ling-wanli`, on the same 147 unit pairs with
-   the shipped formulation, reached κ 0.35 / 0.35 against the two LLM judges, at ~17× the
-   runtime (2,295 s vs 132 s).
+   the shipped formulation, reached κ 0.35 / 0.35 against the two LLM judges. It is slower,
+   but no speed ratio is reported: the one timing was taken while other jobs shared the CPU,
+   which fails the latency measurement rule (idle machine, 3 repeats, median).
+   *Corrected 2026-09-23: an earlier version of this report gave "~17× the runtime
+   (2,295 s vs 132 s)" from that uncontrolled run.*
 
 Formulation steps measured on the same 147 unit pairs (unit-level κ vs gpt-4.1-mini / gpt-5.4):
 
