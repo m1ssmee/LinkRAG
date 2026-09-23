@@ -6,31 +6,34 @@ Their split and 1,000-pair evaluation subset are unpublished; this is every QA p
 
 **Read with care.** The answerer here (`gpt-5.4-2026-03-05`) is far stronger than the open models T1 evaluated with, so a gap to their numbers is mostly the LLM, not retrieval; the baseline-vs-linkrag rows are the retrieval comparison. Videos are 2–5 minutes, so top-4 of ~15–40 units already covers much of each video. MCQ distractors are weak (see accuracy).
 
+
+> *Corrected 2026-09-23:* the "their" columns below previously used values that do not match the published paper (Tables 4–5, read as images from the CMC full-text HTML). Old → published: open-ended F1 simple 31.15→29.47, hard 19.35→24.38, very hard 10.24→16.72; ROUGE-1 39.80→36.82, 24.60→30.94, 15.32→22.51; similarity 0.75/0.68/0.51/0.71 → 77.23/74.56/71.48/74.42 %; MCQ accuracy 68.40/56.30/44.20/56.30 → 57.29/52.34/50.67/53.43 %. Overall F1 23.52 and ROUGE-1 29.76 were right. Our own numbers are unchanged.
+
 ## Open-ended (their Table 4 / 6)
 
 | level | n | mode | token-F1 | ROUGE-1 | sim (bge-m3) | their F1 | their ROUGE-1 | their sim |
 |---|---:|---|---:|---:|---:|---:|---:|---:|
-| simple | 141 | baseline | 33.9% | 38.7% | 0.76 | 31.15% | 39.80% | 0.75 |
-| simple | 141 | linkrag | 31.8% | 36.6% | 0.75 | 31.15% | 39.80% | 0.75 |
-| hard | 140 | baseline | 28.3% | 31.4% | 0.73 | 19.35% | 24.60% | 0.68 |
-| hard | 140 | linkrag | 25.5% | 28.5% | 0.70 | 19.35% | 24.60% | 0.68 |
-| very hard | 139 | baseline | 16.8% | 20.1% | 0.65 | 10.24% | 15.32% | 0.51 |
-| very hard | 139 | linkrag | 15.1% | 18.1% | 0.63 | 10.24% | 15.32% | 0.51 |
-| overall | 420 | baseline | 26.4% | 30.1% | 0.71 | 23.52% | 29.76% | 0.71 |
-| overall | 420 | linkrag | 24.2% | 27.8% | 0.69 | 23.52% | 29.76% | 0.71 |
+| simple | 141 | baseline | 33.9% | 38.7% | 0.76 | 29.47% | 36.82% | 0.77 |
+| simple | 141 | linkrag | 31.8% | 36.6% | 0.75 | 29.47% | 36.82% | 0.77 |
+| hard | 140 | baseline | 28.3% | 31.4% | 0.73 | 24.38% | 30.94% | 0.75 |
+| hard | 140 | linkrag | 25.5% | 28.5% | 0.70 | 24.38% | 30.94% | 0.75 |
+| very hard | 139 | baseline | 16.8% | 20.1% | 0.65 | 16.72% | 22.51% | 0.71 |
+| very hard | 139 | linkrag | 15.1% | 18.1% | 0.63 | 16.72% | 22.51% | 0.71 |
+| overall | 420 | baseline | 26.4% | 30.1% | 0.71 | 23.52% | 29.76% | 0.74 |
+| overall | 420 | linkrag | 24.2% | 27.8% | 0.69 | 23.52% | 29.76% | 0.74 |
 
 ## MCQ (their Table 5)
 
 | level | n | mode | accuracy | their accuracy |
 |---|---:|---|---:|---:|
-| simple | 140 | baseline | 93.6% | 68.40% |
-| simple | 140 | linkrag | 93.6% | 68.40% |
-| hard | 140 | baseline | 95.7% | 56.30% |
-| hard | 140 | linkrag | 95.0% | 56.30% |
-| very hard | 140 | baseline | 99.3% | 44.20% |
-| very hard | 140 | linkrag | 99.3% | 44.20% |
-| overall | 420 | baseline | 96.2% | 56.30% |
-| overall | 420 | linkrag | 96.0% | 56.30% |
+| simple | 140 | baseline | 93.6% | 57.29% |
+| simple | 140 | linkrag | 93.6% | 57.29% |
+| hard | 140 | baseline | 95.7% | 52.34% |
+| hard | 140 | linkrag | 95.0% | 52.34% |
+| very hard | 140 | baseline | 99.3% | 50.67% |
+| very hard | 140 | linkrag | 99.3% | 50.67% |
+| overall | 420 | baseline | 96.2% | 53.43% |
+| overall | 420 | linkrag | 96.0% | 53.43% |
 
 LLM cost (this run):
 
@@ -40,9 +43,9 @@ LLM cost (this run):
 
 ## Reading (28/100 videos, 840 QA pairs)
 
-- **Open-ended**: baseline token-F1 **26.4 %** / ROUGE-1 30.1 % / sim 0.71 vs their 23.52 % / 29.76 % / 0.71 — level with
+- **Open-ended**: baseline token-F1 **26.4 %** / ROUGE-1 30.1 % / sim 0.71 vs their 23.52 % / 29.76 % / 74.42 % (their sim is all-MiniLM-L6-v2, ours bge-m3: not comparable) — level with
   their number, not above it, once n grows from 3 videos (40.6 %) to 28. The 3-video figure was a small-sample artefact.
-- **MCQ**: **96.2 %** vs their 56.30 % — mostly the answerer (gpt-5.4 vs their open model) and weak distractors; this column
+- **MCQ**: **96.2 %** vs their 53.43 % — mostly the answerer (gpt-5.4 vs their open model) and weak distractors; this column
   says little about retrieval.
 - **linkrag is 2 points *below* baseline on open-ended** (24.2 % vs 26.4 %) at every level. On a single 2–5-minute video the only
   link is temporal co-occurrence, and expansion + complementarity admit frame-OCR units that displace transcript units the

@@ -52,10 +52,19 @@ from linkrag.retrieve.rerank import rerank
 RAW = Path("data/raw/lectqa_vid")
 PROCESSED = Path("data/processed/lectqa_vid")
 LEVELS = ("simple", "hard", "very hard")
-THEIRS = {  # Table 4 (open-ended, proposed) and Table 5 (MCQ, proposed), per level
-    "open": {"simple": (31.15, 39.80, 0.75), "hard": (19.35, 24.60, 0.68),
-             "very hard": (10.24, 15.32, 0.51), "overall": (23.52, 29.76, 0.71)},
-    "mcq": {"simple": 68.40, "hard": 56.30, "very hard": 44.20, "overall": 56.30},
+# Their published numbers, all in %: CMC 88(2) art. 96, full-text HTML, Tables 4-6 (images),
+# read 2026-09-23. Corrected then: earlier values here (sim 0.71, MCQ 56.30 %, and most
+# per-difficulty cells) did not match the published tables.
+THEIRS = {
+    "open": {  # Table 4, "Temporal-Aware RAG (Ours)"
+        "simple":    {"f1": 29.47, "sim": 77.23, "bleu": 8.61, "meteor": 38.15, "rouge1": 36.82},
+        "hard":      {"f1": 24.38, "sim": 74.56, "bleu": 5.29, "meteor": 34.71, "rouge1": 30.94},
+        "very hard": {"f1": 16.72, "sim": 71.48, "bleu": 2.83, "meteor": 24.36, "rouge1": 22.51},
+        "overall":   {"f1": 23.52, "sim": 74.42, "bleu": 5.58, "meteor": 32.41, "rouge1": 29.76},
+    },
+    "mcq": {"simple": 57.29, "hard": 52.34, "very hard": 50.67, "overall": 53.43},  # Table 5, ACC
+    # Table 6, "Multimodal RAG (ASR + captions, no timestamps)" -- their no-temporal baseline
+    "open_no_timestamps": {"overall": {"f1": 14.80, "sim": 61.00, "bleu": 2.95, "meteor": 21.65}},
 }
 
 
@@ -350,7 +359,8 @@ def run(ids: list[str], cfg: dict, dcfg: dict, modes: list[str], out: Path, repe
                 continue
             r1, _ = agg("open", mode, level, "rouge1")
             sm, _ = agg("open", mode, level, "sim")
-            tf, tr, ts = THEIRS["open"][level]
+            th = THEIRS["open"][level]
+            tf, tr, ts = th["f1"], th["rouge1"], th["sim"] / 100
             L.append(f"| {level} | {n} | {mode} | {f1:.1%} | {r1:.1%} | {sm:.2f} | {tf:.2f}% | {tr:.2f}% | {ts:.2f} |")
     L += ["", "## MCQ (their Table 5)", "", "| level | n | mode | accuracy | their accuracy |", "|---|---:|---|---:|---:|"]
     for level in (*LEVELS, "overall"):
@@ -578,7 +588,7 @@ def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = T
             for mode in ("baseline", "linkrag"):
                 xs = [r for r in frs if r["kind"] == "open" and r["mode"] == mode and (level == "overall" or r["level"] == level)]
                 if xs:
-                    tf, tr, _ = THEIRS["open"][level]
+                    tf, tr = THEIRS["open"][level]["f1"], THEIRS["open"][level]["rouge1"]
                     L.append(f"| {level} | {len(xs)} | {mode} | {st.mean(r['f1'] for r in xs):.1%} | {st.mean(r['rouge1'] for r in xs):.1%} | {tf:.2f}% | {tr:.2f}% |")
     footer = record_run("scripts/adapters/lectqa_vid.py", f"lectqa v2 localisation ({len(ids)} videos)",
                         [(u1["model"], u1["llm_usage"]), (u2["model"], u2["llm_usage"])], cfg["models"].get("pricing"))

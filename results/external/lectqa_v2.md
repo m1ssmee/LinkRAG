@@ -4,6 +4,9 @@ Subset: the 28 of the first 35 videos whose YouTube links were still available; 
 
 **Caption for every `linkrag` / `linkrag_iter` row:** single-stream setting — one video, no separate deck or paper — so the only link available is temporal co-occurrence between a transcript segment and the frames on screen; **cross-file linking is inactive by construction**. These rows test additive expansion + the complementarity reranker over transcript and frame-OCR units, nothing more.
 
+
+> *Corrected 2026-09-23:* the "their" columns below previously used values that do not match the published paper (Tables 4–5, read as images from the CMC full-text HTML). Old → published: open-ended F1 simple 31.15→29.47, hard 19.35→24.38, very hard 10.24→16.72; ROUGE-1 39.80→36.82, 24.60→30.94, 15.32→22.51; similarity 0.75/0.68/0.51/0.71 → 77.23/74.56/71.48/74.42 %; MCQ accuracy 68.40/56.30/44.20/56.30 → 57.29/52.34/50.67/53.43 %. Overall F1 23.52 and ROUGE-1 29.76 were right. Our own numbers are unchanged.
+
 ## 1. Temporal localisation (primary metric; no answerer)
 
 **Their paper reports no localisation metric.** Its evaluation section lists token-level precision/recall/F1, BLEU, METEOR, ROUGE-1 and semantic similarity for open-ended questions and accuracy/precision/recall/F1 over option labels for MCQ (§5.2) — nothing about whether a retrieved segment matched the annotated interval, and it never states its top-K. **This table is therefore ours-on-their-data**, with their fixed-window configuration replicated as the `fixed` baseline row in §2 rather than a number copied from the paper.
@@ -146,12 +149,12 @@ Their paper does not name the answering LLM ("an instruction-tuned LLM", §4.4.4
 
 | level | n | mode | token-F1 | ROUGE-1 | their F1 (Table 4) | their ROUGE-1 |
 |---|---:|---|---:|---:|---:|---:|
-| simple | 141 | baseline | 33.9% | 38.7% | 31.15% | 39.80% |
-| simple | 141 | linkrag | 31.8% | 36.6% | 31.15% | 39.80% |
-| hard | 140 | baseline | 28.3% | 31.4% | 19.35% | 24.60% |
-| hard | 140 | linkrag | 25.5% | 28.5% | 19.35% | 24.60% |
-| very hard | 139 | baseline | 16.8% | 20.1% | 10.24% | 15.32% |
-| very hard | 139 | linkrag | 15.1% | 18.1% | 10.24% | 15.32% |
+| simple | 141 | baseline | 33.9% | 38.7% | 29.47% | 36.82% |
+| simple | 141 | linkrag | 31.8% | 36.6% | 29.47% | 36.82% |
+| hard | 140 | baseline | 28.3% | 31.4% | 24.38% | 30.94% |
+| hard | 140 | linkrag | 25.5% | 28.5% | 24.38% | 30.94% |
+| very hard | 139 | baseline | 16.8% | 20.1% | 16.72% | 22.51% |
+| very hard | 139 | linkrag | 15.1% | 18.1% | 16.72% | 22.51% |
 | overall | 420 | baseline | 26.4% | 30.1% | 23.52% | 29.76% |
 | overall | 420 | linkrag | 24.2% | 27.8% | 23.52% | 29.76% |
 
