@@ -40,6 +40,7 @@ from typing import Any, Callable, Sequence
 
 from linkrag.core import EvidenceUnit
 from linkrag.eval.metrics import matches_locator
+from linkrag.generate.citations import mmss
 
 Completer = Callable[[str, str], str]
 
@@ -181,13 +182,8 @@ def locator_str(unit: EvidenceUnit) -> str:
     if loc.page is not None:
         return f"{name} p.{loc.page}"
     if loc.start_s is not None:
-        return f"{name} {_mmss(loc.start_s)}-{_mmss(loc.end_s or loc.start_s)}"
+        return f"{name} {mmss(loc.start_s)}-{mmss(loc.end_s or loc.start_s)}"
     return name
-
-
-def _mmss(s: float) -> str:
-    s = int(round(s))
-    return f"{s // 60}:{s % 60:02d}"
 
 
 def source_of(unit: EvidenceUnit, deck_files: set[str]) -> str:
@@ -519,7 +515,7 @@ def write_report(verdicts: Sequence[QuestionVerdict], path: str | Path, *, corpu
     return path
 
 
-def dump_json(verdicts: Sequence[QuestionVerdict], path: str | Path) -> Path:
+def dump_json(verdicts: Sequence[Any], path: str | Path) -> Path:
     path = Path(path)
     path.write_text(json.dumps([asdict(v) for v in verdicts], ensure_ascii=False, indent=1))
     return path

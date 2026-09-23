@@ -24,12 +24,11 @@ cross-modal questions collapse into single-source ones.
 
 from __future__ import annotations
 
-import json
 import math
 import random
 import re
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
@@ -314,10 +313,4 @@ def write_report(verdicts: Sequence[SentenceVerdict], path: str | Path, *, corpu
         L.append("")
     path = Path(path)
     path.write_text("\n".join(L) + "\n")
-    return path
-
-
-def dump_json(verdicts: Sequence[SentenceVerdict], path: str | Path) -> Path:
-    path = Path(path)
-    path.write_text(json.dumps([asdict(v) for v in verdicts], ensure_ascii=False, indent=1))
     return path

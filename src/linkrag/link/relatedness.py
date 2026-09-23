@@ -126,11 +126,6 @@ def pass_rates(verdicts: Sequence[LinkVerdict]) -> dict[str, tuple[int, int]]:
     return {t: (n[t], k[t]) for t in sorted(n)}
 
 
-def is_gated_out(link: Link) -> bool:
-    r = (link.metadata or {}).get("relatedness")
-    return bool(r) and not r.get("passed", True)
-
-
 def write_report(verdicts: Sequence[LinkVerdict], links: Sequence[Link],
                  units: Sequence[EvidenceUnit], path, *, corpus: str, manifest_hash: str,
                  judge_model: str, runs: int, sample: int = 6) -> Any:

@@ -329,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
                         f"{fmt_runs(per_run, 'prec')} | {fmt_runs(per_run, 'mods', pct=False)} | {llm:.1f} |")
                 md.append(line)
                 print("  " + line.strip("| ").replace(" | ", "  "))
-    md += ["", f"Bucket sizes: " + ", ".join(
+    md += ["", "Bucket sizes: " + ", ".join(
         f"{b} {sum(1 for r in rows if b in buckets_of(r.get('type', '')))}" for b in BUCKETS)
         + f" (deictic ⊂ cross_modal; single + cross = {len(rows)} questions)."]
 

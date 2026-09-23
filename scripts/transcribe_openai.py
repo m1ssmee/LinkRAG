@@ -12,9 +12,7 @@ name it explicitly) and reports cost, wall time and the pilot01 term table.
 from __future__ import annotations
 
 import argparse
-import json
 import time
-from collections import Counter
 from pathlib import Path
 
 from linkrag.core import load_config, setup_logging

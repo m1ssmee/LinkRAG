@@ -22,7 +22,7 @@ from linkrag.manifest import MANIFEST_NAME, load_manifest
 from linkrag.link.graph import build_graph
 from linkrag.retrieve.baseline import retrieve_scored
 from linkrag.retrieve.linkrag import RetrievedUnit, retrieve_linkrag
-from linkrag.retrieve.rerank import METHODS, rerank, set_diagnostics
+from linkrag.retrieve.rerank import METHODS, rerank
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -94,7 +94,6 @@ def main(argv: list[str] | None = None) -> int:
                      mmr_lambda=rcfg["mmr_lambda"], question=args.question,
                      cross_encoder=rcfg.get("cross_encoder"), device=cfg["device"],
                      modality_gate=rcfg.get("modality_gate", False))
-    retrieved = [(r.unit, r.score) for r in results]
     units = [r.unit for r in results]
 
     # Instrument #1 (DESIGN.md): always report what the retrieved set is made of.

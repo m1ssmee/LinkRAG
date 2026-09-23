@@ -75,11 +75,6 @@ def figure_kind(text: str) -> str:
     return _kind(match.group(1)) if match else "figure"
 
 
-def referenced_numbers(text: str) -> set[int]:
-    """Every figure/table number a paragraph refers to (numbers only, kind-blind)."""
-    return {int(n) for _kindword, n in NUMBERED_REF.findall(text or "")}
-
-
 def referenced(text: str) -> set[tuple[str, int]]:
     """(kind, number) pairs, so "Table 2" does not match "Figure 2"."""
     return {(_kind(k), int(n)) for k, n in NUMBERED_REF.findall(text or "")}

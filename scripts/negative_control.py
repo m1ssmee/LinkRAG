@@ -60,7 +60,7 @@ def control(cfg: dict, args) -> list[str]:
     for t in sorted(set(by_type) | {"audio_slide", "figure_text", "deictic", "same_slide"}):
         L.append(f"| {t} | {by_type.get(t, 0)} | {cross.get(t, 0)} |")
     L.append(f"| **all** | {sum(by_type.values())} | **{sum(cross.values())}** |")
-    L += ["", f"Pairs recorded as unrelated in `links.jsonl` `_meta`: "
+    L += ["", "Pairs recorded as unrelated in `links.jsonl` `_meta`: "
           + (json.dumps(meta.get("unrelated_pairs"), indent=None) if meta.get("unrelated_pairs") else "none") + "",
           "", f"Expected zero cross-file links: **{'PASS' if sum(cross.values()) == 0 else 'FAIL'}**.", ""]
     return L

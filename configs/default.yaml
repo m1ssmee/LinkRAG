@@ -130,7 +130,6 @@ ingest:
   audio_segmentation: sentence   # sentence | fixed
   min_figure_area_px: 10000      # ignore rules, bullets, logos
   figures_dir: data/processed/figures
-  ocr_images: true               # standalone images: pytesseract (needs the tesseract binary)
   # Slide decks caption nothing: 13/18 pilot01 figures had empty content because
   # find_caption looks below the image (a paper convention). OCR the image itself.
   ocr_figures: true
@@ -335,8 +334,6 @@ datasets:
     audio_segment_seconds: 15
     frame_interval_s: 5
     top_k: 4
-  mavils:
-    repo: data/raw/mavils          # clone of github.com/andererka/MaViLS
 
 cost:
   # Cost policy (DESIGN.md, 2026-09-23): the budget for every LLM call defaults to $0,
@@ -372,8 +369,6 @@ dataset:
     sample_seed: 20260923
 
 eval:
-  metrics: [answer_accuracy, evidence_precision, evidence_recall, cross_modal_coverage, citation_faithfulness]
-  report_both_modes: true
   # Judge for gold verification, answer grading and the redundancy metric. Must be a
   # DIFFERENT model from models.llm (the answerer): self-grading is lenient. Preferred
   # default is a local model (e.g. provider: ollama, model: llama3.1:8b, with

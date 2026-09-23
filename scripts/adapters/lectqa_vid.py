@@ -142,7 +142,6 @@ def extract_frames(video: Path, out_dir: Path, every_s: float, min_change: float
     """One frame every `every_s` seconds, kept only if it differs from the last kept
     frame (mean absolute pixel difference on a 64x36 grey thumbnail > min_change)."""
     import av
-    from PIL import Image
     out_dir.mkdir(parents=True, exist_ok=True)
     kept: list[tuple[float, Path]] = []
     last_thumb = None
@@ -256,10 +255,6 @@ def token_f1(pred: str, ref: str) -> float:
     return 2 * prec * rec / (prec + rec)
 
 
-def rouge1(pred: str, ref: str) -> float:
-    return token_f1(pred, ref)  # unigram ROUGE-1 F is the same computation without stop-word/article removal
-
-
 def rouge1_raw(pred: str, ref: str) -> float:
     p = re.findall(r"\w+", pred.lower())
     r = re.findall(r"\w+", ref.lower())
@@ -365,7 +360,7 @@ def run(ids: list[str], cfg: dict, dcfg: dict, modes: list[str], out: Path, repe
         return (statistics.mean(xs), len(xs)) if xs else (float("nan"), 0)
 
     n_videos = len({r["vid"] for r in rows})
-    L = [f"# LectQA-Vid — target T1 — first run", "",
+    L = ["# LectQA-Vid — target T1 — first run", "",
          f"{n_videos} of 100 videos · {len(rows) // (len(modes) * repeats)} QA pairs per mode · "
          f"modes {modes} · k={k} · answerer `{llm.get('model')}` temperature={llm.get('temperature')} · "
          f"repeats {repeats} · transcript: whisper-{cfg['models']['whisper']} · frames every "
@@ -411,7 +406,7 @@ def theirs_report(rows: list[dict], ids: list[str], cfg: dict, llm: dict, modes:
     from linkrag.eval import lectqa_metrics as LM
     out.with_suffix(".jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
     n_videos = len({r["vid"] for r in rows})
-    L = [f"# LectQA-Vid — their metric suite (T1 eqs. 29–36)", "",
+    L = ["# LectQA-Vid — their metric suite (T1 eqs. 29–36)", "",
          f"{n_videos} videos · answerer `{llm.get('model')}` (cache-only replay of stored answers; "
          f"{misses} cache misses skipped) · metrics `linkrag.eval.lectqa_metrics`: set-based token P/R/F1, "
          f"nltk BLEU-4 (no smoothing) and METEOR (alpha 0.9, beta 3, gamma 0.5), ROUGE-1 = unigram recall, "
@@ -463,15 +458,6 @@ def theirs_report(rows: list[dict], ids: list[str], cfg: dict, llm: dict, modes:
 
 
 # ----------------------------------------------------------------- v2: localisation
-
-def _hms(t: str) -> float:
-    """'HH:MM:SS' or 'MM:SS' (both occur in the annotation files) -> seconds."""
-    parts = [float(x) for x in str(t).strip().split(":")]   # 83 stamps are plain seconds ('210.72')
-    while len(parts) < 3:
-        parts.insert(0, 0.0)
-    h, m, s_ = parts[-3:]
-    return h * 3600 + m * 60 + s_
-
 
 def strict_seconds(t: str) -> float | None:
     """A timestamp only when its format is unambiguous: HH:MM:SS or MM:SS with minute and
@@ -1469,7 +1455,6 @@ def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = T
     rates = [rebuild_fixed_index(v, cfg, dcfg) for v in ids]
     rows_fixed, u2 = localise(ids, cfg, dcfg, index_name="index_fixed", label="fixed", cache_only=cache_only, max_cost=max_cost)
     n_q = len({(r["vid"], r["kind"], r["level"]) for r in rows_sent}) and len(rows_sent) // 8
-    first = json.loads(Path("reports/lectqa_vid_first_run.jsonl").read_text().splitlines()[0]) if Path("reports/lectqa_vid_first_run.jsonl").exists() else {}
     L = [f"# LectQA-Vid — second pass ({len(ids)}/100 videos, {n_q} QA pairs)", "",
          f"Subset: the {len(ids)} of the first 35 videos whose YouTube links were still available; 7 were not "
          "(`data/raw/lectqa_vid/fetch_failures.txt`). Every number below is on this 28/100 subset, one run. "

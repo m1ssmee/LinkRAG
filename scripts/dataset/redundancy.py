@@ -18,9 +18,9 @@ from pathlib import Path
 
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
-from linkrag.eval.redundancy import DEFAULT_PAIRS, dump_json, redundancy, role_of, write_report
-from linkrag.eval.verify_gold import entailment_opts, refuse_nli_decisions, verifier_label
-from linkrag.generate.answer import http_completer, judge_completer
+from linkrag.eval.redundancy import DEFAULT_PAIRS, redundancy, role_of, write_report
+from linkrag.eval.verify_gold import dump_json, entailment_opts, refuse_nli_decisions, verifier_label
+from linkrag.generate.answer import judge_completer
 from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, load_manifest
 

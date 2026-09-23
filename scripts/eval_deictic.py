@@ -44,7 +44,6 @@ def main(argv: list[str] | None = None) -> int:
     accept = lambda p: build.get(p, {p})
 
     segs = [r for r in csv.DictReader(open(args.labels, newline=""))]
-    span = {r["segment_id"]: (float(r["start"]), float(r["end"])) for r in segs}
 
     pairs = list(csv.DictReader(open(args.pairs, newline="")))
     by_seg = defaultdict(list)
@@ -216,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
 
     w("## Summary and what these numbers can carry")
     w("")
-    w(f"| metric | value | n |")
+    w("| metric | value | n |")
     w("|---|---:|---:|")
     w(f"| precision on positives | {(100*total_ok/total_n) if total_n else 0:.0f}% "
       f"| {total_n} pairs |")
@@ -238,8 +237,8 @@ def main(argv: list[str] | None = None) -> int:
           f"rather than the slide-agreement proxy used earlier.")
     else:
         w("")
-        w(f"Only one tier appears in the scorable windows, so this evaluation says "
-          f"nothing about whether tiering helps.")
+        w("Only one tier appears in the scorable windows, so this evaluation says "
+          "nothing about whether tiering helps.")
     w("")
     w(f"**The binding constraint has moved.** Before slide-figure clustering only "
       f"{3} of 10 windows were scorable, because most slides yielded no figure unit at "

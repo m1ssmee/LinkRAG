@@ -238,7 +238,6 @@ def ingest_audio(
     path = Path(path)
     if backend not in ("local", "openai"):
         raise ValueError(f"unknown asr_backend {backend!r}: use 'local' or 'openai'")
-    ingest_audio.last_asr_meta = None                  # type: ignore[attr-defined]
     ingest_audio.last_transcript = None                # type: ignore[attr-defined]
     with stage_timer(
         "ingest.audio", file=path.name, seg=segmentation,
@@ -252,7 +251,6 @@ def ingest_audio(
             words, meta = transcribe(path, cfg or {}, prompt=initial_prompt)
             t["asr_backend"] = "openai"
             t["audio_seconds"] = meta["audio_seconds"]
-            ingest_audio.last_asr_meta = meta          # type: ignore[attr-defined]
             if freeze_to:
                 write_transcript(words, freeze_to, path, meta)
                 ingest_audio.last_transcript = str(freeze_to)   # type: ignore[attr-defined]

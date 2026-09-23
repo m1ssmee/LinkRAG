@@ -15,7 +15,7 @@ from linkrag.link.figure_text import (
     figure_number,
     figure_text_scores,
     link_figures_to_text,
-    referenced_numbers,
+    referenced,
 )
 
 
@@ -42,8 +42,8 @@ def test_figure_number_and_references() -> None:
     assert figure_number("Figure 1: attention heatmap") == 1
     assert figure_number("Fig. 12 shows") == 12
     assert figure_number("no number") is None
-    assert referenced_numbers("As Fig. 2 shows, and Figure 10 confirms") == {2, 10}
-    assert referenced_numbers("") == set()
+    assert referenced("As Fig. 2 shows, and Figure 10 confirms") == {("figure", 2), ("figure", 10)}
+    assert referenced("") == set()
 
 
 # ------------------------------------------------------- figure <-> paragraph
