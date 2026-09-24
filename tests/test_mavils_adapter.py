@@ -48,3 +48,28 @@ def test_their_dp_loads_and_decodes_monotone_case():
     S = np.eye(4)
     pairs, _ = m.their_dp()(S, 0.1)
     assert [j for _, j in pairs] == [0, 1, 2, 3]
+
+
+def test_sentence_frames_take_the_first_frame_at_each_timestamp(tmp_path, monkeypatch):
+    import json
+
+    import av
+    import pandas as pd
+    from PIL import Image
+    video = tmp_path / "v.mp4"
+    with av.open(str(video), "w") as out:                  # 10 frames at 1 fps, grey level 20*k
+        st = out.add_stream("mpeg4", rate=1)
+        st.width, st.height, st.pix_fmt = 32, 32, "yuv420p"
+        for k in range(10):
+            frame = av.VideoFrame.from_image(Image.new("RGB", (32, 32), (20 * k,) * 3))
+            for pkt in st.encode(frame):
+                out.mux(pkt)
+        for pkt in st.encode():
+            out.mux(pkt)
+    monkeypatch.setattr(m, "CACHE", tmp_path / "cache")
+    monkeypatch.setattr(m, "video_for", lambda stem: video)
+    monkeypatch.setattr(m, "load_ground_truth", lambda p: pd.DataFrame({"time": [2.0, 0.5, 2.0, 30.0]}))
+    out = m.sentence_frames_for("x")
+    grey = [np.asarray(Image.open(out / f"{i:05d}.jpg").convert("L")).mean() for i in range(4)]
+    assert [round(g / 20) for g in grey] == [2, 1, 2, 9]   # first frame at/after t; past the end -> last frame
+    assert json.loads((out / "done.json").read_text())["past_end"] == 1

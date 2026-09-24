@@ -1061,6 +1061,92 @@ def frames_for(stem: str) -> dict | None:
     return stats
 
 
+def sentence_frames_for(stem: str) -> Path | None:
+    """The frame on screen at each ground-truth sentence timestamp (MaViLS's own frame
+    choice), at native resolution, as CACHE/sentence_frames/<stem>/<sentence>.jpg (JPEG q90:
+    ~12,000 native frames as PNG would be ~12 GB). One sequential decode per video; the
+    first frame at or after each timestamp; sentences past the last frame get the last one."""
+    import av
+    out = CACHE / "sentence_frames" / stem
+    meta = out / "done.json"
+    if meta.exists():
+        return out
+    video = video_for(stem)
+    if video is None:
+        return None
+    times = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{stem}.xlsx")["time"].astype(float).tolist()
+    order = sorted(range(len(times)), key=lambda i: times[i])
+    out.mkdir(parents=True, exist_ok=True)
+    k, last, size = 0, None, None
+    with av.open(str(video)) as container:
+        stream = container.streams.video[0]
+        stream.thread_type = "AUTO"
+        for frame in container.decode(stream):
+            t = float(frame.pts * stream.time_base) if frame.pts is not None else 0.0
+            if k < len(order) and t + 1e-6 >= times[order[k]]:
+                img = frame.to_image()
+                size = img.size
+                while k < len(order) and t + 1e-6 >= times[order[k]]:
+                    img.save(out / f"{order[k]:05d}.jpg", quality=90)
+                    k += 1
+            last = frame
+            if k == len(order):
+                break
+    if k < len(order) and last is not None:
+        img = last.to_image()
+        for i in order[k:]:
+            img.save(out / f"{i:05d}.jpg", quality=90)
+    meta.write_text(json.dumps({"stem": stem, "video": video.name, "sentences": len(times), "size": size,
+                                "past_end": len(order) - k}))
+    return out
+
+
+OCR_SIDE = 960        # OCR reads a frame upscaled to at least this longest side (320 px x 3, as before)
+
+
+def sentence_visual_for(stem: str, cfg: dict, figures_dir: Path) -> dict | None:
+    """sentence x page matrices from the frame at each sentence timestamp (sentence_frames_for):
+    SwiftFormer image score, frame-OCR TF-IDF and BM25 against the page OCR text, plus each
+    frame's OCR word count. OCR per frame is cached by the JPEG's hash; the matrices per lecture."""
+    import hashlib
+    import math
+    from concurrent.futures import ThreadPoolExecutor
+    from PIL import Image
+    from linkrag.index import tokenize
+    from linkrag.link.visual import ocr_frame, render_pages, swiftformer_features, text_similarity
+    path = CACHE / "sentence_visual" / f"{stem}.npz"
+    if path.exists():
+        z = np.load(path)
+        return {k: z[k] for k in z.files}
+    src = sentence_frames_for(stem)
+    if src is None:
+        return None
+    jpgs = sorted(src.glob("*.jpg"))
+    cache = CACHE / "frame_ocr"
+    cache.mkdir(parents=True, exist_ok=True)
+
+    def ocr_one(p: Path) -> str:
+        f = cache / f"{hashlib.sha1(p.read_bytes()).hexdigest()}.txt"
+        if not f.exists():
+            im = Image.open(p)
+            f.write_text(ocr_frame(im, scale=max(1, math.ceil(OCR_SIDE / max(im.size)))))
+        return f.read_text()
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        texts = list(ex.map(ocr_one, jpgs))
+    pages = render_pages(REPO / "data" / "lectures" / LECTURES[stem][0])
+    for p in pages:
+        p.thumbnail((FRAME_SIDE, FRAME_SIDE))
+    page_feats = swiftformer_features(pages, cfg["device"])
+    feats = np.concatenate([swiftformer_features([Image.open(p).convert("RGB") for p in jpgs[i:i + 64]], cfg["device"])
+                            for i in range(0, len(jpgs), 64)])          # chunked: native frames are large
+    page_text = [u.content for u in slide_units(stem, "ocr", figures_dir)[0]]
+    out = {"swiftformer": feats @ page_feats.T, "tfidf": text_similarity(texts, page_text, "tfidf"),
+           "bm25": text_similarity(texts, page_text, "bm25"), "words": np.array([len(tokenize(t)) for t in texts])}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(path, **out)
+    return out
+
+
 def load_slides(stem: str) -> list:
     from PIL import Image
     from linkrag.ingest.video_slides import Slide
@@ -1222,16 +1308,33 @@ def cmd_visual_frames(args, cfg, encoder) -> int:
     return 1 if missing else 0
 
 
-def lecture_matrices(stem: str, cfg: dict, encoder, figures_dir: Path, with_text: bool = False) -> dict:
+def lecture_matrices(stem: str, cfg: dict, encoder, figures_dir: Path, with_text: bool = False,
+                     frame_source: str | None = None) -> dict:
     """Every sentence x page matrix of one lecture: ours and theirs (text), and, when the
     lecture has video, the visual channel per frame->page score and (with_text) the frame-OCR
-    channel per text score. Each sentence takes the row of the frame on screen at its timestamp."""
+    channel per text score. `frame_source` (default `link.align.frame_source`):
+    representative = each sentence takes the row of the representative frame on screen at its
+    timestamp; sentence_time = the frame at the sentence timestamp itself, native resolution
+    (MaViLS's choice; SwiftFormer image score only)."""
+    frame_source = frame_source or cfg["link"]["align"].get("frame_source", "representative")
+    if frame_source not in ("representative", "sentence_time"):
+        raise ValueError(f"unknown frame_source {frame_source!r}: use 'representative' or 'sentence_time'")
     from linkrag.link.visual import segment_visual
     S_o, owner, gt, pages, status = similarity_for(stem, window=0.0, slide_text="ocr", cfg=cfg, encoder=encoder,
                                                    figures_dir=figures_dir)
     d = {"ours": S_o, "theirs": their_similarity_for(stem, cfg=cfg, figures_dir=figures_dir)[0], "owner": owner,
          "gt": gt, "pages": pages, "status": status, "visual": None, "frame_ocr": None}
     if frames_for(stem) is None:                     # no video for this lecture: text columns only
+        return d
+    if frame_source == "sentence_time":
+        from linkrag.link.visual import frame_margin
+        sv = sentence_visual_for(stem, cfg, figures_dir)
+        assert sv["swiftformer"].shape == d["ours"].shape, stem            # one row per sentence
+        d["visual"] = {"swiftformer": sv["swiftformer"]}
+        d["frame_ocr"] = {"tfidf": sv["tfidf"], "bm25": sv["bm25"]}
+        d["frame_of"] = list(range(len(sv["words"])))
+        d["frame_words"] = sv["words"].tolist()
+        d["frame_margin"] = {"swiftformer": frame_margin(sv["swiftformer"])}
         return d
     times = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{stem}.xlsx")["time"].astype(float).tolist()
     slides = load_slides(stem)
