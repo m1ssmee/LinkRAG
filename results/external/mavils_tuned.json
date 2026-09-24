@@ -38,5 +38,13 @@
  "visual_method": "swiftformer",
  "visual_text_weight": 0.75,
  "visual_theirs_weight": 0.5,
- "visual_study": "2026-09-24: frame->page score and visual weight by tune their-F1; weight = share of the min-max scaled visual matrix"
+ "visual_study": "2026-09-24: frame->page score and visual weight by tune their-F1; weight = share of the min-max scaled visual matrix",
+ "frame_ocr_method": "bm25",
+ "visual_frame_ocr_weight": 0.25,
+ "three_way_weights": [
+  0.5,
+  0.25,
+  0.25
+ ],
+ "frame_ocr_study": "2026-09-24: text score, frame_ocr weight and three-way (visual, frame_ocr, theirs) weights by tune their-F1; frames OCR'd at 3x from 320 px"
 }

@@ -1354,9 +1354,120 @@ def cmd_visual(args, cfg, encoder) -> int:
     return 0
 
 
+OCR_COLS = ("ours", "visual+theirs", "frame_ocr", "visual+frame_ocr", "visual+frame_ocr+theirs")
+SIMPLEX = [(a / 4, b / 4, (4 - a - b) / 4) for a in range(5) for b in range(5 - a)]   # step 0.25: 15 points
+PAPER_ALL_FEATURES = 0.82                                                          # their Table 2, 20 lectures
+
+
+def cmd_visual_ocr(args, cfg, encoder) -> int:
+    """Items 3-4 of the frame-OCR task. Tune half only: the frame-OCR text score (TF-IDF vs
+    BM25, by frame_ocr-only their-F1), the frame_ocr weight in visual+frame_ocr (grid step
+    0.25) and the three-way weights of visual+frame_ocr+theirs (simplex, step 0.25). The
+    image score (SwiftFormer) and the visual+theirs weight are the values tuned before
+    (results/external/mavils_tuned.json). Test half once."""
+    from linkrag.link.align import fuse_many
+    a = cfg["link"]["align"]
+    split = split_lectures()
+    tune = split["tune"]
+    tuned = json.loads((EXTERNAL / "mavils_tuned.json").read_text())
+    sigma, vm, wvt = float(tuned["sigma"]), tuned["visual_method"], float(tuned["visual_theirs_weight"])
+    figures_dir = Path(args.figures_dir)
+    data = {stem: lecture_matrices(stem, cfg, encoder, figures_dir, with_text=True) for stem in sorted(LECTURES)}
+
+    def run(stem, col, tm="tfidf", w=0.5, w3=(1 / 3, 1 / 3, 1 / 3)):
+        d = data[stem]
+        V, O = (d["visual"][vm], d["frame_ocr"][tm]) if d["visual"] is not None else (None, None)
+        S = {"ours": lambda: d["ours"],
+             "visual+theirs": lambda: fuse_similarity(d["theirs"], V, "fused_weighted", wvt),
+             "frame_ocr": lambda: fuse_many([O], [1.0]),                         # alone, min-max scaled
+             "visual+frame_ocr": lambda: fuse_similarity(V, O, "fused_weighted", w),
+             "visual+frame_ocr+theirs": lambda: fuse_many([V, O, d["theirs"]], w3)}[col]()
+        return d["gt"], decode(S, d["pages"], d["owner"], a, variant="dp", min_sim=None, flat=0.0, sigma=sigma)
+
+    def mean_paired(stems_, col, **kw):
+        res = [run(s_, col, **kw) for s_ in stems_]
+        f1s = [their_prf(g, p)[2] for g, p in res]
+        prs, covs = zip(*(answered_metrics(g, p) for g, p in res))
+        return float(np.mean(f1s)), f"{np.mean(f1s):.3f} ({np.mean(prs):.3f} / {np.mean(covs):.2f})"
+
+    tm_rows = {tm: mean_paired(tune, "frame_ocr", tm=tm) for tm in ("tfidf", "bm25")}
+    tm = max(tm_rows, key=lambda k: tm_rows[k][0])
+    grid = [0.0, 0.25, 0.5, 0.75, 1.0]
+    w_rows = [(w, *mean_paired(tune, "visual+frame_ocr", tm=tm, w=w)) for w in grid]
+    w_best = max(w_rows, key=lambda r: r[1])[0]
+    s_rows = [(w3, *mean_paired(tune, "visual+frame_ocr+theirs", tm=tm, w3=w3)) for w3 in SIMPLEX]
+    w3_best = max(s_rows, key=lambda r: r[1])[0]
+    kw = {"visual+frame_ocr": {"tm": tm, "w": w_best}, "visual+frame_ocr+theirs": {"tm": tm, "w3": w3_best},
+          "frame_ocr": {"tm": tm}}
+    tuned.update({"frame_ocr_method": tm, "visual_frame_ocr_weight": w_best, "three_way_weights": list(w3_best),
+                  "frame_ocr_study": "2026-09-24: text score, frame_ocr weight and three-way (visual, frame_ocr, theirs) "
+                                     "weights by tune their-F1; frames OCR'd at 3x from 320 px"})
+    (EXTERNAL / "mavils_tuned.json").write_text(json.dumps(tuned, indent=1) + "\n")
+
+    L = ["# MaViLS — frame OCR and three-feature fusion vs their all-features", "",
+         "Their protocol: sentence granularity, page OCR on the slide side, their sklearn F1. Cells: **their F1 "
+         f"(precision-on-answered / coverage)**. Decoder: our DP at the tuned σ = {sigma}, λ={a['jump_penalty']} "
+         f"β={a['back_penalty']} B={a['max_back']}. LLM-free, $0.", "",
+         "Columns: *ours* = our text-only hybrid. *visual+theirs* = the previous best (`mavils_visual.md`: "
+         f"{vm} image score, w = {wvt}). *frame_ocr* = each sentence takes the frame→page **text** row of the frame on screen "
+         "at its timestamp (`mavils_frame_ocr_sanity.md`), min-max scaled. *visual+frame_ocr* = w·frame_ocr + "
+         "(1−w)·visual. *visual+frame_ocr+theirs* = weighted sum of the three, each min-max scaled "
+         "(`linkrag.link.align.fuse_many`): all three of their feature types (image, frame OCR, speech-to-slide text). "
+         "Their published columns: audio-only (Table 1) and all features (Table 2, λ = 0.1).", "",
+         "**Caveat carried from the frames:** frames are one representative per dHash segment, kept at 320 px; the "
+         "text on them is read after a 3× upscale. MaViLS reads the full-resolution frame at each sentence timestamp. "
+         "Re-extracting sentence-time or full-resolution frames was not possible: the videos are no longer available.", "",
+         "## Tune half", "", "| frame-OCR text score | frame_ocr-only tune |", "|---|---:|"]
+    for k, (f1, pr) in tm_rows.items():
+        L.append(f"| {k} | {pr}{' ←' if k == tm else ''} |")
+    L += ["", f"| w (share of frame_ocr, {tm}) | visual+frame_ocr tune |", "|---:|---:|"]
+    for w, f1, pr in w_rows:
+        L.append(f"| {w} | {pr}{' ←' if w == w_best else ''} |")
+    L += ["", "| weights (visual, frame_ocr, theirs) | visual+frame_ocr+theirs tune |", "|---|---:|"]
+    for w3, f1, pr in sorted(s_rows, key=lambda r: -r[1]):
+        L.append(f"| {w3[0]:.2f}, {w3[1]:.2f}, {w3[2]:.2f} | {pr}{' ←' if w3 == w3_best else ''} |")
+    best_col = max(("frame_ocr", "visual+frame_ocr", "visual+frame_ocr+theirs"),
+                   key=lambda c: mean_paired(tune, c, **kw[c])[0])
+    L += ["", f"Chosen on tune: text score **{tm}**, visual+frame_ocr w = **{w_best}**, three-way weights **"
+          f"{w3_best[0]:.2f} / {w3_best[1]:.2f} / {w3_best[2]:.2f}** (visual / frame_ocr / theirs). Best new column on "
+          f"tune: **{best_col}**.", "", "## Test half — reported once", "",
+          "| lecture | " + " | ".join(OCR_COLS) + " | their all-features (T2) |", "|---|" + "---:|" * (len(OCR_COLS) + 1)]
+    test = [s_ for s_ in split["test"] if data[s_]["visual"] is not None]
+    no_video = [s_ for s_ in split["test"] if data[s_]["visual"] is None]
+    wins = {"theirs_all": [0, 0], "visual+theirs": [0, 0]}
+    for s_ in test:
+        cells, f1 = [], {}
+        for col in OCR_COLS:
+            g, p = run(s_, col, **kw.get(col, {}))
+            f1[col] = their_prf(g, p)[2]
+            cells.append(paired(g, p))
+        wins["theirs_all"][f1[best_col] < LECTURES[s_][3]] += 1
+        wins["visual+theirs"][f1[best_col] < f1["visual+theirs"]] += 1
+        L.append(f"| {LECTURES[s_][1]} | " + " | ".join(cells) + f" | {LECTURES[s_][3]:.2f} |")
+    means = {c: mean_paired(test, c, **kw.get(c, {}))[1] for c in OCR_COLS}
+    L.append("| **mean** | " + " | ".join(f"**{means[c]}**" for c in OCR_COLS)
+             + f" | {np.mean([LECTURES[s_][3] for s_ in test]):.2f} |")
+    for s_ in no_video:
+        L.append(f"| {LECTURES[s_][1]} (no video) | {paired(*run(s_, 'ours'))} | — | — | — | — | {LECTURES[s_][3]:.2f} |")
+    with_video = [s_ for s_ in sorted(LECTURES) if data[s_]["visual"] is not None]
+    all_means = {c: mean_paired(with_video, c, **kw.get(c, {}))[1] for c in OCR_COLS}
+    L += ["", f"Best new column on tune: **{best_col}**. On the {len(test)} test lectures with video it beats their "
+          f"all-features F1 on {wins['theirs_all'][0]} and loses {wins['theirs_all'][1]}; against the previous best "
+          f"(visual+theirs) it wins {wins['visual+theirs'][0]} and loses {wins['visual+theirs'][1]} (a tie counts as a "
+          f"win). Their all-features mean on these lectures is {np.mean([LECTURES[s_][3] for s_ in test]):.2f}; "
+          f"{PAPER_ALL_FEATURES} is their 20-lecture average.", "",
+          f"All {len(with_video)} lectures with video (contains the tune half, so the tuned columns are optimistic): "
+          + ", ".join(f"{c} {v}" for c, v in all_means.items()) + ".", ""]
+    out = Path(args.out)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames", "visual", "frame-ocr"])
+    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames", "visual", "frame-ocr",
+                                    "visual-ocr"])
     ap.add_argument("--shuffles", type=int, default=30)
     ap.add_argument("--reuse", action="store_true", help="gate: reuse cached z-scores from the previous run's json")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -1372,7 +1483,8 @@ def main(argv: list[str] | None = None) -> int:
                     "inspect": None, "final": "reports/mavils_final.md", "fused": "reports/mavils_fused.md",
                     "gate": "results/external/mavils_gate_v2.md", "gate-gran": "results/external/mavils_gate_v3.md",
                     "visual-frames": "results/external/mavils_frames.md", "visual": "results/external/mavils_visual.md",
-                    "frame-ocr": "results/external/mavils_frame_ocr_sanity.md"}[args.cmd]
+                    "frame-ocr": "results/external/mavils_frame_ocr_sanity.md",
+                    "visual-ocr": "results/external/mavils_frame_ocr.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
@@ -1381,7 +1493,7 @@ def main(argv: list[str] | None = None) -> int:
     encoder([""])
     return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused,
             "gate": cmd_gate, "gate-gran": cmd_gate_gran, "visual-frames": cmd_visual_frames,
-            "visual": cmd_visual, "frame-ocr": cmd_frame_ocr}[args.cmd](args, cfg, encoder)
+            "visual": cmd_visual, "frame-ocr": cmd_frame_ocr, "visual-ocr": cmd_visual_ocr}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":
