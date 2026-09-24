@@ -29,7 +29,7 @@ Everything else is a component or related work.
 | | Target | Benchmark | Their number we must beat | Our metric |
 |---|---|---|---|---|
 | **T1** | Intra-Video Temporal-Aware RAG — Shafiq, Ejaz, Shah, Kamal, Sohail, Aslam. *CMC* 88(2), art. 96, 2026. doi:10.32604/cmc.2026.081534 | **LectQA-Vid**: 100 CS lecture videos (2–5 min), 3,000 QA pairs (1,500 MCQ + 1,500 open-ended), 80/10/10 split; evaluation subset 1,000 (500 MCQ + 500 open) | Open-ended, *Overall* row of their Table 4 (all in %): **F1 23.52, semantic similarity 74.42** (all-MiniLM-L6-v2 cosine), ROUGE-1 29.76, BLEU 5.58, METEOR 32.41. MCQ, *Overall* row of Table 5: **accuracy 53.43**. Their multimodal-RAG-without-timestamps baseline (Table 6 *Overall*): F1 14.80, similarity 61.00. *Corrected 2026-09-23: this row previously gave semantic similarity 0.71, MCQ accuracy 56.30 % and a Table 6 baseline F1 of 19.62 %; the published tables (read as images from the full-text HTML) say 74.42 %, 53.43 % and 14.80 %.* | Same metrics, same split, same difficulty breakdown (Simple / Hard / Very Hard / Overall), plus evidence recall and modality coverage which they do not report. |
-| **T2** | MaViLS — Anderer, Reich, Wölfel. *Interspeech 2024*, pp. 1375–1379. doi:10.21437/Interspeech.2024-978. arXiv:2409.16765 | **MaViLS**: 20 lectures (MIT OCW, Tübingen, DeepMind), >22 h video, 12,830 segments; every spoken sentence hand-labelled with a slide index (−1 = no slide). github.com/andererka/MaViLS | Per-frame F1 against ground truth, ignoring −1 labels. *Average* row of their Table 1: **audio-transcript-only 0.53**, OCR-text-only 0.76, image-only 0.64, SIFT 0.56; Table 2 / §4.2: **all three features combined, λ_jump = 0.1: 0.82**. | Same F1 definition, per lecture and average. **Our text setting is their audio column** — a transcript aligned to a slide PDF — so 0.53 is the like-for-like number there. *Since 2026-09-24 (findings 14–15) we also use the video frames (19 of 20 lectures), image and frame OCR, so 0.82 is now a direct comparison: 0.810 vs their 0.80 on the 9 test lectures with video.* |
+| **T2** | MaViLS — Anderer, Reich, Wölfel. *Interspeech 2024*, pp. 1375–1379. doi:10.21437/Interspeech.2024-978. arXiv:2409.16765 | **MaViLS**: 20 lectures (MIT OCW, Tübingen, DeepMind), >22 h video, 12,830 segments; every spoken sentence hand-labelled with a slide index (−1 = no slide). github.com/andererka/MaViLS | Per-frame F1 against ground truth, ignoring −1 labels. *Average* row of their Table 1: **audio-transcript-only 0.53**, OCR-text-only 0.76, image-only 0.64, SIFT 0.56; Table 2 / §4.2: **all three features combined, λ_jump = 0.1: 0.82**. | Same F1 definition, per lecture and average. **Our text setting is their audio column** — a transcript aligned to a slide PDF — so 0.53 is the like-for-like number there. *Since 2026-09-24 (findings 14–16) we also use the video frames (19 of 20 lectures): image, frame OCR, and the frame at each sentence's timestamp. So 0.82 is now a direct comparison: 0.853 vs their 0.80 on the 9 test lectures with video, which is parity (paired 95 % CI −0.05 to +0.16).* |
 
 What the targets already have, stated plainly so it is not re-claimed as ours:
 
@@ -447,6 +447,54 @@ explicit instruction.
      at parity. What remains is camera-heavy video, full-resolution sentence-time frames
      (which need the videos) and the missing Climate policies video. This is still an
      alignment result only: the pilot corpus has no video, so no retrieval number changes.
+
+16. **MaViLS final: with frames taken at each sentence's timestamp, the three-feature
+   alignment reaches 0.853 against their 0.80 on the same 9 test lectures. That is
+   numerically above, but within lecture-to-lecture noise: the honest label is parity.**
+   (`results/external/mavils_visibility_gate.md`, `mavils_final_round.md`, 2026-09-24;
+   LLM-free, $0.)
+   - **Caveats first.**
+     - *Coverage.* 9 test lectures: Climate policies has no video.
+     - *Variance.* The paired per-lecture differences to their numbers run from −0.22 (Short
+       range) to +0.34 (Phonetics). The 95 % bootstrap interval of the mean difference,
+       [−0.050, +0.161], includes zero.
+     - *The 0.82.* Our 0.853 clears their 20-lecture average of 0.82, but that is not a
+       paired comparison. On the same 9 lectures their mean is 0.80, and the +0.05 is inside
+       the noise above.
+     - *Test-half exposure.* The test half has now been run in three rounds (findings 14,
+       15, 16). Every threshold and weight was set on the tune half, but the decision to
+       run further rounds, and what to try in them, was informed by earlier test results
+       (Reinforcement, Numerics). The 10-lecture tune half has set, across the three rounds:
+       the image score, the text score, four weight sets and two gate settings.
+     - *Their numbers.* The 0.80 is their published per-lecture figures, decoded by their
+       DP.
+     - *Frames.* Sentence-time frames are native resolution, from 320×240 to 1280×720,
+       stored as JPEG q90.
+   - **What changed.**
+     - *The slide-visibility gate* (`slide_visible`). A frame counts as a slide if OCR reads
+       at least one word or its image match beats the runner-up by more than 0.02. Otherwise
+       its image and frame-OCR rows are neutral.
+     - *Sentence-time frames* (`link.align.frame_source: sentence_time`). The frame at each
+       sentence timestamp, MaViLS's own choice, at native resolution.
+   - **Test half, run once:** previous best 0.810, + gate 0.809, + sentence-time 0.850,
+     **+ both 0.853** (chosen on tune: 0.878).
+     - *The gate.* It gained +0.031 on tune but nothing on test (−0.001 on representative
+       frames, +0.003 on sentence-time). It does not generalise here.
+     - *Sentence-time frames* did the work. Frame text went from 52 % to 75 % of frames on
+       average, and Numerics from 56 % to 99 %.
+   - **Per lecture (+ both vs their all-features).** 6 wins, 3 losses.
+     - *Numerics* now wins, 0.89 vs 0.81 (it was 0.71).
+     - *Reinforcement* improves, 0.52 → 0.67, but still loses to 0.75.
+     - *Short range* falls with sentence-time frames, 0.84 → 0.58 vs their 0.80. This was
+       not investigated on the test half, so as not to tune on it.
+     - *ML for health*: 0.91 vs 0.95.
+   - **Verdict (the sentence for the paper).** On MaViLS, combining speech-to-slide text,
+     frame OCR and image features, taken from the frame at each sentence's timestamp, our
+     alignment reaches a mean F1 of 0.853 on the 9 held-out lectures with video, against
+     0.80 for MaViLS's published all-features result on the same lectures (6 wins, 3
+     losses). The paired difference (+0.055, 95 % CI −0.050 to +0.161) is within
+     lecture-to-lecture variation, so we report parity with their result, not an
+     improvement.
 
 ### Design changes recorded against the verified-gold result (2026-09-21)
 
