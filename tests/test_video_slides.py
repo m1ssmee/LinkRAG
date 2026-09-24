@@ -37,6 +37,8 @@ def test_segments_transitions_and_revisits():
     assert slides[1].intervals == [(6.0, 11.0)]
     assert slide_at(slides, 3.0) == 0 and slide_at(slides, 7.5) == 1 and slide_at(slides, 12.0) == 0
     assert slide_at(slides, 20.0) is None
+    kept = segment_slides(frames, max_dist=10, min_dur=2.0, step=1.0, dedup=False)   # the revisit stays its own slide
+    assert [s.intervals for s in kept] == [[(0.0, 6.0)], [(6.0, 11.0)], [(11.0, 15.0)]]
 
 
 def test_figure_boxes_find_the_figure_not_the_text_or_a_corner_logo():

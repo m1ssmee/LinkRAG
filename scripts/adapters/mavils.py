@@ -1002,9 +1002,142 @@ def cmd_gate_gran(args, cfg, encoder) -> int:
     return 0
 
 
+# ----------------------------------------------------------------- visual channel
+
+VIDEO_DIR = REPO / "data" / "video"      # the Kaggle download (the repo ships no video)
+FRAME_SIDE = 320                         # frames and pages are compared at this longest side
+# Segmentation for the visual channel: a new frame on any change above 2 bits, and no revisit
+# merging. The LectQA default (10 bits, revisits merged) merged distinct slides that share a
+# template: Decarbonization kept 28 frames for a 45-page deck, Climate & Cities 25 for 44.
+# Splitting too finely costs only disk; merging loses the slide. Set once, before any F1.
+FRAME_MAX_DIST = 2
+# "Confident" frame->page match: the best page beats the runner-up by more than this.
+# Set before any frame was scored; a sanity check only, never a tuned quantity.
+MARGIN = {"dhash": 4 / 64, "swiftformer": 0.05}
+
+
+# ground-truth stem -> video in the Kaggle zip, checked by duration (every label run ends within
+# 0.6 min of its video's end). The zip has no climate-policy video: its `clinical_care` file is a
+# medicine lecture (frames OCR "Goals of Medicine"), so climate_science_policy_MIT2 has none.
+# physics.mp4 and physics_high_res.mp4 are the same 79.3 min; the high-res one is used.
+VIDEOS = {
+    "ML_for_health_MIT": "ML_for_health_high_res.mp4", "cities_and_decarbonization": "cities_and_decarbonization_standard_res.mp4",
+    "climate_and_cities": "cities_and_climate_high_res.mp4", "cognitive_robotics_MIT": "cognitive_robotics_high_res.mp4",
+    "computer_vision_2_2": "computer_vision_2_2_high_res.mp4", "creating_breakthrough_products_MIT": "creating_breakthrough_products_MIT.mp4",
+    "cryptocurrency_MIT": "cryptocurrency_high_res.mp4", "deeplearning": "deep_learning_high_res.mp4",
+    "image_processing": "image_processing_high_res.mp4", "numerics": "numerics_high_res.mp4", "phonetics": "phonetics_high_res.mp4",
+    "physics": "physics_high_res.mp4", "psychology": "psychology_high_res.mp4",
+    "reinforcement_learning": "reinforcement_learning_high_res.mp4", "sensory_systems": "sensory_systems_high_res.mp4",
+    "short_range": "short_range_MIT.mp4", "solar_resource": "solar_resource_high_res.mp4",
+    "team_dynamics_game_design_MIT": "team_dynamics_high_res.mp4", "theory_of_computation": "theory_of_computation_high_res.mp4",
+}
+
+
+def video_for(stem: str) -> Path | None:
+    p = VIDEO_DIR / VIDEOS[stem] if stem in VIDEOS else None
+    return p if p is not None and p.exists() else None
+
+
+def frames_for(stem: str) -> dict | None:
+    """Representative frames (1 fps dHash segmentation, `linkrag.ingest.video_slides`) with
+    their on-screen intervals, cached in CACHE/frames/<stem>/. Only these are kept."""
+    from linkrag.ingest.video_slides import sample_frames, segment_slides
+    out = CACHE / "frames" / stem
+    meta = out / "slides.json"
+    if meta.exists():
+        return json.loads(meta.read_text())
+    video = video_for(stem)
+    if video is None:
+        return None
+    frames = sample_frames(video, 1.0, max_side=FRAME_SIDE)
+    slides = segment_slides(frames, max_dist=FRAME_MAX_DIST, dedup=False)
+    out.mkdir(parents=True, exist_ok=True)
+    for sl in slides:
+        sl.image.save(out / f"s{sl.index:04d}.png")
+    stats = {"stem": stem, "video": video.name, "video_bytes": video.stat().st_size,
+             "video_s": round(frames[-1][0] + 1.0, 1) if frames else 0.0, "sampled": len(frames), "kept": len(slides),
+             "intervals": [[list(iv) for iv in sl.intervals] for sl in slides]}
+    meta.write_text(json.dumps(stats))
+    return stats
+
+
+def load_slides(stem: str) -> list:
+    from PIL import Image
+    from linkrag.ingest.video_slides import Slide
+    stats = json.loads((CACHE / "frames" / stem / "slides.json").read_text())
+    return [Slide(index=k, intervals=[tuple(iv) for iv in ivs],
+                  image=Image.open(CACHE / "frames" / stem / f"s{k:04d}.png").convert("RGB"))
+            for k, ivs in enumerate(stats["intervals"])]
+
+
+def frame_page_for(stem: str, cfg: dict) -> dict[str, np.ndarray]:
+    """frame x page similarity by dHash and by SwiftFormer-xs, cached. Pages are rendered
+    and shrunk to the frames' longest side."""
+    from linkrag.link.visual import dhash_similarity, render_pages, swiftformer_similarity
+    path = CACHE / "visual" / f"{stem}.npz"
+    if path.exists():
+        z = np.load(path)
+        return {"dhash": z["dhash"], "swiftformer": z["swiftformer"]}
+    frames = [sl.image for sl in load_slides(stem)]
+    pages = render_pages(REPO / "data" / "lectures" / LECTURES[stem][0])
+    for p in pages:
+        p.thumbnail((FRAME_SIDE, FRAME_SIDE))
+    fp = {"dhash": dhash_similarity(frames, pages), "swiftformer": swiftformer_similarity(frames, pages, cfg["device"])}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(path, **fp)
+    return fp
+
+
+def cmd_visual_frames(args, cfg, encoder) -> int:
+    """Items 1-2: representative frames and frame->page similarity for every lecture."""
+    from linkrag.link.visual import confident_rate
+    rows, missing = [], []
+    for stem in sorted(LECTURES):
+        st = frames_for(stem)
+        if st is None:
+            missing.append(stem)
+            continue
+        fp = frame_page_for(stem, cfg)
+        disk = sum(p.stat().st_size for p in (CACHE / "frames" / stem).glob("*.png"))
+        conf = {k: confident_rate(fp[k], MARGIN[k]) for k in fp}
+        agree = float(np.mean(fp["dhash"].argmax(1) == fp["swiftformer"].argmax(1)))
+        rows.append((stem, st, disk, fp["dhash"].shape, conf, agree))
+        print(f"{stem}: {st['kept']} frames from {st['video_s'] / 60:.0f} min, confident dhash {conf['dhash']:.2f} "
+              f"swiftformer {conf['swiftformer']:.2f}")
+    L = ["# MaViLS — representative frames and frame→page similarity", "",
+         f"Videos: the MaViLS Kaggle dataset (their README; the GitHub repo ships none). Frames: 1 fps, shrunk to "
+         f"{FRAME_SIDE} px on the longest side, segmented by 64-bit dHash (`linkrag.ingest.video_slides.segment_slides`: "
+         f"a new segment when consecutive frames differ by > {FRAME_MAX_DIST} bits, segments < 2 s merged, revisits "
+         "**not** merged: at the LectQA default of 10 bits with revisit merging, slides sharing a template collapsed, "
+         "e.g. Decarbonization kept 28 frames for a 45-page deck). One representative frame per segment is kept "
+         "(`data/processed/mavils/frames/`, not tracked), with its intervals; the unzipped videos are removed after "
+         "extraction (the Kaggle zip is the source). Pages: rendered from their PDFs and shrunk to the same size. "
+         "LLM-free, $0.", "",
+         "Frame→page scores (`linkrag.link.visual`): **dHash** 1 − Hamming/64; **SwiftFormer-xs** "
+         f"(`{'MBZUAI/swiftformer-xs'}`, MaViLS's own image model) cosine of the flattened last hidden state. "
+         f"*Confident* = the best page beats the runner-up by more than {MARGIN['dhash']:.4f} (dHash) / "
+         f"{MARGIN['swiftformer']} (SwiftFormer), margins set before any frame was scored. This is a sanity check, "
+         "not an accuracy: no frame label is used.", "",
+         "| lecture | video min | frames kept | frame disk | pages | confident dHash | confident SwiftFormer | same best page |",
+         "|---|---:|---:|---:|---:|---:|---:|---:|"]
+    for stem, st, disk, shape, conf, agree in rows:
+        L.append(f"| {LECTURES[stem][1]} | {st['video_s'] / 60:.0f} | {st['kept']} | {disk / 1e6:.1f} MB | {shape[1]} | "
+                 f"{conf['dhash']:.2f} | {conf['swiftformer']:.2f} | {agree:.2f} |")
+    if rows:
+        L.append(f"| **total / mean** | {sum(r[1]['video_s'] for r in rows) / 60:.0f} | {sum(r[1]['kept'] for r in rows)} | "
+                 f"{sum(r[2] for r in rows) / 1e6:.1f} MB | | {np.mean([r[4]['dhash'] for r in rows]):.2f} | "
+                 f"{np.mean([r[4]['swiftformer'] for r in rows]):.2f} | {np.mean([r[5] for r in rows]):.2f} |")
+    if missing:
+        L += ["", f"**No video found for {len(missing)} lecture(s):** " + ", ".join(missing) + "."]
+    out = Path(args.out)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 1 if missing else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran"])
+    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames"])
     ap.add_argument("--shuffles", type=int, default=30)
     ap.add_argument("--reuse", action="store_true", help="gate: reuse cached z-scores from the previous run's json")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -1018,7 +1151,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.out is None:
         args.out = {"run": "reports/mavils_alignment.md", "study": "reports/mavils_heldout_study.md",
                     "inspect": None, "final": "reports/mavils_final.md", "fused": "reports/mavils_fused.md",
-                    "gate": "results/external/mavils_gate_v2.md", "gate-gran": "results/external/mavils_gate_v3.md"}[args.cmd]
+                    "gate": "results/external/mavils_gate_v2.md", "gate-gran": "results/external/mavils_gate_v3.md",
+                    "visual-frames": "results/external/mavils_frames.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
@@ -1026,7 +1160,8 @@ def main(argv: list[str] | None = None) -> int:
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
     return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused,
-            "gate": cmd_gate, "gate-gran": cmd_gate_gran}[args.cmd](args, cfg, encoder)
+            "gate": cmd_gate, "gate-gran": cmd_gate_gran,
+            "visual-frames": cmd_visual_frames}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":

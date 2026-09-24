@@ -48,19 +48,24 @@ class Slide:
     image: Any = None                                   # PIL image of the representative frame
 
 
-def sample_frames(video: str | Path, fps: float = 1.0) -> list[tuple[float, Any]]:
-    """(time_s, PIL image) at `fps`, decoded with PyAV."""
+def sample_frames(video: str | Path, fps: float = 1.0, max_side: int | None = None) -> list[tuple[float, Any]]:
+    """(time_s, PIL image) at `fps`, decoded with PyAV. `max_side` shrinks each kept
+    frame on read, so an hour of lecture fits in memory (5,400 frames)."""
     import av
     out: list[tuple[float, Any]] = []
     next_t, step = 0.0, 1.0 / fps
     with av.open(str(video)) as container:
         stream = container.streams.video[0]
+        stream.thread_type = "AUTO"
         for frame in container.decode(stream):
             t = float(frame.pts * stream.time_base) if frame.pts is not None else 0.0
             if t + 1e-6 < next_t:
                 continue
             next_t = t + step
-            out.append((t, frame.to_image()))
+            im = frame.to_image()
+            if max_side:
+                im.thumbnail((max_side, max_side))
+            out.append((t, im))
     return out
 
 
@@ -76,8 +81,10 @@ def hamming(a: int, b: int) -> int:
 
 
 def segment_slides(frames: list[tuple[float, Any]], *, max_dist: int = 10, min_dur: float = 2.0,
-                   step: float = 1.0) -> list[Slide]:
-    """Frames -> slides (segmented, transitions merged, revisits deduplicated)."""
+                   step: float = 1.0, dedup: bool = True) -> list[Slide]:
+    """Frames -> slides (segmented, transitions merged, revisits deduplicated unless `dedup`
+    is off: then every segment is its own slide, so two slides on one template that the
+    64-bit hash cannot tell apart are never merged)."""
     if not frames:
         return []
     hashes = [dhash(img) for _, img in frames]
@@ -99,7 +106,7 @@ def segment_slides(frames: list[tuple[float, Any]], *, max_dist: int = 10, min_d
     slides: list[Slide] = []
     for s, rep in merged:
         start, end = frames[s[0]][0], frames[s[-1]][0] + step
-        match = next((sl for sl in slides if hamming(sl.hash, hashes[rep]) <= max_dist), None)
+        match = next((sl for sl in slides if hamming(sl.hash, hashes[rep]) <= max_dist), None) if dedup else None
         if match is None:
             slides.append(Slide(index=len(slides), intervals=[(start, end)], hash=hashes[rep],
                                 frame_time=frames[rep][0], image=frames[rep][1]))
