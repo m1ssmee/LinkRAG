@@ -42,7 +42,8 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 from linkrag.core import EvidenceUnit, Location, load_config, setup_logging
 from linkrag.index import default_encoder
 from linkrag.ingest.pdf import ingest_pdf
-from linkrag.link.align import abstain, align_monotonic, align_naive, fuse_similarity, relatedness_gate, similarity_matrix
+from linkrag.link.align import (abstain, align_monotonic, align_naive, distiluse_similarity, fuse_similarity,
+                                relatedness_gate, similarity_matrix)
 
 # ground-truth stem -> (slides PDF, their Table 1 name, Table 1 audio F1, Table 2 combined F1 @ lambda 0.1)
 LECTURES = {
@@ -234,13 +235,9 @@ def their_similarity_for(stem: str, *, cfg: dict, figures_dir: Path):
     if path.exists():
         z = np.load(path)
         return z["S"], z["owner"], gt, z["pages"]
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer("sentence-transformers/distiluse-base-multilingual-cased", device=cfg["device"])
     audio, owner = sentence_units(df, stem)
     slides, _ = slide_units(stem, "ocr", figures_dir)
-    a = model.encode([u.content for u in audio], convert_to_numpy=True, normalize_embeddings=True)
-    b = model.encode([u.content for u in slides], convert_to_numpy=True, normalize_embeddings=True)
-    S = (a @ b.T).astype(np.float64)
+    S = distiluse_similarity(audio, slides, device=cfg["device"])
     pages = np.array([u.location.page for u in slides])
     path.parent.mkdir(parents=True, exist_ok=True)
     np.savez(path, S=S, owner=np.array(owner), pages=pages)
