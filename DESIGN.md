@@ -366,6 +366,49 @@ explicit instruction.
      the full-context ceiling. A retrieval claim needs material that does not fit in the
      context.
 
+14. **MaViLS: the video frames carry the alignment. A visual channel lifts our text-only
+   F1 from about 0.49 to 0.76 and comes within 0.035 of their all-features result, but still
+   loses to it on 6 of 9 test lectures.** (`results/external/mavils_frames.md`,
+   `mavils_visual.md`, 2026-09-24; LLM-free, $0.)
+   - **Caveats first.**
+     - *Coverage.* 19 of 20 lectures have video. The MaViLS Kaggle zip has no video for
+       Climate policies, a test-half lecture, so every test number is a paired mean over 9
+       lectures; that lecture is shown text-only, outside the mean.
+     - *Segmentation.* It differs from LectQA's: a new frame on any change above 2 bits, and
+       revisits not merged. At the LectQA default, slides sharing a template collapsed
+       (Decarbonization kept 28 frames for a 45-page deck). This was set once, from deck
+       page counts, before any F1 was computed.
+     - *Frame timing.* Each sentence takes the representative frame of the segment on
+       screen at its timestamp, not the frame at that instant as MaViLS does.
+     - *SwiftFormer.* Preprocessing is done by hand, with one resize instead of their two.
+     - *What their number includes.* Their all-features number also uses frame OCR, which
+       we do not, and their own DP. It is a published per-lecture figure, not re-run.
+     - *Tuning.* Two quantities were tuned on the tune half: the frame→page score and the
+       visual weight.
+   - **What changed.** `linkrag.link.visual` scores representative frames against rendered
+     deck pages, by dHash and by SwiftFormer-xs (MaViLS's own image model). Each sentence
+     then takes its frame's row. `align()` gained `visual`, `visual+text` and
+     `visual+theirs`.
+   - **Tune half.** SwiftFormer beats dHash clearly (visual-only 0.691 vs 0.315). The
+     chosen weights are visual+text w = 0.75 and visual+theirs w = 0.5.
+   - **Test half, reported once** (9 lectures, their F1): our text 0.426, their text
+     0.489, fused text 0.493. **Visual 0.710, visual+text 0.764, visual+theirs 0.765.**
+     Their published audio-only mean is 0.47 and all-features 0.80 on the same lectures.
+     visual+theirs beats our text-only on 9 of 9 lectures and their all-features on 3 of 9.
+   - **Where it helps and where it does not.**
+     - *Helps:* lectures whose speech barely matches the slide text. Phonetics goes from
+       0.16 (their text) to 0.84–0.94; ML for health goes from 0.34 (ours) to 0.95.
+     - *Does not help:* camera-heavy videos. On Reinforcement (speaker shots; 1,141 frames)
+       visual alone reaches 0.13 and the best fusion 0.45, against their 0.75. Solar
+       resource reaches at most 0.55.
+     - The label-free sanity check had already flagged how often the frame→page match is
+       ambiguous: the best page beat the runner-up clearly for only 20 % of frames. The DP
+       still uses the relative scores.
+   - **Consequence.** On MaViLS the remaining gap to their 0.82 is visual, not textual.
+     Frame OCR, the one feature of theirs we lack, is the next candidate. This is an
+     alignment result only: the pilot corpus has no video, so no LinkRAG retrieval number
+     changes.
+
 ### Design changes recorded against the verified-gold result (2026-09-21)
 
 Recorded as design changes, not retunes: each has a config switch that reproduces
