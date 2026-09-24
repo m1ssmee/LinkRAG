@@ -1222,6 +1222,28 @@ def cmd_visual_frames(args, cfg, encoder) -> int:
     return 1 if missing else 0
 
 
+def lecture_matrices(stem: str, cfg: dict, encoder, figures_dir: Path, with_text: bool = False) -> dict:
+    """Every sentence x page matrix of one lecture: ours and theirs (text), and, when the
+    lecture has video, the visual channel per frame->page score and (with_text) the frame-OCR
+    channel per text score. Each sentence takes the row of the frame on screen at its timestamp."""
+    from linkrag.link.visual import segment_visual
+    S_o, owner, gt, pages, status = similarity_for(stem, window=0.0, slide_text="ocr", cfg=cfg, encoder=encoder,
+                                                   figures_dir=figures_dir)
+    d = {"ours": S_o, "theirs": their_similarity_for(stem, cfg=cfg, figures_dir=figures_dir)[0], "owner": owner,
+         "gt": gt, "pages": pages, "status": status, "visual": None, "frame_ocr": None}
+    if frames_for(stem) is None:                     # no video for this lecture: text columns only
+        return d
+    times = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{stem}.xlsx")["time"].astype(float).tolist()
+    slides = load_slides(stem)
+    fp = frame_page_for(stem, cfg)
+    assert list(pages) == list(range(1, fp["dhash"].shape[1] + 1)), stem     # columns = deck pages, in order
+    d["visual"] = {k: segment_visual(times, slides, fp[k]) for k in fp}
+    if with_text:
+        ft = frame_text_page_for(stem, figures_dir)
+        d["frame_ocr"] = {k: segment_visual(times, slides, ft[k]) for k in ft}
+    return d
+
+
 VISUAL_COLS = ("ours", "theirs", "fused", "visual", "visual+text", "visual+theirs")
 
 
@@ -1230,7 +1252,6 @@ def cmd_visual(args, cfg, encoder) -> int:
     timestamp (`linkrag.link.visual.segment_visual`). Tune half only: the frame->page score
     (dHash vs SwiftFormer, by visual-only their-F1) and the visual weight in visual+text and
     visual+theirs (grid 0/.25/.5/.75/1). Test half once. Decoder: our DP at the tuned sigma."""
-    from linkrag.link.visual import segment_visual
     a = cfg["link"]["align"]
     split = split_lectures()
     tune, test = split["tune"], split["test"]
@@ -1239,17 +1260,8 @@ def cmd_visual(args, cfg, encoder) -> int:
     figures_dir = Path(args.figures_dir)
     data = {}
     for stem in sorted(LECTURES):
-        S_o, owner, gt, pages, status = similarity_for(stem, window=0.0, slide_text="ocr", cfg=cfg, encoder=encoder,
-                                                       figures_dir=figures_dir)
-        S_t = their_similarity_for(stem, cfg=cfg, figures_dir=figures_dir)[0]
-        times = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{stem}.xlsx")["time"].astype(float)
-        if frames_for(stem) is None:                 # no video for this lecture: text columns only
-            data[stem] = (S_o, S_t, None, owner, gt, pages, status)
-            continue
-        fp = frame_page_for(stem, cfg)
-        assert list(pages) == list(range(1, fp["dhash"].shape[1] + 1)), stem     # columns = deck pages, in order
-        V = {k: segment_visual(times.tolist(), load_slides(stem), fp[k]) for k in fp}
-        data[stem] = (S_o, S_t, V, owner, gt, pages, status)
+        m = lecture_matrices(stem, cfg, encoder, figures_dir)
+        data[stem] = (m["ours"], m["theirs"], m["visual"], m["owner"], m["gt"], m["pages"], m["status"])
 
     def run(stem, col, vm, w):
         S_o, S_t, V, owner, gt, pages, _ = data[stem]

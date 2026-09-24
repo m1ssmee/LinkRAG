@@ -63,3 +63,22 @@ def test_text_similarity_tfidf_and_bm25_prefer_the_matching_page():
     with pytest.raises(ValueError, match="text similarity"):
         text_similarity(frames, pages, "jaccard")
 
+
+def test_align_frame_ocr_options_and_three_way_fusion():
+    from linkrag.link.align import fuse_many
+    audio = [EvidenceUnit(id=f"a{i}", modality="audio", content="x", source_file="a", location=Location(start_s=i, end_s=i + 1))
+             for i in range(3)]
+    slides = [EvidenceUnit(id=f"p{j}", modality="text", content="y", source_file="d", location=Location(page=j + 1))
+              for j in range(3)]
+    O, V = np.eye(3), np.zeros((3, 3))
+    got = align(audio, slides, encoder=None, similarity="frame_ocr", frame_ocr=O, jump_penalty=0.0, skip_penalty=0.0)
+    assert got.path == [0, 1, 2]
+    got = align(audio, slides, encoder=None, similarity="visual+frame_ocr", visual=V, frame_ocr=O, fusion_weight=1.0,
+                jump_penalty=0.0, skip_penalty=0.0)
+    assert got.path == [0, 1, 2]                                   # weight 1 = frame OCR alone
+    F = fuse_many([V, O, 2 * O], [0.25, 0.25, 0.5])
+    assert np.allclose(F, 0.75 * np.eye(3))                        # each min-max scaled; V is all zeros
+    with pytest.raises(ValueError, match="three fusion_weights"):
+        align(audio, slides, encoder=None, similarity="visual+frame_ocr+theirs", visual=V, frame_ocr=O)
+    with pytest.raises(ValueError, match="frame_ocr"):
+        align(audio, slides, encoder=None, similarity="frame_ocr")

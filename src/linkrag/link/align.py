@@ -226,6 +226,14 @@ def fuse_similarity(ours: np.ndarray, theirs: np.ndarray, method: str = "fused_w
     raise ValueError(f"unknown fusion {method!r}: use 'fused_max' or 'fused_weighted'")
 
 
+def fuse_many(matrices: Sequence[np.ndarray], weights: Sequence[float]) -> np.ndarray:
+    """Weighted sum of several same-shape similarity matrices, each min-max scaled over the
+    whole matrix first (as `fuse_similarity`). The weights are tuned quantities."""
+    if len(matrices) != len(weights) or len({m.shape for m in matrices}) != 1:
+        raise ValueError("fuse_many needs one weight per matrix and matrices of one shape")
+    return sum(float(w) * _minmax(m) for m, w in zip(matrices, weights))
+
+
 def align_naive(similarity: np.ndarray) -> list[int]:
     """argmax per segment, independently. No sequence structure -- the P2-style
     ablation. Nothing stops it assigning slide 20 then slide 3 then slide 20."""
@@ -407,21 +415,32 @@ def align(
     fusion_weight: float = 0.5,
     device: str = "cpu",
     visual: np.ndarray | None = None,
+    frame_ocr: np.ndarray | None = None,
+    fusion_weights: Sequence[float] | None = None,
 ) -> Alignment:
     """`similarity`: ours (bge-m3 + BM25 + IDF hybrid, the default), theirs (MaViLS's
     distiluse cosine), fused_max, fused_weighted -- see `fuse_similarity`; visual (the
     segment x page matrix passed as `visual`, `linkrag.link.visual`), visual+text and
-    visual+theirs (fusion_weight*visual + (1-fusion_weight)*text, each min-max scaled)."""
+    visual+theirs (fusion_weight*visual + (1-fusion_weight)*text, each min-max scaled);
+    frame_ocr (segment x page matrix of the text on the frame, passed as `frame_ocr`),
+    visual+frame_ocr (fusion_weight*frame_ocr + (1-fusion_weight)*visual) and
+    visual+frame_ocr+theirs (`fuse_many` with `fusion_weights` for visual, frame_ocr, theirs)."""
     if method not in ("monotonic", "naive"):
         raise ValueError(f"unknown alignment method {method!r}: use 'monotonic' or 'naive'")
-    if similarity not in ("ours", "theirs", "fused_max", "fused_weighted", "visual", "visual+text", "visual+theirs"):
+    if similarity not in ("ours", "theirs", "fused_max", "fused_weighted", "visual", "visual+text", "visual+theirs",
+                          "frame_ocr", "visual+frame_ocr", "visual+frame_ocr+theirs"):
         raise ValueError(f"unknown similarity {similarity!r}")
     if similarity.startswith("visual") and visual is None:
         raise ValueError(f"similarity {similarity!r} needs the segment x page `visual` matrix")
+    if "frame_ocr" in similarity and frame_ocr is None:
+        raise ValueError(f"similarity {similarity!r} needs the segment x page `frame_ocr` matrix")
+    if similarity == "visual+frame_ocr+theirs" and (fusion_weights is None or len(fusion_weights) != 3):
+        raise ValueError("visual+frame_ocr+theirs needs three fusion_weights (visual, frame_ocr, theirs)")
     weights = weights or {}
     with stage_timer("link.align", method=method, similarity=similarity,
                      n=len(audio_units), m=len(slide_units)) as t:
-        ours = None if similarity in ("theirs", "visual", "visual+theirs") else similarity_matrix(
+        ours = None if similarity in ("theirs", "visual", "visual+theirs", "frame_ocr", "visual+frame_ocr",
+                                      "visual+frame_ocr+theirs") else similarity_matrix(
             audio_units, slide_units, encoder=encoder,
             w_dense=weights.get("dense", 0.6),
             w_bm25=weights.get("bm25", 0.25),
@@ -433,10 +452,15 @@ def align(
             sim = visual
         elif similarity == "visual+text":
             sim = fuse_similarity(ours, visual, "fused_weighted", fusion_weight)
+        elif similarity == "frame_ocr":
+            sim = frame_ocr
+        elif similarity == "visual+frame_ocr":
+            sim = fuse_similarity(visual, frame_ocr, "fused_weighted", fusion_weight)
         else:
             theirs = distiluse_similarity(audio_units, slide_units, device=device)
             sim = (theirs if similarity == "theirs" else
                    fuse_similarity(theirs, visual, "fused_weighted", fusion_weight) if similarity == "visual+theirs" else
+                   fuse_many([visual, frame_ocr, theirs], fusion_weights) if similarity == "visual+frame_ocr+theirs" else
                    fuse_similarity(ours, theirs, similarity, fusion_weight))
         similarity = sim  # the matrix from here on
         path = (align_naive(similarity) if method == "naive" else
