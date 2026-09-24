@@ -1,4 +1,4 @@
-"""Fixtures are generated, not committed: reportlab draws the PDF, PIL the PNG,
+"""Fixtures are generated, not committed: pymupdf draws the PDF, PIL the PNG,
 stdlib `wave` the audio. Keeps binaries out of git and the corpus reproducible."""
 
 from __future__ import annotations
@@ -55,28 +55,20 @@ def png_path(fixtures_dir: Path) -> Path:
 @pytest.fixture(scope="session")
 def pdf_path(fixtures_dir: Path, png_path: Path) -> Path:
     """Two pages: prose on both, plus an embedded figure with a caption below it."""
-    from reportlab.lib.pagesizes import letter
-    from reportlab.pdfgen import canvas
+    import pymupdf
 
     path = fixtures_dir / "notes.pdf"
-    page_width, page_height = letter
-    pdf = canvas.Canvas(str(path), pagesize=letter)
+    doc = pymupdf.open()
+    page = doc.new_page(width=612, height=792)          # US letter; y grows downwards from the top
+    lines = [line.strip() + "." for line in (BODY * 3).split(". ") if line.strip()] + [CROSS_REF, TABLE_REF]
+    page.insert_text((72, 72), "\n".join(lines), fontname="helv", fontsize=12, lineheight=1.2)
 
-    text_object = pdf.beginText(72, page_height - 72)
-    for line in (BODY * 3).split(". "):
-        if line.strip():
-            text_object.textLine(line.strip() + ".")
-    text_object.textLine(CROSS_REF)
-    text_object.textLine(TABLE_REF)
-    pdf.drawText(text_object)
-    pdf.showPage()
-
-    pdf.drawString(72, page_height - 72, "Attention weights concentrate on the subject token.")
-    # reportlab's origin is bottom-left; the caption sits physically below the image.
-    pdf.drawImage(str(png_path), 72, 400, width=400, height=120)
-    pdf.drawString(72, 380, CAPTION)
-    pdf.showPage()
-    pdf.save()
+    page = doc.new_page(width=612, height=792)
+    page.insert_text((72, 72), "Attention weights concentrate on the subject token.", fontname="helv", fontsize=12)
+    page.insert_image(pymupdf.Rect(72, 272, 472, 392), filename=str(png_path))
+    page.insert_text((72, 412), CAPTION, fontname="helv", fontsize=12)   # the caption sits below the image
+    doc.save(path)
+    doc.close()
     return path
 
 
