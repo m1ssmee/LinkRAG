@@ -992,7 +992,8 @@ def faithfulness(cfg: dict, src: Path, out: Path, *, max_cost: float, dry_run: b
     def check(r):
         ans = Answer(answer=r["answer"], claims=[Claim(**c) for c in r["claims"]], raw="")
         return {**{k: r[k] for k in ("vid", "qi", "level", "mode")},
-                **verify_answer(ans, ev[(r["qi"], r["mode"])], complete, runs=runs, workers=4)}
+                **verify_answer(ans, ev[(r["qi"], r["mode"])], complete, runs=runs, workers=4,
+                                answer_key=f"{r['qi']}:{r['mode']}")}
 
     with ThreadPoolExecutor(max_workers=4) as ex:
         res = list(ex.map(check, rows))

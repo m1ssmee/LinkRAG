@@ -35,7 +35,7 @@ ABSTENTION = "not found in the provided material"
 
 
 def verify_claim(claim: Claim, units: dict[str, EvidenceUnit], judge: Completer, *, runs: int = 3,
-                 backend: str = "llm", device: str = "cpu") -> Claim:
+                 backend: str = "llm", device: str = "cpu", answer_key: str | None = None) -> Claim:
     """Entailment of one claim against each unit it cites; first supporting unit wins."""
     if not claim.unit_ids:
         claim.verdict = "weak"
@@ -44,7 +44,8 @@ def verify_claim(claim: Claim, units: dict[str, EvidenceUnit], judge: Completer,
         unit = units.get(uid)
         if unit is None:                       # id not in the evidence set
             continue
-        v = entail_unit(claim.claim, claim.claim, unit, judge, runs, backend, device)
+        v = entail_unit(claim.claim, claim.claim, unit, judge, runs, backend, device,
+                        cache_key=None if answer_key is None else f"{answer_key}|{uid}")
         claim.votes = v.votes
         if v.kept:
             claim.verdict, claim.span = "supported", v.span
@@ -55,18 +56,19 @@ def verify_claim(claim: Claim, units: dict[str, EvidenceUnit], judge: Completer,
 
 def verify_answer(ans: Answer, units: Sequence[EvidenceUnit], judge: Completer, *,
                   runs: int = 3, workers: int = 4, strict: bool = False,
-                  backend: str = "llm", device: str = "cpu") -> dict[str, Any]:
+                  backend: str = "llm", device: str = "cpu", answer_key: str | None = None) -> dict[str, Any]:
     """Verify every claim; returns the claim verdicts and the text to show.
 
     `strict` removes unsupported claims from the displayed answer and abstains when
     nothing is left. The unverified answer is always kept in the result so a report
-    can show what the model said before the check."""
+    can show what the model said before the check. `answer_key` names the answer, so a
+    cached judge keeps each answer's replies apart (see `cached_completer` `key`)."""
     by_id = {u.id: u for u in units}
     with stage_timer("generate.verify", claims=len(ans.claims), strict=int(strict)) as t:
         if ans.claims:
             with ThreadPoolExecutor(max_workers=workers) as ex:
-                ans.claims = list(ex.map(lambda c: verify_claim(c, by_id, judge, runs=runs,
-                                                                backend=backend, device=device), ans.claims))
+                ans.claims = list(ex.map(lambda c: verify_claim(c, by_id, judge, runs=runs, backend=backend,
+                                                                device=device, answer_key=answer_key), ans.claims))
         counts = {v: sum(c.verdict == v for c in ans.claims) for v in ("supported", "weak", "unsupported")}
         t.update({k: v for k, v in counts.items()})
 

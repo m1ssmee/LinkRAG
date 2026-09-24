@@ -53,7 +53,12 @@ def cached_completer(inner: Completer, cache_dir: Path, *, cache_only: bool = Fa
     """Disk cache keyed by (system, user, n-th identical call). Thread-safe.
 
     The n-th index keeps repeated judge runs distinct calls while letting an
-    interrupted batch resume for free. Usage is stored next to each reply
+    interrupted batch resume for free. Under threads it is order-dependent: two
+    callers with the same prompt can each get the other's stored reply. A caller
+    that knows who is asking passes `key=(context, run)` instead: the reply is
+    stored per context and run, so a replay is deterministic. A keyed miss first
+    reads the pre-keying entry for that run (`<prompt>.<run>`), so replies paid for
+    before keying stay usable, and the same entry is read for every context. Usage is stored next to each reply
     (`<key>.<n>.usage.json`) so a later hit reports exact tokens; hits without it
     are estimated and counted under `estimated_tokens`.
 
@@ -70,17 +75,24 @@ def cached_completer(inner: Completer, cache_dir: Path, *, cache_only: bool = Fa
     if getattr(inner, "usage", {}).get("backend"):    # carried through to the ledger row
         usage["backend"] = inner.usage["backend"]       # type: ignore[attr-defined]
 
-    def complete(system: str, user: str) -> str:
+    def complete(system: str, user: str, key: tuple[str, int] | None = None) -> str:
         base = hashlib.sha256((system + "\x00" + user).encode()).hexdigest()
-        with lock:
-            n = seen[base]
-            seen[base] += 1
-        path = cache_dir / f"{base}.{n}.txt"
-        upath = cache_dir / f"{base}.{n}.usage.json"
-        if path.exists():
-            text = path.read_text()
-            if upath.exists():
-                u = json.loads(upath.read_text())
+        if key is None:
+            with lock:
+                n = seen[base]
+                seen[base] += 1
+            stem, legacy = f"{base}.{n}", None
+        else:
+            ctx, n = key
+            stem, legacy = f"{base}.{hashlib.sha256(ctx.encode()).hexdigest()[:12]}.{n}", f"{base}.{n}"
+        path = cache_dir / f"{stem}.txt"
+        upath = cache_dir / f"{stem}.usage.json"
+        hit = stem if path.exists() else legacy if legacy and (cache_dir / f"{legacy}.txt").exists() else None
+        if hit is not None:
+            text = (cache_dir / f"{hit}.txt").read_text()
+            uhit = cache_dir / f"{hit}.usage.json"
+            if uhit.exists():
+                u = json.loads(uhit.read_text())
                 pt, ct, est = u.get("prompt_tokens", 0), u.get("completion_tokens", 0), 0
             else:
                 pt, ct = estimate_tokens(system + user), estimate_tokens(text)

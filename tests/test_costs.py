@@ -33,6 +33,47 @@ def test_cache_records_exact_usage_and_flags_estimates(tmp_path):
     assert c3.usage["estimated_tokens"] == c3.usage["prompt_tokens"] + c3.usage["completion_tokens"] > 0
 
 
+def test_keyed_cache_keeps_identical_prompts_apart_and_replays_in_any_order(tmp_path):
+    import hashlib
+    calls = []
+
+    def inner(system, user):
+        calls.append(user)
+        inner.last_usage = {"prompt_tokens": 1, "completion_tokens": 1}
+        return f"reply{len(calls)}"
+    c = cached_completer(inner, tmp_path)
+    assert c("s", "same", key=("answerA|u1", 0)) == "reply1"
+    assert c("s", "same", key=("answerB|u1", 0)) == "reply2"          # same prompt, its own reply
+
+    def boom(system, user):
+        raise AssertionError("must replay from cache")
+    replay = cached_completer(boom, tmp_path, cache_only=True)
+    assert replay("s", "same", key=("answerB|u1", 0)) == "reply2"     # order reversed, same mapping
+    assert replay("s", "same", key=("answerA|u1", 0)) == "reply1"
+    # an entry written before keying (<prompt>.<run>) is read for every context, by run index
+    base = hashlib.sha256(("s" + "\x00" + "old").encode()).hexdigest()
+    (tmp_path / f"{base}.0.txt").write_text("legacy0")
+    (tmp_path / f"{base}.1.txt").write_text("legacy1")
+    assert replay("s", "old", key=("any", 1)) == "legacy1" and replay("s", "old", key=("other", 1)) == "legacy1"
+    assert replay("s", "old", key=("any", 0)) == "legacy0"
+
+
+def test_verify_answer_keys_the_judge_by_answer_and_unit():
+    from linkrag.core import EvidenceUnit
+    from linkrag.generate.answer import Answer, Claim
+    from linkrag.generate.verify import verify_answer
+    seen = []
+
+    def judge(system, user, key=None):
+        seen.append(key)
+        return '{"facts": [{"fact": "x", "supported": true, "span": "x"}], "verdict": "yes"}'
+    unit = EvidenceUnit(id="u1", modality="text", content="x", source_file="f")
+    for who in ("q1:baseline", "q2:baseline"):
+        verify_answer(Answer(answer="x", raw="", claims=[Claim(claim="x", unit_ids=["u1"])]), [unit], judge,
+                      runs=2, backend="llm", answer_key=who)
+    assert seen == [("q1:baseline|u1", 0), ("q1:baseline|u1", 1), ("q2:baseline|u1", 0), ("q2:baseline|u1", 1)]
+
+
 def test_price_longest_prefix_and_unknown():
     pricing = {"gpt-5.4": {"input_per_m": 2.5, "output_per_m": 15.0},
                "gpt-5.4-mini": {"input_per_m": 0.75, "output_per_m": 4.5}}

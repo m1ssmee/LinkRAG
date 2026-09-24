@@ -244,7 +244,7 @@ def refuse_nli_decisions(backend: str, *paths: str | Path) -> None:
 
 
 def entail_unit(question: str, expected: str, unit: EvidenceUnit, complete: Completer,
-                runs: int, backend: str = "llm", device: str = "cpu") -> UnitVerdict:
+                runs: int, backend: str = "llm", device: str = "cpu", cache_key: str | None = None) -> UnitVerdict:
     """Does this unit state at least one fact of the reference answer?
 
     One code path, two backends (`eval.entailment.backend`):
@@ -266,8 +266,11 @@ def entail_unit(question: str, expected: str, unit: EvidenceUnit, complete: Comp
         raise ValueError(f"unknown entailment backend {backend!r}: use 'nli' or 'llm'")
     votes, spans = [], []
     prompt = ENTAIL_PROMPT.format(question=question, expected=expected, text=unit.content)
-    for _ in range(runs):
-        reply = parse_json(complete(JUDGE_SYSTEM, prompt))
+    for r in range(runs):
+        # cache_key: who is asking (answer and unit), so identical prompts from different
+        # answers keep their own cached replies (linkrag.costs.cached_completer `key`)
+        reply = parse_json(complete(JUDGE_SYSTEM, prompt) if cache_key is None
+                           else complete(JUDGE_SYSTEM, prompt, key=(cache_key, r)))
         verdict = str(reply.get("verdict", "no")).lower().strip()
         facts = [f for f in reply.get("facts", []) if isinstance(f, dict)]
         quotable = [str(f.get("span", "") or "") for f in facts
