@@ -96,7 +96,7 @@ def protocol_note() -> str:
 def their_prf(gt: np.ndarray, pred: np.ndarray) -> tuple[float, float, float]:
     labels = np.unique(gt)                       # unfiltered, -1 included -- theirs
     mask = gt != -1
-    kw = dict(labels=labels, average="micro", zero_division=0)
+    kw = {"labels": labels, "average": "micro", "zero_division": 0}
     return (float(precision_score(gt[mask], pred[mask], **kw)),
             float(recall_score(gt[mask], pred[mask], **kw)),
             float(f1_score(gt[mask], pred[mask], **kw)))

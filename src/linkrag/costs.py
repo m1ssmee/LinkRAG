@@ -32,7 +32,7 @@ USAGE_KEYS = ("calls", "cached_calls", "prompt_tokens", "completion_tokens",
 
 
 def empty_usage() -> dict[str, Any]:
-    return {k: 0 for k in USAGE_KEYS}
+    return dict.fromkeys(USAGE_KEYS, 0)
 
 
 def add_usage(total: dict[str, Any], one: dict[str, Any]) -> None:

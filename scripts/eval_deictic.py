@@ -43,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     build = {10: {10, 11}, 11: {10, 11}, 17: {17, 18}, 18: {17, 18}}
     accept = lambda p: build.get(p, {p})
 
-    segs = [r for r in csv.DictReader(open(args.labels, newline=""))]
+    segs = list(csv.DictReader(open(args.labels, newline="")))
 
     pairs = list(csv.DictReader(open(args.pairs, newline="")))
     by_seg = defaultdict(list)

@@ -67,7 +67,7 @@ def label_segment(seg_start: float, seg_end: float, slides, outro):
     ambiguous = False
 
     if outro and overlap(seg_start, seg_end, *outro) / duration > 0.5:
-        return None, "qa", True if _near_boundary(seg_start, seg_end, slides, outro) else False
+        return None, "qa", bool(_near_boundary(seg_start, seg_end, slides, outro))
 
     # Zero-length slides are excluded from the majority vote by construction: their
     # overlap with anything is 0, so they can never win. Straddling one only matters

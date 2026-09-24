@@ -115,7 +115,7 @@ def score_mcq(pred: Sequence[str | None], gold: Sequence[str]) -> dict[str, floa
     n = len(gold)
     if not n:
         return {"n": 0}
-    labels = sorted({g for g in gold} | {p for p in pred if p is not None})
+    labels = sorted(set(gold) | {p for p in pred if p is not None})
     ps, rs, fs = [], [], []
     for lab in labels:
         tp = sum(p == lab and g == lab for p, g in zip(pred, gold))
