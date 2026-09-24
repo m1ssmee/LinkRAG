@@ -1088,6 +1088,86 @@ def frame_page_for(stem: str, cfg: dict) -> dict[str, np.ndarray]:
     return fp
 
 
+# "Confident" frame->page text match, as MARGIN above; set before any frame OCR was scored.
+# BM25 rows are min-max scaled per frame, so the best page is always 1.
+TEXT_MARGIN = {"tfidf": 0.05, "bm25": 0.10}
+
+
+def frame_ocr_for(stem: str) -> list[str]:
+    """OCR of every representative frame (`linkrag.link.visual.ocr_frame`, 3x upscale), in
+    slide-index order, cached per frame under CACHE/frame_ocr/<sha1 of the PNG>.txt."""
+    import hashlib
+    from concurrent.futures import ThreadPoolExecutor
+    from PIL import Image
+    from linkrag.link.visual import ocr_frame
+    cache = CACHE / "frame_ocr"
+    cache.mkdir(parents=True, exist_ok=True)
+
+    def one(png: Path) -> str:
+        f = cache / f"{hashlib.sha1(png.read_bytes()).hexdigest()}.txt"
+        if not f.exists():
+            f.write_text(ocr_frame(Image.open(png)))
+        return f.read_text()
+    frames = sorted((CACHE / "frames" / stem).glob("s*.png"))
+    with ThreadPoolExecutor(max_workers=8) as ex:          # tesseract runs as a subprocess
+        return list(ex.map(one, frames))
+
+
+def frame_text_page_for(stem: str, figures_dir: Path) -> dict[str, np.ndarray]:
+    """frame x page similarity of frame OCR text to the page OCR text (the slide-side text
+    every other column uses), by TF-IDF cosine and by BM25; cached."""
+    from linkrag.link.visual import text_similarity
+    path = CACHE / "frame_text" / f"{stem}.npz"
+    if path.exists():
+        z = np.load(path)
+        return {"tfidf": z["tfidf"], "bm25": z["bm25"]}
+    texts = frame_ocr_for(stem)
+    pages = [u.content for u in slide_units(stem, "ocr", figures_dir)[0]]
+    fp = {m: text_similarity(texts, pages, m) for m in ("tfidf", "bm25")}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(path, **fp)
+    return fp
+
+
+def cmd_frame_ocr(args, cfg, encoder) -> int:
+    """Item 1: frame OCR and frame->page text similarity, with the label-free sanity check."""
+    from linkrag.index import tokenize
+    from linkrag.link.visual import confident_rate
+    figures_dir = Path(args.figures_dir)
+    rows = []
+    for stem in sorted(LECTURES):
+        if not (CACHE / "frames" / stem / "slides.json").exists():
+            continue
+        words = [len(tokenize(t)) for t in frame_ocr_for(stem)]
+        fp = frame_text_page_for(stem, figures_dir)
+        conf = {k: confident_rate(fp[k], TEXT_MARGIN[k]) for k in fp}
+        agree = float(np.mean(fp["tfidf"].argmax(1) == fp["bm25"].argmax(1)))
+        rows.append((stem, len(words), float(np.mean([w > 0 for w in words])), float(np.median(words)), conf, agree))
+        print(f"{stem}: {len(words)} frames, with text {rows[-1][2]:.2f}, median words {rows[-1][3]:.0f}")
+    L = ["# MaViLS — frame OCR and frame→page text similarity", "",
+         "Every representative frame of `mavils_frames.md` (320 px on the longest side, the only size kept) OCR'd with "
+         "tesseract after a 3× LANCZOS upscale (`linkrag.link.visual.ocr_frame`; at native size slide text is a few "
+         "pixels tall and OCR reads almost nothing: a label-free check on frames alone, before any F1). Cached per frame "
+         "by the hash of the frame. Frame→page scores (`text_similarity`), tokenised as everywhere else "
+         "(`linkrag.index.tokenize`), against the page OCR text: **TF-IDF** cosine (fit on the pages) and **BM25** "
+         "(min-max scaled per frame). A frame with no text gets a zero row. LLM-free, $0.", "",
+         f"*Confident* = best page beats the runner-up by more than {TEXT_MARGIN['tfidf']} (TF-IDF) / "
+         f"{TEXT_MARGIN['bm25']} (BM25), set before scoring. A sanity check, not an accuracy: no label is used.", "",
+         "| lecture | frames | with any text | median words | confident TF-IDF | confident BM25 | same best page |",
+         "|---|---:|---:|---:|---:|---:|---:|"]
+    for stem, n, has, med, conf, agree in rows:
+        L.append(f"| {LECTURES[stem][1]} | {n} | {has:.2f} | {med:.0f} | {conf['tfidf']:.2f} | {conf['bm25']:.2f} | {agree:.2f} |")
+    if rows:
+        L.append(f"| **total / mean** | {sum(r[1] for r in rows)} | {np.mean([r[2] for r in rows]):.2f} | "
+                 f"{np.median([r[3] for r in rows]):.0f} | {np.mean([r[4]['tfidf'] for r in rows]):.2f} | "
+                 f"{np.mean([r[4]['bm25'] for r in rows]):.2f} | {np.mean([r[5] for r in rows]):.2f} |")
+    L += ["", "Climate policies has no video (see `mavils_frames.md`), so no frames."]
+    out = Path(args.out)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 0
+
+
 def jumpiness(gt: np.ndarray) -> tuple[float, float]:
     """Their `evaluation/analyse_videos.py`: slide changes / unique labels, and the
     no-slide share (-1 rows / labelled rows)."""
@@ -1264,7 +1344,7 @@ def cmd_visual(args, cfg, encoder) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames", "visual"])
+    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames", "visual", "frame-ocr"])
     ap.add_argument("--shuffles", type=int, default=30)
     ap.add_argument("--reuse", action="store_true", help="gate: reuse cached z-scores from the previous run's json")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -1279,7 +1359,8 @@ def main(argv: list[str] | None = None) -> int:
         args.out = {"run": "reports/mavils_alignment.md", "study": "reports/mavils_heldout_study.md",
                     "inspect": None, "final": "reports/mavils_final.md", "fused": "reports/mavils_fused.md",
                     "gate": "results/external/mavils_gate_v2.md", "gate-gran": "results/external/mavils_gate_v3.md",
-                    "visual-frames": "results/external/mavils_frames.md", "visual": "results/external/mavils_visual.md"}[args.cmd]
+                    "visual-frames": "results/external/mavils_frames.md", "visual": "results/external/mavils_visual.md",
+                    "frame-ocr": "results/external/mavils_frame_ocr_sanity.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
@@ -1288,7 +1369,7 @@ def main(argv: list[str] | None = None) -> int:
     encoder([""])
     return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused,
             "gate": cmd_gate, "gate-gran": cmd_gate_gran, "visual-frames": cmd_visual_frames,
-            "visual": cmd_visual}[args.cmd](args, cfg, encoder)
+            "visual": cmd_visual, "frame-ocr": cmd_frame_ocr}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":

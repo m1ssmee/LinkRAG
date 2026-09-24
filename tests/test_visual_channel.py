@@ -49,3 +49,17 @@ def test_align_visual_options():
     assert got.path == [0, 1, 2] and np.array_equal(got.similarity, V)
     with pytest.raises(ValueError, match="visual"):
         align(audio, slides, encoder=None, similarity="visual+text")
+
+
+def test_text_similarity_tfidf_and_bm25_prefer_the_matching_page():
+    from linkrag.link.visual import text_similarity
+    pages = ["gradient descent learning rate", "convolution kernel stride padding", "attention query key value"]
+    frames = ["Convolution: kernel, stride", "", "query and key"]
+    for method in ("tfidf", "bm25"):
+        S = text_similarity(frames, pages, method)
+        assert S.shape == (3, 3)
+        assert S[0].argmax() == 1 and S[2].argmax() == 2
+        assert not S[1].any()                                    # a frame with no text: zero row
+    with pytest.raises(ValueError, match="text similarity"):
+        text_similarity(frames, pages, "jaccard")
+
