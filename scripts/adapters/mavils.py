@@ -1088,6 +1088,13 @@ def frame_page_for(stem: str, cfg: dict) -> dict[str, np.ndarray]:
     return fp
 
 
+def jumpiness(gt: np.ndarray) -> tuple[float, float]:
+    """Their `evaluation/analyse_videos.py`: slide changes / unique labels, and the
+    no-slide share (-1 rows / labelled rows)."""
+    return (float(np.count_nonzero(np.diff(gt)) / len(np.unique(gt))),
+            float(np.count_nonzero(gt == -1) / max(np.count_nonzero(gt != -1), 1)))
+
+
 def cmd_visual_frames(args, cfg, encoder) -> int:
     """Items 1-2: representative frames and frame->page similarity for every lecture."""
     from linkrag.link.visual import confident_rate
@@ -1135,9 +1142,129 @@ def cmd_visual_frames(args, cfg, encoder) -> int:
     return 1 if missing else 0
 
 
+VISUAL_COLS = ("ours", "theirs", "fused", "visual", "visual+text", "visual+theirs")
+
+
+def cmd_visual(args, cfg, encoder) -> int:
+    """Items 3-4. Each sentence takes the frame->page row of the frame on screen at its
+    timestamp (`linkrag.link.visual.segment_visual`). Tune half only: the frame->page score
+    (dHash vs SwiftFormer, by visual-only their-F1) and the visual weight in visual+text and
+    visual+theirs (grid 0/.25/.5/.75/1). Test half once. Decoder: our DP at the tuned sigma."""
+    from linkrag.link.visual import segment_visual
+    a = cfg["link"]["align"]
+    split = split_lectures()
+    tune, test = split["tune"], split["test"]
+    tuned = json.loads((EXTERNAL / "mavils_tuned.json").read_text())
+    sigma, fw = float(tuned["sigma"]), float(tuned["fusion_weight"])
+    figures_dir = Path(args.figures_dir)
+    data = {}
+    for stem in sorted(LECTURES):
+        S_o, owner, gt, pages, status = similarity_for(stem, window=0.0, slide_text="ocr", cfg=cfg, encoder=encoder,
+                                                       figures_dir=figures_dir)
+        S_t = their_similarity_for(stem, cfg=cfg, figures_dir=figures_dir)[0]
+        times = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{stem}.xlsx")["time"].astype(float)
+        if frames_for(stem) is None:                 # no video for this lecture: text columns only
+            data[stem] = (S_o, S_t, None, owner, gt, pages, status)
+            continue
+        fp = frame_page_for(stem, cfg)
+        assert list(pages) == list(range(1, fp["dhash"].shape[1] + 1)), stem     # columns = deck pages, in order
+        V = {k: segment_visual(times.tolist(), load_slides(stem), fp[k]) for k in fp}
+        data[stem] = (S_o, S_t, V, owner, gt, pages, status)
+
+    def run(stem, col, vm, w):
+        S_o, S_t, V, owner, gt, pages, _ = data[stem]
+        S = {"ours": lambda: S_o, "theirs": lambda: S_t,
+             "fused": lambda: fuse_similarity(S_o, S_t, "fused_weighted", fw),
+             "visual": lambda: fuse_similarity(S_o, V[vm], "fused_weighted", 1.0),       # V alone, min-max scaled
+             "visual+text": lambda: fuse_similarity(S_o, V[vm], "fused_weighted", w),
+             "visual+theirs": lambda: fuse_similarity(S_t, V[vm], "fused_weighted", w)}[col]()
+        return gt, decode(S, pages, owner, a, variant="dp", min_sim=None, flat=0.0, sigma=sigma)
+
+    def mean_paired(stems_, col, vm, w=0.5):
+        res = [run(s_, col, vm, w) for s_ in stems_]
+        f1s = [their_prf(g, p)[2] for g, p in res]
+        prs, covs = zip(*(answered_metrics(g, p) for g, p in res))
+        return float(np.mean(f1s)), f"{np.mean(f1s):.3f} ({np.mean(prs):.3f} / {np.mean(covs):.2f})"
+
+    vm_rows = {vm: mean_paired(tune, "visual", vm) for vm in ("dhash", "swiftformer")}
+    vm = max(vm_rows, key=lambda k: vm_rows[k][0])
+    grid = [0.0, 0.25, 0.5, 0.75, 1.0]
+    w_rows = {col: [(w, *mean_paired(tune, col, vm, w)) for w in grid] for col in ("visual+text", "visual+theirs")}
+    w_best = {col: max(rows, key=lambda r: r[1])[0] for col, rows in w_rows.items()}
+    tuned.update({"visual_method": vm, "visual_text_weight": w_best["visual+text"],
+                  "visual_theirs_weight": w_best["visual+theirs"],
+                  "visual_study": "2026-09-24: frame->page score and visual weight by tune their-F1; "
+                                  "weight = share of the min-max scaled visual matrix"})
+    (EXTERNAL / "mavils_tuned.json").write_text(json.dumps(tuned, indent=1) + "\n")
+    wcol = lambda col: w_best.get(col, 0.5)
+
+    L = ["# MaViLS — visual channel vs their all-features", "",
+         "Their protocol: sentence granularity, page OCR on the slide side, their sklearn F1. Cells: **their F1 "
+         "(precision-on-answered / coverage)**. Decoder: our DP at the tuned σ = "
+         f"{sigma}, λ={a['jump_penalty']} β={a['back_penalty']} B={a['max_back']}. LLM-free, $0.", "",
+         "Columns: *ours* = bge-m3 + BM25 + IDF hybrid; *theirs* = distiluse cosine (their audio feature); *fused* = "
+         f"{fw}·theirs + {1 - fw}·ours (tuned 2026-09-22). *visual* = each sentence takes the frame→page row of the "
+         "representative frame on screen at its timestamp (`mavils_frames.md`), min-max scaled. *visual+text* / "
+         "*visual+theirs* = w·visual + (1−w)·text, each min-max scaled. Their published columns: audio-only (Table 1) "
+         "and all features, i.e. speech + frame OCR + SwiftFormer image features, merged, λ = 0.1 (Table 2).", "",
+         f"Split `results/external/mavils_split.json`: tune = {', '.join(LECTURES[s][1] for s in tune)}; test = "
+         f"{', '.join(LECTURES[s][1] for s in test)}. Every choice below is made on the tune half; the test half is "
+         "run once. Chosen values are recorded in `results/external/mavils_tuned.json`.", "",
+         "## Tune half", "", "| frame→page score | visual-only tune |", "|---|---:|"]
+    for k, (f1, pr) in vm_rows.items():
+        L.append(f"| {k} | {pr}{' ←' if k == vm else ''} |")
+    L += ["", f"| w (share of visual, {vm}) | visual+text | visual+theirs |", "|---:|---:|---:|"]
+    for i, w in enumerate(grid):
+        L.append(f"| {w} | " + " | ".join(f"{w_rows[c][i][2]}{' ←' if w == w_best[c] else ''}" for c in w_rows) + " |")
+    L += ["", f"Chosen on tune: frame→page score **{vm}**, visual+text w = **{w_best['visual+text']}**, visual+theirs "
+          f"w = **{w_best['visual+theirs']}**. No confidence floor was needed or used.", "",
+          "## Test half — reported once", "",
+          "| lecture | text layer | jumpiness | no-slide ratio | " + " | ".join(VISUAL_COLS)
+          + " | their audio (T1) | their all-features (T2) |", "|---|---|---:|---:|" + "---:|" * (len(VISUAL_COLS) + 2)]
+    no_video = [s_ for s_ in test if data[s_][2] is None]
+    test = [s_ for s_ in test if data[s_][2] is not None]           # every column paired on the same lectures
+    wins = {"vs_theirs_all": [0, 0], "vs_ours": [0, 0]}
+    best_col = max(("visual", "visual+text", "visual+theirs"), key=lambda c: mean_paired(tune, c, vm, wcol(c))[0])
+    for s_ in test:
+        status, gt = data[s_][6], data[s_][4]
+        jump, noslide = jumpiness(gt)
+        cells, f1 = [], {}
+        for col in VISUAL_COLS:
+            g, p = run(s_, col, vm, wcol(col))
+            f1[col] = their_prf(g, p)[2]
+            cells.append(paired(g, p))
+        wins["vs_theirs_all"][f1[best_col] < LECTURES[s_][3]] += 1
+        wins["vs_ours"][f1[best_col] < f1["ours"]] += 1
+        L.append(f"| {LECTURES[s_][1]} | {status['text_layer']} | {jump:.2f} | {noslide:.2f} | " + " | ".join(cells)
+                 + f" | {LECTURES[s_][2]:.2f} | {LECTURES[s_][3]:.2f} |")
+    means = {c: mean_paired(test, c, vm, wcol(c))[1] for c in VISUAL_COLS}
+    L.append("| **mean** | | | | " + " | ".join(f"**{means[c]}**" for c in VISUAL_COLS)
+             + f" | {np.mean([LECTURES[s_][2] for s_ in test]):.2f} | {np.mean([LECTURES[s_][3] for s_ in test]):.2f} |")
+    for s_ in no_video:
+        L.append(f"| {LECTURES[s_][1]} (no video) | {data[s_][6]['text_layer']} | {jumpiness(data[s_][4])[0]:.2f} | "
+                 f"{jumpiness(data[s_][4])[1]:.2f} | " + " | ".join(paired(*run(s_, c, vm, 0.5)) if c in ("ours", "theirs", "fused")
+                                                             else "—" for c in VISUAL_COLS)
+                 + f" | {LECTURES[s_][2]:.2f} | {LECTURES[s_][3]:.2f} |")
+    if no_video:
+        L += ["", f"**No video for {', '.join(LECTURES[s_][1] for s_ in no_video)}**: the MaViLS Kaggle zip has none for "
+              f"it, so the test mean is over {len(test)} lectures (paired: every column on the same lectures) and the "
+              "no-video row is outside it."]
+    with_video = [s_ for s_ in sorted(LECTURES) if data[s_][2] is not None]
+    all_means = {c: mean_paired(with_video, c, vm, wcol(c))[1] for c in VISUAL_COLS}
+    L += ["", f"Best visual column on tune: **{best_col}**. On the test half it beats their all-features F1 on "
+          f"{wins['vs_theirs_all'][0]} of {len(test)} lectures (loses {wins['vs_theirs_all'][1]}) and our text-only "
+          f"*ours* on {wins['vs_ours'][0]} (loses {wins['vs_ours'][1]}); a tie counts as a win.", "",
+          f"All {len(with_video)} lectures with video (contains the tune half, so the tuned columns are optimistic): "
+          + ", ".join(f"{c} {v}" for c, v in all_means.items()) + ".", ""]
+    out = Path(args.out)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames"])
+    ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames", "visual"])
     ap.add_argument("--shuffles", type=int, default=30)
     ap.add_argument("--reuse", action="store_true", help="gate: reuse cached z-scores from the previous run's json")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -1152,7 +1279,7 @@ def main(argv: list[str] | None = None) -> int:
         args.out = {"run": "reports/mavils_alignment.md", "study": "reports/mavils_heldout_study.md",
                     "inspect": None, "final": "reports/mavils_final.md", "fused": "reports/mavils_fused.md",
                     "gate": "results/external/mavils_gate_v2.md", "gate-gran": "results/external/mavils_gate_v3.md",
-                    "visual-frames": "results/external/mavils_frames.md"}[args.cmd]
+                    "visual-frames": "results/external/mavils_frames.md", "visual": "results/external/mavils_visual.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
@@ -1160,8 +1287,8 @@ def main(argv: list[str] | None = None) -> int:
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
     return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused,
-            "gate": cmd_gate, "gate-gran": cmd_gate_gran,
-            "visual-frames": cmd_visual_frames}[args.cmd](args, cfg, encoder)
+            "gate": cmd_gate, "gate-gran": cmd_gate_gran, "visual-frames": cmd_visual_frames,
+            "visual": cmd_visual}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":

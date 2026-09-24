@@ -34,5 +34,9 @@
  "relatedness_z": 1.27,
  "null_shuffles": 30,
  "gate_granularity_s": 30.0,
- "gate_study": "2026-09-22: threshold = smallest z with <=5% false acceptance on the 380 cross pairs"
+ "gate_study": "2026-09-22: threshold = smallest z with <=5% false acceptance on the 380 cross pairs",
+ "visual_method": "swiftformer",
+ "visual_text_weight": 0.75,
+ "visual_theirs_weight": 0.5,
+ "visual_study": "2026-09-24: frame->page score and visual weight by tune their-F1; weight = share of the min-max scaled visual matrix"
 }
