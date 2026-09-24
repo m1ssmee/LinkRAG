@@ -23,7 +23,7 @@ from typing import Callable
 from linkrag.core import stage_timer
 from linkrag.index import Encoder, Index
 from linkrag.retrieve.baseline import RRF_K, retrieve_scored
-from linkrag.retrieve.linkrag import RetrievedUnit
+from linkrag.retrieve.linkrag import RetrievedUnit, retrieve_linkrag
 
 Completer = Callable[[str, str], str]
 
@@ -133,7 +133,6 @@ def retrieve_linkrag_iter(
     a0 -> p1 edge exists, but a0 is never a seed, so traversal never starts there.
     A second query can supply the missing seed.
     """
-    from linkrag.retrieve.linkrag import retrieve_linkrag
 
     # additive expansion seeds from k_final units (nothing is evicted to make room
     # for neighbours); evict keeps the Phase-4 k_seed.
@@ -146,3 +145,29 @@ def retrieve_linkrag_iter(
                                k_seed=k_seed, k_final=k_final, candidates=candidates,
                                rrf_k=rrf_k, seed_results=seeds, **linkrag_kwargs)
     return results, it
+
+
+def retrieve_pool(mode: str, question: str, index: Index, graph, *, encoder: Encoder, cfg: dict,
+                  complete: Completer | None, pool: int, link: dict | None = None) -> tuple[list[RetrievedUnit], int]:
+    """Candidates for one (mode, question): baseline, linkrag, iterative or linkrag_iter, `pool`
+    of them, and the LLM calls spent. `link` holds the link-following settings (hops,
+    link_types, min_link_score, normalise_seeds, expansion); by default they come from
+    retrieve.linkrag / retrieve.expansion in the config."""
+    lcfg, icfg = cfg["retrieve"]["linkrag"], cfg["retrieve"]["iterative"]
+    common = {"candidates": cfg["retrieve"]["candidates"], "rrf_k": cfg["retrieve"]["rrf_k"]}
+    link = link or {"hops": lcfg["hops"], "link_types": lcfg["link_types"], "min_link_score": lcfg["min_link_score"],
+                    "normalise_seeds": lcfg.get("normalise_seeds", False),
+                    "expansion": cfg["retrieve"].get("expansion", "additive")}
+    if mode == "baseline":
+        return [RetrievedUnit(unit=u, score=s, origin="seed")
+                for u, s in retrieve_scored(question, index, encoder=encoder, top_k=pool, **common)], 0
+    if mode == "linkrag":
+        return retrieve_linkrag(question, index, graph, encoder=encoder, mode="linkrag", k_seed=lcfg["k_seed"],
+                                k_final=pool, decay=lcfg["decay"], **link, **common), 0
+    if mode == "iterative":
+        it = retrieve_iterative(question, index, encoder=encoder, complete=complete, rounds=icfg["rounds"],
+                                k_per_round=icfg["k_per_round"], k_final=pool, **common)
+        return it.units, it.llm_calls
+    out, it = retrieve_linkrag_iter(question, index, graph, encoder=encoder, complete=complete, rounds=icfg["rounds"],
+                                    k_seed=lcfg["k_seed"], k_final=pool, decay=lcfg["decay"], **link, **common)
+    return out, it.llm_calls

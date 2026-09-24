@@ -13,32 +13,16 @@ from linkrag.generate.answer import http_completer
 from linkrag.index import Index, build_index, default_encoder
 from linkrag.link.align import load_links
 from linkrag.link.graph import build_graph
-from linkrag.retrieve.baseline import retrieve_scored
-from linkrag.retrieve.linkrag import RetrievedUnit, retrieve_linkrag
+from linkrag.retrieve.iterative import retrieve_pool
 
 from lectqa.common import LEVELS, PROCESSED, THEIRS, gold_interval, iou, load_qa, temporal_links
 
 
-def retrieve_pool(mode, q, index, graph, *, encoder, cfg, complete, pool, link_types=("audio_slide",)):
-    link_types = list(link_types) if link_types else None
-    lcfg, icfg = cfg["retrieve"]["linkrag"], cfg["retrieve"]["iterative"]
-    common = dict(candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"])
-    if mode == "baseline":
-        return [RetrievedUnit(unit=u, score=s, origin="seed")
-                for u, s in retrieve_scored(q, index, encoder=encoder, top_k=pool, **common)]
-    if mode == "linkrag":
-        return retrieve_linkrag(q, index, graph, encoder=encoder, mode="linkrag", k_seed=lcfg["k_seed"], k_final=pool,
-                                hops=1, link_types=link_types, min_link_score=0.0, decay=lcfg["decay"],
-                                normalise_seeds=True, expansion="additive", **common)
-    from linkrag.retrieve.iterative import retrieve_iterative, retrieve_linkrag_iter
-    if mode == "iterative":
-        return retrieve_iterative(q, index, encoder=encoder, complete=complete, rounds=icfg["rounds"],
-                                  k_per_round=icfg["k_per_round"], k_final=pool, **common).units
-    out, _ = retrieve_linkrag_iter(q, index, graph, encoder=encoder, complete=complete, rounds=icfg["rounds"],
-                                   k_seed=lcfg["k_seed"], k_final=pool, hops=1, link_types=link_types,
-                                   min_link_score=0.0, decay=lcfg["decay"], normalise_seeds=True,
-                                   expansion="additive", **common)
-    return out
+def lectqa_link(link_types) -> dict:
+    """Link-following on LectQA-Vid: one hop, the given link types (None = all), no score floor,
+    normalised seeds, additive expansion."""
+    return {"hops": 1, "link_types": list(link_types) if link_types else None, "min_link_score": 0.0,
+            "normalise_seeds": True, "expansion": "additive"}
 
 
 def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index", label: str = "",
@@ -78,8 +62,8 @@ def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index"
             g0, g1 = gi
             for mode in modes:
                 try:
-                    cand = retrieve_pool(mode, q["question"], index, graph, encoder=encoder, cfg=cfg, complete=complete,
-                                         pool=pool, link_types=link_types)
+                    cand, _ = retrieve_pool(mode, q["question"], index, graph, encoder=encoder, cfg=cfg,
+                                            complete=complete, pool=pool, link=lectqa_link(link_types))
                 except CacheMiss:
                     skipped += 1
                     continue

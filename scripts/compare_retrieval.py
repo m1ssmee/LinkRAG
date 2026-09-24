@@ -30,9 +30,7 @@ from linkrag.index import Index, default_encoder
 from linkrag.link.align import load_links
 from linkrag.link.graph import build_graph
 from linkrag.manifest import MANIFEST_NAME, load_manifest
-from linkrag.retrieve.baseline import retrieve_scored
-from linkrag.retrieve.iterative import retrieve_iterative, retrieve_linkrag_iter
-from linkrag.retrieve.linkrag import RetrievedUnit, retrieve_linkrag
+from linkrag.retrieve.iterative import retrieve_pool
 from linkrag.retrieve.rerank import METHODS, rerank, set_diagnostics
 
 MODES = ("baseline", "iterative", "linkrag", "linkrag_iter")
@@ -82,44 +80,6 @@ def prf(retrieved_ids, gold):
         return float("nan"), float("nan")
     hit = len(set(retrieved_ids) & gold)
     return hit / len(gold), hit / max(len(retrieved_ids), 1)
-
-
-def retrieve_pool(mode, question, index, graph, *, encoder, cfg, complete, pool):
-    """Candidates for one (mode, question). Returns (results, llm_calls, seconds)."""
-    lcfg, icfg = cfg["retrieve"]["linkrag"], cfg["retrieve"]["iterative"]
-    common = dict(candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"])
-    norm = lcfg.get("normalise_seeds", False)
-    expansion = cfg["retrieve"].get("expansion", "additive")
-    t0 = time.perf_counter()
-
-    if mode == "baseline":
-        out = [RetrievedUnit(unit=u, score=s, origin="seed")
-               for u, s in retrieve_scored(question, index, encoder=encoder,
-                                           top_k=pool, **common)]
-        return out, 0, time.perf_counter() - t0
-
-    if mode == "linkrag":
-        out = retrieve_linkrag(question, index, graph, encoder=encoder, mode="linkrag",
-                               k_seed=lcfg["k_seed"], k_final=pool, hops=lcfg["hops"],
-                               link_types=lcfg["link_types"],
-                               min_link_score=lcfg["min_link_score"],
-                               decay=lcfg["decay"], normalise_seeds=norm,
-                               expansion=expansion, **common)
-        return out, 0, time.perf_counter() - t0
-
-    if mode == "iterative":
-        it = retrieve_iterative(question, index, encoder=encoder, complete=complete,
-                                rounds=icfg["rounds"], k_per_round=icfg["k_per_round"],
-                                k_final=pool, **common)
-        return it.units, it.llm_calls, time.perf_counter() - t0
-
-    out, it = retrieve_linkrag_iter(
-        question, index, graph, encoder=encoder, complete=complete,
-        rounds=icfg["rounds"], k_seed=lcfg["k_seed"], k_final=pool,
-        hops=lcfg["hops"], link_types=lcfg["link_types"],
-        min_link_score=lcfg["min_link_score"], decay=lcfg["decay"],
-        normalise_seeds=norm, expansion=expansion, **common)
-    return out, it.llm_calls, time.perf_counter() - t0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -195,9 +155,11 @@ def main(argv: list[str] | None = None) -> int:
             latencies, run_ids = [], []
             for row in rows:
                 gold = gold_ids_for(row, index)
-                results, calls, secs = retrieve_pool(
+                t0 = time.perf_counter()
+                results, calls = retrieve_pool(
                     mode, row["question"], index, graph, encoder=encoder, cfg=cfg,
                     complete=complete, pool=pool)
+                secs = time.perf_counter() - t0
                 calls_total += calls
                 calls_q.setdefault((row["qid"], mode), []).append(calls)
                 latencies.append(secs)
