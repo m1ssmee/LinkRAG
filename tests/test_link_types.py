@@ -30,3 +30,14 @@ def test_survey_flags_a_file_with_a_retired_type(tmp_path, capsys):
     (tmp_path / "old_links.jsonl").write_text("\n".join(map(json.dumps, rows)) + "\n")
     assert check_link_types.main([str(tmp_path)]) == 1
     assert "OUTSIDE THE SET: {'deictic_visual': 1}" in capsys.readouterr().out
+
+
+def test_link_and_load_links_reject_a_retired_type(tmp_path):
+    from linkrag.core import Link
+    from linkrag.link.align import load_links
+    with pytest.raises(ValueError, match="unknown link_type 'deictic_visual'"):
+        Link("a", "b", "deictic_visual", 0.5)
+    f = tmp_path / "links.jsonl"
+    f.write_text(json.dumps({"src_id": "a", "dst_id": "b", "link_type": "figure_paragraph", "score": 1.0}) + "\n")
+    with pytest.raises(ValueError, match=r"links\.jsonl: unknown link_type 'figure_paragraph'"):
+        load_links(f)

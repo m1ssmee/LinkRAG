@@ -35,9 +35,8 @@ LINK_TYPES: frozenset[str] = frozenset(get_args(LinkType))
 
 def check_link_type(link_type: str) -> str:
     """The closed set of link types. Retired names (deictic_visual, figure_paragraph, from
-    before the Phase 3 renames) raise. Not yet called by `Link` or `load_links`:
-    `scripts/check_link_types.py` found them in data/processed/links_linkrag.jsonl, and
-    enabling validation waits for a decision on that file."""
+    before the Phase 3 renames) raise. Enforced when a `Link` is built, so also on load
+    (`link.align.load_links`); `scripts/check_link_types.py` surveys stored files."""
     if link_type not in LINK_TYPES:
         raise ValueError(f"unknown link_type {link_type!r}: use one of {sorted(LINK_TYPES)}")
     return link_type
@@ -82,6 +81,9 @@ class Link:
     # and the eval needs it to score whether the *reason* was right, not just the
     # endpoints.
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        check_link_type(self.link_type)
 
 
 ENDPOINT_KEYS = ("provider", "base_url", "base_url_env", "api_key_env", "billing")

@@ -42,7 +42,7 @@ def test_location_cite_picks_the_right_axis() -> None:
 
 
 def test_link_is_directed_and_scored() -> None:
-    link = Link("u1", "u2", "deictic_visual", 0.81)
+    link = Link("u1", "u2", "deictic", 0.81)
     assert (link.src_id, link.dst_id) != (link.dst_id, link.src_id)
     assert 0.0 <= link.score <= 1.0
 

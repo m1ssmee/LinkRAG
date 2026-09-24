@@ -565,7 +565,10 @@ def load_links(path: str | Path, expect_manifest: str | None = None, *,
             f"{path} was built against corpus {stamp or 'UNSTAMPED'}, but the index "
             f"is corpus {expect_manifest}. Re-run scripts/build_links.py."
         )
-    links = [Link(**r) for r in records if "_meta" not in r]
+    try:
+        links = [Link(**r) for r in records if "_meta" not in r]
+    except ValueError as exc:                            # a retired link type: say which file
+        raise ValueError(f"{path}: {exc}") from exc
     dropped = 0
     if gated:
         kept = []
