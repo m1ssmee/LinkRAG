@@ -217,6 +217,8 @@ link:
     #   theirs         distiluse-base-multilingual-cased cosine (MaViLS)
     #   fused_max      cellwise max of the two, each min-max scaled
     #   fused_weighted fusion_weight*theirs + (1-fusion_weight)*ours
+    #   visual         segment x page matrix from the video frames (linkrag.link.visual); align() needs it passed in
+    #   visual+text    fusion_weight*visual + (1-fusion_weight)*ours;  visual+theirs the same with theirs
     similarity: ours
     fusion_weight: 0.5         # tuned quantity; MaViLS tune-half value in results/external/mavils_tuned.json
     min_score: 0.0             # drop links scoring below this

@@ -406,17 +406,22 @@ def align(
     similarity: str = "ours",
     fusion_weight: float = 0.5,
     device: str = "cpu",
+    visual: np.ndarray | None = None,
 ) -> Alignment:
     """`similarity`: ours (bge-m3 + BM25 + IDF hybrid, the default), theirs (MaViLS's
-    distiluse cosine), fused_max, fused_weighted -- see `fuse_similarity`."""
+    distiluse cosine), fused_max, fused_weighted -- see `fuse_similarity`; visual (the
+    segment x page matrix passed as `visual`, `linkrag.link.visual`), visual+text and
+    visual+theirs (fusion_weight*visual + (1-fusion_weight)*text, each min-max scaled)."""
     if method not in ("monotonic", "naive"):
         raise ValueError(f"unknown alignment method {method!r}: use 'monotonic' or 'naive'")
-    if similarity not in ("ours", "theirs", "fused_max", "fused_weighted"):
+    if similarity not in ("ours", "theirs", "fused_max", "fused_weighted", "visual", "visual+text", "visual+theirs"):
         raise ValueError(f"unknown similarity {similarity!r}")
+    if similarity.startswith("visual") and visual is None:
+        raise ValueError(f"similarity {similarity!r} needs the segment x page `visual` matrix")
     weights = weights or {}
     with stage_timer("link.align", method=method, similarity=similarity,
                      n=len(audio_units), m=len(slide_units)) as t:
-        ours = None if similarity == "theirs" else similarity_matrix(
+        ours = None if similarity in ("theirs", "visual", "visual+theirs") else similarity_matrix(
             audio_units, slide_units, encoder=encoder,
             w_dense=weights.get("dense", 0.6),
             w_bm25=weights.get("bm25", 0.25),
@@ -424,9 +429,15 @@ def align(
         )
         if similarity == "ours":
             sim = ours
+        elif similarity == "visual":
+            sim = visual
+        elif similarity == "visual+text":
+            sim = fuse_similarity(ours, visual, "fused_weighted", fusion_weight)
         else:
             theirs = distiluse_similarity(audio_units, slide_units, device=device)
-            sim = theirs if similarity == "theirs" else fuse_similarity(ours, theirs, similarity, fusion_weight)
+            sim = (theirs if similarity == "theirs" else
+                   fuse_similarity(theirs, visual, "fused_weighted", fusion_weight) if similarity == "visual+theirs" else
+                   fuse_similarity(ours, theirs, similarity, fusion_weight))
         similarity = sim  # the matrix from here on
         path = (align_naive(similarity) if method == "naive" else
                 align_monotonic(similarity, jump_penalty=jump_penalty,

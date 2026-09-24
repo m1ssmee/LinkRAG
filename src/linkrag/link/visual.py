@@ -2,7 +2,10 @@
 
 A lecture video shows the slide being talked about. `linkrag.ingest.video_slides`
 recovers one representative frame per on-screen interval (1 fps dHash segmentation).
-Here each frame is scored against every rendered deck page.
+Here each frame is scored against every rendered deck page, and each transcript
+segment inherits the row of the frame on screen at its midpoint. The result is a
+segment x page matrix with the same shape as the text similarity, so the existing DP
+decodes it and `link.align.fuse_similarity` combines it with text.
 
 Two frame->page scores:
   dhash     1 - Hamming/64 between 64-bit difference hashes. Cheap, no model; blind to
@@ -13,6 +16,9 @@ Two frame->page scores:
             config done by hand (224x224 bilinear, /255, ImageNet mean/std), because
             `AutoImageProcessor` would pull in torchvision. MaViLS resizes a frame to
             the page size before that same 224x224 resize; we resize once.
+
+A segment whose midpoint falls outside every on-screen interval gets a zero row: no
+visual evidence, and the decoder's transition terms decide.
 """
 
 from __future__ import annotations
@@ -23,7 +29,7 @@ from typing import Any, Sequence
 
 import numpy as np
 
-from linkrag.ingest.video_slides import dhash, hamming
+from linkrag.ingest.video_slides import Slide, dhash, hamming, slide_at
 
 SWIFTFORMER = "MBZUAI/swiftformer-xs"
 
@@ -69,6 +75,17 @@ def swiftformer_features(images: Sequence[Any], device: str = "cpu", batch: int 
 def swiftformer_similarity(frames: Sequence[Any], pages: Sequence[Any], device: str = "cpu") -> np.ndarray:
     """frame x page cosine of SwiftFormer-xs features."""
     return swiftformer_features(frames, device) @ swiftformer_features(pages, device).T
+
+
+def segment_visual(midpoints: Sequence[float], slides: Sequence[Slide], frame_page: np.ndarray) -> np.ndarray:
+    """segment x page: each segment takes the frame->page row of the slide on screen at
+    its midpoint (`slide_at`); zeros where no interval covers it."""
+    out = np.zeros((len(midpoints), frame_page.shape[1]))
+    for i, t in enumerate(midpoints):
+        k = slide_at(list(slides), float(t))
+        if k is not None:
+            out[i] = frame_page[k]
+    return out
 
 
 def confident_rate(frame_page: np.ndarray, margin: float) -> float:
