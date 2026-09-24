@@ -430,15 +430,8 @@ def cmd_study(args, cfg, encoder) -> int:
     grid_flat = [0.0, 0.5, 1.0]
 
     def evaluate(stems, variant, min_sim, flat):
-        f1s, precs, covs = [], [], []
-        for stem in stems:
-            S, owner, gt, pages, _ = data[stem]
-            pred = decode(S, pages, owner, a, variant=variant, min_sim=min_sim, flat=flat)
-            f1s.append(their_prf(gt, pred)[2])
-            p, c = answered_metrics(gt, pred)
-            precs.append(p)
-            covs.append(c)
-        return float(np.mean(f1s)), float(np.mean(precs)), float(np.mean(covs))
+        return paired_means([(gt, decode(S, pages, owner, a, variant=variant, min_sim=min_sim, flat=flat))
+                             for S, owner, gt, pages, _ in (data[s] for s in stems)])
 
     flat_rows = [(f, *evaluate(split["tune"], "dp+abstain+flat", None, f)) for f in grid_flat]
     best_flat = max(flat_rows, key=lambda r: r[1])[0]
@@ -553,6 +546,19 @@ def cmd_inspect(args, cfg, encoder) -> int:
     return 0
 
 
+def paired_means(pairs) -> tuple[float, float, float]:
+    """Mean their-F1, precision-on-answered and coverage over (gt, pred) pairs, one per lecture."""
+    f1s = [their_prf(g, p)[2] for g, p in pairs]
+    prs, covs = zip(*(answered_metrics(g, p) for g, p in pairs))
+    return float(np.mean(f1s)), float(np.mean(prs)), float(np.mean(covs))
+
+
+def paired_mean_cell(pairs) -> tuple[float, str]:
+    """Mean their-F1, and the cell every mean row carries: 'F1 (precision-on-answered / coverage)'."""
+    f1, pr, cov = paired_means(pairs)
+    return f1, f"{f1:.3f} ({pr:.3f} / {cov:.2f})"
+
+
 def paired(gt: np.ndarray, pred: np.ndarray) -> str:
     """The two numbers every alignment table carries: their F1, and precision-on-answered / coverage."""
     f1 = their_prf(gt, pred)[2]
@@ -578,17 +584,10 @@ def cmd_final(args, cfg, encoder) -> int:
         print(f"loaded {LECTURES[stem][1]}")
 
     def mean_f1(stems_, fn):
-        return float(np.mean([their_prf(data[s][2], fn(s))[2] for s in stems_]))
+        return paired_means([(data[s][2], fn(s)) for s in stems_])[0]
 
     def mean_paired(stems_, fn):
-        f1s, prs, covs = [], [], []
-        for s_ in stems_:
-            gt = data[s_][2]
-            pred = fn(s_)
-            f1s.append(their_prf(gt, pred)[2])
-            pr, cov = answered_metrics(gt, pred)
-            prs.append(pr); covs.append(cov)
-        return f"{np.mean(f1s):.3f} ({np.mean(prs):.3f} / {np.mean(covs):.2f})"
+        return paired_mean_cell([(data[s][2], fn(s)) for s in stems_])[1]
 
     def dp(stem, sigma=None, builds=False, min_sim=None):
         S, owner, gt, pages, _ = data[stem]
@@ -724,13 +723,7 @@ def cmd_fused(args, cfg, encoder) -> int:
         return gt, pred
 
     def mean_paired(stems_, method, weight=0.5):
-        f1s, prs, covs = [], [], []
-        for s_ in stems_:
-            gt, pred = run(s_, method, weight)
-            f1s.append(their_prf(gt, pred)[2])
-            pr, cov = answered_metrics(gt, pred)
-            prs.append(pr); covs.append(cov)
-        return float(np.mean(f1s)), f"{np.mean(f1s):.3f} ({np.mean(prs):.3f} / {np.mean(covs):.2f})"
+        return paired_mean_cell([run(s_, method, weight) for s_ in stems_])
 
     weights = [0.0, 0.25, 0.5, 0.75, 1.0]
     rows_w = [(w, *mean_paired(tune, "fused_weighted", w)) for w in weights]
@@ -1396,10 +1389,7 @@ def cmd_visual(args, cfg, encoder) -> int:
         return gt, decode(S, pages, owner, a, variant="dp", min_sim=None, flat=0.0, sigma=sigma)
 
     def mean_paired(stems_, col, vm, w=0.5):
-        res = [run(s_, col, vm, w) for s_ in stems_]
-        f1s = [their_prf(g, p)[2] for g, p in res]
-        prs, covs = zip(*(answered_metrics(g, p) for g, p in res))
-        return float(np.mean(f1s)), f"{np.mean(f1s):.3f} ({np.mean(prs):.3f} / {np.mean(covs):.2f})"
+        return paired_mean_cell([run(s_, col, vm, w) for s_ in stems_])
 
     vm_rows = {vm: mean_paired(tune, "visual", vm) for vm in ("dhash", "swiftformer")}
     vm = max(vm_rows, key=lambda k: vm_rows[k][0])
@@ -1500,7 +1490,7 @@ def cmd_visibility_gate(args, cfg, encoder) -> int:
                       flat=0.0, sigma=sigma)
 
     def mean_f1(stems_, gate):
-        return float(np.mean([their_prf(data[s_]["gt"], pred(s_, gate))[2] for s_ in stems_]))
+        return paired_means([(data[s_]["gt"], pred(s_, gate)) for s_ in stems_])[0]
 
     off = mean_f1(tune, None)
     grid = [((w, m), mean_f1(tune, {"min_words": w, "min_margin": m})) for w, m in GATE_GRID]
@@ -1686,10 +1676,7 @@ def cmd_visual_ocr(args, cfg, encoder) -> int:
         return d["gt"], decode(S, d["pages"], d["owner"], a, variant="dp", min_sim=None, flat=0.0, sigma=sigma)
 
     def mean_paired(stems_, col, **kw):
-        res = [run(s_, col, **kw) for s_ in stems_]
-        f1s = [their_prf(g, p)[2] for g, p in res]
-        prs, covs = zip(*(answered_metrics(g, p) for g, p in res))
-        return float(np.mean(f1s)), f"{np.mean(f1s):.3f} ({np.mean(prs):.3f} / {np.mean(covs):.2f})"
+        return paired_mean_cell([run(s_, col, **kw) for s_ in stems_])
 
     tm_rows = {tm: mean_paired(tune, "frame_ocr", tm=tm) for tm in ("tfidf", "bm25")}
     tm = max(tm_rows, key=lambda k: tm_rows[k][0])
