@@ -53,5 +53,18 @@
   "image_score": "swiftformer",
   "frames": "representative"
  },
- "visibility_gate_study": "2026-09-24: a frame shows a slide if its OCR reads >= min_words words or its image margin (best - runner-up page) > min_margin; else its visual rows are neutral. Grid by tune their-F1 of the tuned three-way fusion; off unless it beats no gate on tune"
+ "visibility_gate_study": "2026-09-24: a frame shows a slide if its OCR reads >= min_words words or its image margin (best - runner-up page) > min_margin; else its visual rows are neutral. Grid by tune their-F1 of the tuned three-way fusion; off unless it beats no gate on tune",
+ "visual_final_round": {
+  "sentence_time_three_way_weights": [
+   0.25,
+   0.5,
+   0.25
+  ],
+  "sentence_time_gate": {
+   "min_words": 1,
+   "min_margin": 0.02
+  },
+  "best_column_on_tune": "+ both",
+  "study": "2026-09-24: sentence-time weights (simplex step 0.25) then gate (W x M grid) by tune their-F1; best column by tune mean"
+ }
 }

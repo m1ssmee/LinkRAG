@@ -1555,6 +1555,106 @@ def cmd_visibility_gate(args, cfg, encoder) -> int:
     return 0
 
 
+def cmd_final_round(args, cfg, encoder) -> int:
+    """Final round, item 3. Four variants of the tuned three-way fusion (visual / frame_ocr /
+    theirs): the previous best (representative frames, no gate), + the visibility gate, +
+    sentence-time frames, + both. Tune half only: for sentence-time frames the three-way
+    weights (SIMPLEX) and then the gate thresholds (GATE_GRID); the representative gate is the
+    one fixed in item 1. The column reported as ours is the best on tune. Test half once."""
+    a = cfg["link"]["align"]
+    split = split_lectures()
+    tune = split["tune"]
+    tuned = json.loads((EXTERNAL / "mavils_tuned.json").read_text())
+    sigma, vm, tm = float(tuned["sigma"]), tuned["visual_method"], tuned["frame_ocr_method"]
+    w3 = tuple(tuned["three_way_weights"])
+    g_rep = {k: tuned["visibility_gate"][k] for k in ("min_words", "min_margin")}
+    fd = Path(args.figures_dir)
+    stems = [s for s in sorted(LECTURES) if (CACHE / "frames" / s / "slides.json").exists()]
+    rep = {s: lecture_matrices(s, cfg, encoder, fd, with_text=True, frame_source="representative") for s in stems}
+    sen = {s: lecture_matrices(s, cfg, encoder, fd, with_text=True, frame_source="sentence_time") for s in stems}
+
+    def f1(dd, s_, w, gate):
+        d = dd[s_]
+        pred = decode(three_way(d, vm, tm, w, gate), d["pages"], d["owner"], a, variant="dp", min_sim=None, flat=0.0,
+                      sigma=sigma)
+        return their_prf(d["gt"], pred)[2], answered_metrics(d["gt"], pred)
+
+    def mean(dd, stems_, w, gate):
+        return float(np.mean([f1(dd, s_, w, gate)[0] for s_ in stems_]))
+
+    s_rows = [(w, mean(sen, tune, w, None)) for w in SIMPLEX]
+    w3s = max(s_rows, key=lambda r: r[1])[0]
+    off_s = mean(sen, tune, w3s, None)
+    g_rows = [((w, m), mean(sen, tune, w3s, {"min_words": w, "min_margin": m})) for w, m in GATE_GRID]
+    (gw, gm), g_best = max(g_rows, key=lambda r: r[1])
+    g_sen = {"min_words": gw, "min_margin": gm} if g_best > off_s else None
+    cols = {"previous best": (rep, w3, None), "+ gate": (rep, w3, g_rep), "+ sentence-time": (sen, w3s, None),
+            "+ both": (sen, w3s, g_sen)}
+    tune_means = {c: mean(dd, tune, w, g) for c, (dd, w, g) in cols.items()}
+    best = max(tune_means, key=tune_means.get)
+    tuned["visual_final_round"] = {"sentence_time_three_way_weights": list(w3s), "sentence_time_gate": g_sen,
+                            "best_column_on_tune": best,
+                            "study": "2026-09-24: sentence-time weights (simplex step 0.25) then gate (W x M grid) by "
+                                     "tune their-F1; best column by tune mean"}
+    (EXTERNAL / "mavils_tuned.json").write_text(json.dumps(tuned, indent=1) + "\n")
+
+    test = [s_ for s_ in split["test"] if s_ in rep]
+    theirs = {s_: LECTURES[s_][3] for s_ in test}
+    L = ["# MaViLS — final round: visibility gate and sentence-time frames", "",
+         "Their protocol: sentence granularity, page OCR on the slide side, their sklearn F1. Cells: **their F1 "
+         f"(precision-on-answered / coverage)**. Decoder: our DP at σ = {sigma}. Every column is the three-way fusion "
+         f"(image {vm} / frame OCR {tm} / speech-to-slide text, min-max scaled, `fuse_many`). LLM-free, $0.", "",
+         "- *previous best* — representative frames (one per dHash segment, 320 px), weights "
+         f"{w3[0]}/{w3[1]}/{w3[2]}, no gate (`mavils_frame_ocr.md`, 0.810).",
+         f"- *+ gate* — the same with the slide-visibility gate of `mavils_visibility_gate.md` (W = {g_rep['min_words']}, "
+         f"M = {g_rep['min_margin']}).",
+         "- *+ sentence-time* — the frame at each sentence timestamp at native resolution (MaViLS's own choice), OCR'd "
+         f"at ≥ {OCR_SIDE} px longest side; weights re-chosen on tune.",
+         "- *+ both* — sentence-time frames and a gate re-tuned on them.", "",
+         "Videos: the MaViLS Kaggle zip, found again as `~/Downloads/archive (2).zip` (Kaggle's default name; same 21 "
+         "files as the earlier `video.zip`); sentence-time frames extracted, then the videos removed. Native resolution "
+         "varies by lecture from 320×240 to 1280×720.", "",
+         "## Tune half", "", "Sentence-time three-way weights (visual / frame_ocr / theirs), top 5:", "",
+         "| weights | tune |", "|---|---:|"]
+    for w, v in sorted(s_rows, key=lambda r: -r[1])[:5]:
+        L.append(f"| {w[0]:.2f} / {w[1]:.2f} / {w[2]:.2f} | {v:.3f}{' ←' if w == w3s else ''} |")
+    L += ["", f"Sentence-time gate: no gate {off_s:.3f}; best W = {gw}, M = {gm} at {g_best:.3f} → "
+          + (f"**gate on (W = {gw}, M = {gm})**." if g_sen else "**gate off** (no setting beats no gate)."), "",
+          "| column | tune mean |", "|---|---:|", *[f"| {c} | {v:.3f}{' ←' if c == best else ''} |" for c, v in tune_means.items()],
+          "", f"Chosen on tune: **{best}**.", "", "## Test half — reported once", "",
+          "| lecture | " + " | ".join(cols) + " | their all-features (T2) |", "|---|" + "---:|" * (len(cols) + 1)]
+    best_f1 = {}
+    for s_ in test:
+        cells = []
+        for c, (dd, w, g) in cols.items():
+            v, (pr, cov) = f1(dd, s_, w, g)
+            if c == best:
+                best_f1[s_] = v
+            cells.append(f"{v:.2f} ({pr:.2f} / {cov:.2f})")
+        L.append(f"| {LECTURES[s_][1]} | " + " | ".join(cells) + f" | {theirs[s_]:.2f} |")
+    means = {c: mean(dd, test, w, g) for c, (dd, w, g) in cols.items()}
+    L.append("| **mean** | " + " | ".join(f"**{means[c]:.3f}**" for c in cols) + f" | {np.mean(list(theirs.values())):.2f} |")
+    diffs = np.array([best_f1[s_] - theirs[s_] for s_ in test])
+    boots = np.random.default_rng(20260924).choice(diffs, (10000, len(diffs))).mean(axis=1)
+    lo, hi = np.percentile(boots, [2.5, 97.5])
+    wins = [s_ for s_ in test if best_f1[s_] >= theirs[s_]]
+    L += ["", f"## Paired against their all-features ({best})", "",
+          "| lecture | ours | theirs | difference |", "|---|---:|---:|---:|",
+          *[f"| {LECTURES[s_][1]} | {best_f1[s_]:.2f} | {theirs[s_]:.2f} | {best_f1[s_] - theirs[s_]:+.2f} |" for s_ in test],
+          "", f"Mean difference **{diffs.mean():+.3f}**, 95 % bootstrap interval over the {len(test)} lectures "
+          f"[{lo:+.3f}, {hi:+.3f}] (10,000 resamples, numpy seed 20260924). Wins {len(wins)}, losses {len(test) - len(wins)} "
+          f"(a tie counts as a win). Our test mean {means[best]:.3f} vs their {np.mean(list(theirs.values())):.2f} on the same "
+          f"lectures; their {PAPER_ALL_FEATURES} is a 20-lecture average and not a paired comparison.", "",
+          f"Reinforcement: {best_f1.get('reinforcement_learning', float('nan')):.2f} vs their "
+          f"{LECTURES['reinforcement_learning'][3]:.2f}. Numerics: {best_f1.get('numerics', float('nan')):.2f} vs their "
+          f"{LECTURES['numerics'][3]:.2f}.", "",
+          "Climate policies (test half) has no video in their Kaggle zip and is outside every mean here."]
+    out = Path(args.out)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 0
+
+
 OCR_COLS = ("ours", "visual+theirs", "frame_ocr", "visual+frame_ocr", "visual+frame_ocr+theirs")
 SIMPLEX = [(a / 4, b / 4, (4 - a - b) / 4) for a in range(5) for b in range(5 - a)]   # step 0.25: 15 points
 PAPER_ALL_FEATURES = 0.82                                                          # their Table 2, 20 lectures
@@ -1668,7 +1768,7 @@ def cmd_visual_ocr(args, cfg, encoder) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames", "visual", "frame-ocr",
-                                    "visual-ocr", "visibility-gate"])
+                                    "visual-ocr", "visibility-gate", "final-round"])
     ap.add_argument("--shuffles", type=int, default=30)
     ap.add_argument("--reuse", action="store_true", help="gate: reuse cached z-scores from the previous run's json")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -1686,7 +1786,8 @@ def main(argv: list[str] | None = None) -> int:
                     "visual-frames": "results/external/mavils_frames.md", "visual": "results/external/mavils_visual.md",
                     "frame-ocr": "results/external/mavils_frame_ocr_sanity.md",
                     "visual-ocr": "results/external/mavils_frame_ocr.md",
-                    "visibility-gate": "results/external/mavils_visibility_gate.md"}[args.cmd]
+                    "visibility-gate": "results/external/mavils_visibility_gate.md",
+                    "final-round": "results/external/mavils_final_round.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
@@ -1696,7 +1797,7 @@ def main(argv: list[str] | None = None) -> int:
     return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused,
             "gate": cmd_gate, "gate-gran": cmd_gate_gran, "visual-frames": cmd_visual_frames,
             "visual": cmd_visual, "frame-ocr": cmd_frame_ocr, "visual-ocr": cmd_visual_ocr,
-            "visibility-gate": cmd_visibility_gate}[args.cmd](args, cfg, encoder)
+            "visibility-gate": cmd_visibility_gate, "final-round": cmd_final_round}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":
