@@ -46,5 +46,12 @@
   0.25,
   0.25
  ],
- "frame_ocr_study": "2026-09-24: text score, frame_ocr weight and three-way (visual, frame_ocr, theirs) weights by tune their-F1; frames OCR'd at 3x from 320 px"
+ "frame_ocr_study": "2026-09-24: text score, frame_ocr weight and three-way (visual, frame_ocr, theirs) weights by tune their-F1; frames OCR'd at 3x from 320 px",
+ "visibility_gate": {
+  "min_words": 1,
+  "min_margin": 0.02,
+  "image_score": "swiftformer",
+  "frames": "representative"
+ },
+ "visibility_gate_study": "2026-09-24: a frame shows a slide if its OCR reads >= min_words words or its image margin (best - runner-up page) > min_margin; else its visual rows are neutral. Grid by tune their-F1 of the tuned three-way fusion; off unless it beats no gate on tune"
 }

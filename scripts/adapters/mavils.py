@@ -1239,9 +1239,29 @@ def lecture_matrices(stem: str, cfg: dict, encoder, figures_dir: Path, with_text
     assert list(pages) == list(range(1, fp["dhash"].shape[1] + 1)), stem     # columns = deck pages, in order
     d["visual"] = {k: segment_visual(times, slides, fp[k]) for k in fp}
     if with_text:
+        from linkrag.index import tokenize
+        from linkrag.ingest.video_slides import slide_at
+        from linkrag.link.visual import frame_margin
         ft = frame_text_page_for(stem, figures_dir)
         d["frame_ocr"] = {k: segment_visual(times, slides, ft[k]) for k in ft}
+        d["frame_of"] = [slide_at(slides, t) for t in times]            # the frame each sentence takes
+        d["frame_words"] = [len(tokenize(t)) for t in frame_ocr_for(stem)]
+        d["frame_margin"] = {k: frame_margin(fp[k]) for k in fp}
     return d
+
+
+def three_way(d: dict, vm: str, tm: str, w3, gate: dict | None = None) -> np.ndarray:
+    """visual + frame_ocr + theirs (`fuse_many`). With `gate`, a sentence whose frame is not
+    `slide_visible` gets constant visual and frame-OCR rows, so its page is decided by the
+    speech-to-slide text alone (a constant row cannot change which page wins in that row)."""
+    from linkrag.link.align import fuse_many
+    from linkrag.link.visual import slide_visible
+    V, O = d["visual"][vm].copy(), d["frame_ocr"][tm].copy()
+    if gate is not None:
+        vis = slide_visible(d["frame_words"], d["frame_margin"][vm], **gate)
+        rows = [i for i, k in enumerate(d["frame_of"]) if k is not None and not vis[k]]
+        V[rows], O[rows] = V.min(), O.min()
+    return fuse_many([V, O, d["theirs"]], w3)
 
 
 VISUAL_COLS = ("ours", "theirs", "fused", "visual", "visual+text", "visual+theirs")
@@ -1348,6 +1368,84 @@ def cmd_visual(args, cfg, encoder) -> int:
           f"*ours* on {wins['vs_ours'][0]} (loses {wins['vs_ours'][1]}); a tie counts as a win.", "",
           f"All {len(with_video)} lectures with video (contains the tune half, so the tuned columns are optimistic): "
           + ", ".join(f"{c} {v}" for c, v in all_means.items()) + ".", ""]
+    out = Path(args.out)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 0
+
+
+GATE_GRID = [(w, m) for w in (1, 3, 5, 10) for m in (0.01, 0.02, 0.05, 0.10)]
+
+
+def cmd_visibility_gate(args, cfg, encoder) -> int:
+    """Item 1 of the final round: the slide-visibility gate on the representative frames. Rule
+    and thresholds fixed on the tune half only (grid GATE_GRID, by their-F1 of the tuned
+    three-way fusion); the gate stays off unless a setting beats no gate on the tune half."""
+    from linkrag.link.visual import slide_visible
+    a = cfg["link"]["align"]
+    split = split_lectures()
+    tune = split["tune"]
+    tuned = json.loads((EXTERNAL / "mavils_tuned.json").read_text())
+    sigma, vm, tm = float(tuned["sigma"]), tuned["visual_method"], tuned["frame_ocr_method"]
+    w3 = tuple(tuned["three_way_weights"])
+    data = {s: lecture_matrices(s, cfg, encoder, Path(args.figures_dir), with_text=True)
+            for s in sorted(LECTURES) if (CACHE / "frames" / s / "slides.json").exists()}
+
+    def pred(stem, gate):
+        d = data[stem]
+        return decode(three_way(d, vm, tm, w3, gate), d["pages"], d["owner"], a, variant="dp", min_sim=None,
+                      flat=0.0, sigma=sigma)
+
+    def mean_f1(stems_, gate):
+        return float(np.mean([their_prf(data[s_]["gt"], pred(s_, gate))[2] for s_ in stems_]))
+
+    off = mean_f1(tune, None)
+    grid = [((w, m), mean_f1(tune, {"min_words": w, "min_margin": m})) for w, m in GATE_GRID]
+    (bw, bm), best = max(grid, key=lambda r: r[1])
+    gate = {"min_words": bw, "min_margin": bm} if best > off else None
+    tuned["visibility_gate"] = (dict(gate, image_score=vm, frames="representative") if gate else None)
+    tuned["visibility_gate_study"] = ("2026-09-24: a frame shows a slide if its OCR reads >= min_words words or its "
+                                      "image margin (best - runner-up page) > min_margin; else its visual rows are "
+                                      "neutral. Grid by tune their-F1 of the tuned three-way fusion; off unless it beats "
+                                      "no gate on tune")
+    (EXTERNAL / "mavils_tuned.json").write_text(json.dumps(tuned, indent=1) + "\n")
+    L = ["# MaViLS — slide-visibility gate (representative frames)", "",
+         "Rule: a frame shows a slide if its OCR reads at least *W* words (3× upscale, `mavils_frame_ocr_sanity.md`) "
+         f"or its image channel ({vm}) picks a page by more than *M* (best minus runner-up); otherwise it is a speaker or "
+         "room shot, and every sentence taking that frame gets constant image and frame-OCR rows, so its page is "
+         "decided by the speech-to-slide text alone (`three_way`, `linkrag.link.visual.slide_visible`). The optional "
+         "high-contrast-text-area signal was not used: the two signals above were already computed.", "",
+         f"Fusion: the tuned three-way (visual / frame_ocr / theirs = {w3[0]} / {w3[1]} / {w3[2]}, {tm}), our DP at "
+         f"σ = {sigma}. **Tune half only**; the test half is run once in `mavils_final_round.md`. LLM-free, $0.", "",
+         "## Tune half: W × M grid (their F1, mean of 10 lectures)", "",
+         f"No gate: **{off:.3f}**.", "", "| W (words) \\ M (margin) | " + " | ".join(str(m) for m in (0.01, 0.02, 0.05, 0.10))
+         + " |", "|---|" + "---:|" * 4]
+    for w in (1, 3, 5, 10):
+        L.append(f"| {w} | " + " | ".join(f"{f1:.3f}{' ←' if (w, m) == (bw, bm) and gate else ''}"
+                                         for (ww, m), f1 in grid if ww == w) + " |")
+    L += ["", (f"Chosen: **W = {bw}, M = {bm}** (tune {best:.3f} vs {off:.3f} without the gate); recorded in "
+               "`results/external/mavils_tuned.json`." if gate else
+               f"No setting beats no gate on the tune half (best {best:.3f} at W = {bw}, M = {bm}): **gate off**."), "",
+          "## Frames classified speaker, and the tune-half effect", "",
+          "| lecture | half | frames | speaker frames | tune F1 no gate | tune F1 gate | predictions changed |",
+          "|---|---|---:|---:|---:|---:|---:|"]
+    g = gate or {"min_words": bw, "min_margin": bm}
+    for s_ in sorted(data, key=lambda x: LECTURES[x][1]):
+        d = data[s_]
+        vis = slide_visible(d["frame_words"], d["frame_margin"][vm], **g)
+        frac = float(np.mean(~vis))
+        half = "tune" if s_ in tune else "test"
+        cells = "— | — | —"
+        if half == "tune":
+            p0, p1 = pred(s_, None), pred(s_, g)
+            cells = (f"{their_prf(d['gt'], p0)[2]:.3f} | {their_prf(d['gt'], p1)[2]:.3f} | "
+                     f"{int(np.sum(p0 != p1))} of {len(p0)}")
+        L.append(f"| {LECTURES[s_][1]} | {half} | {len(vis)} | {frac:.0%} | {cells} |")
+    low = [s_ for s_ in tune if float(np.mean(~slide_visible(data[s_]["frame_words"], data[s_]["frame_margin"][vm], **g))) < 0.10]
+    unchanged = [s_ for s_ in low if not np.any(pred(s_, None) != pred(s_, g))]
+    L += ["", f"Tune lectures with < 10 % speaker frames: {', '.join(LECTURES[s_][1] for s_ in low) or 'none'}; "
+          f"predictions unchanged by the gate on {len(unchanged)} of {len(low)}"
+          + (f" (changed: {', '.join(LECTURES[s_][1] for s_ in low if s_ not in unchanged)})." if len(unchanged) < len(low) else ".")]
     out = Path(args.out)
     out.write_text("\n".join(L) + "\n")
     print("\n".join(L))
@@ -1467,7 +1565,7 @@ def cmd_visual_ocr(args, cfg, encoder) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames", "visual", "frame-ocr",
-                                    "visual-ocr"])
+                                    "visual-ocr", "visibility-gate"])
     ap.add_argument("--shuffles", type=int, default=30)
     ap.add_argument("--reuse", action="store_true", help="gate: reuse cached z-scores from the previous run's json")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -1484,7 +1582,8 @@ def main(argv: list[str] | None = None) -> int:
                     "gate": "results/external/mavils_gate_v2.md", "gate-gran": "results/external/mavils_gate_v3.md",
                     "visual-frames": "results/external/mavils_frames.md", "visual": "results/external/mavils_visual.md",
                     "frame-ocr": "results/external/mavils_frame_ocr_sanity.md",
-                    "visual-ocr": "results/external/mavils_frame_ocr.md"}[args.cmd]
+                    "visual-ocr": "results/external/mavils_frame_ocr.md",
+                    "visibility-gate": "results/external/mavils_visibility_gate.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
@@ -1493,7 +1592,8 @@ def main(argv: list[str] | None = None) -> int:
     encoder([""])
     return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused,
             "gate": cmd_gate, "gate-gran": cmd_gate_gran, "visual-frames": cmd_visual_frames,
-            "visual": cmd_visual, "frame-ocr": cmd_frame_ocr, "visual-ocr": cmd_visual_ocr}[args.cmd](args, cfg, encoder)
+            "visual": cmd_visual, "frame-ocr": cmd_frame_ocr, "visual-ocr": cmd_visual_ocr,
+            "visibility-gate": cmd_visibility_gate}[args.cmd](args, cfg, encoder)
 
 
 if __name__ == "__main__":

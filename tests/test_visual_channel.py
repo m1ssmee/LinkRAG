@@ -82,3 +82,11 @@ def test_align_frame_ocr_options_and_three_way_fusion():
         align(audio, slides, encoder=None, similarity="visual+frame_ocr+theirs", visual=V, frame_ocr=O)
     with pytest.raises(ValueError, match="frame_ocr"):
         align(audio, slides, encoder=None, similarity="frame_ocr")
+
+
+def test_slide_visibility_rule():
+    from linkrag.link.visual import frame_margin, slide_visible
+    fp = np.array([[0.9, 0.2, 0.1], [0.5, 0.49, 0.48], [0.4, 0.4, 0.4]])
+    assert np.allclose(frame_margin(fp), [0.7, 0.01, 0.0])
+    vis = slide_visible([0, 12, 0], frame_margin(fp), min_words=5, min_margin=0.05)
+    assert vis.tolist() == [True, True, False]        # image decisive; text present; neither = speaker

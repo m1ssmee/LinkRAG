@@ -123,6 +123,19 @@ def segment_visual(midpoints: Sequence[float], slides: Sequence[Slide], frame_pa
     return out
 
 
+def frame_margin(frame_page: np.ndarray) -> np.ndarray:
+    """Per frame: best page minus runner-up (how decisively the frame picks a page)."""
+    top2 = np.sort(frame_page, axis=1)[:, -2:]
+    return top2[:, 1] - top2[:, 0] if frame_page.shape[1] > 1 else np.zeros(len(frame_page))
+
+
+def slide_visible(words: Sequence[int], margin: Sequence[float], *, min_words: int, min_margin: float) -> np.ndarray:
+    """True where a frame shows a slide: its OCR reads at least `min_words` words, or its image
+    channel picks a page by more than `min_margin`. Both low = a speaker or room shot, whose
+    visual rows carry no evidence about the slide."""
+    return (np.asarray(words) >= min_words) | (np.asarray(margin) > min_margin)
+
+
 def confident_rate(frame_page: np.ndarray, margin: float) -> float:
     """Share of frames whose best page beats the runner-up by more than `margin`."""
     if frame_page.shape[1] < 2 or not len(frame_page):
