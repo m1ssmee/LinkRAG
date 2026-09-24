@@ -354,7 +354,8 @@ explicit instruction.
      (37.92, 41.49). So the replica loses about 5 points more than the controls, and the
      filter leaves 34 of 160 questions with no context. Their Table 7 reports the opposite
      (F1 falls to 11.40 without the filter).
-   - **Faithfulness** (unsupported / claims): replica 4.6 %, iterative 5.4 %, full_context
+   - **Faithfulness** (unsupported / claims): replica 4.6 %, iterative 5.3 % (corrected
+     2026-09-24 from 5.4 %: a judge-cache replay artefact, see the report), full_context
      5.6 %, on 647–796 claims per mode. The differences sit inside the ~1.1-point standard
      error of a difference, so no mode is distinguishable. The full transcript's gain is not
      paid for in unsupported claims.

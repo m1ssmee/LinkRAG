@@ -4,19 +4,21 @@ The 900 repeat-0 answers of the open-ended subset (`lectqa_open_modes.md`: 100 q
 
 **supported**: a cited unit entails the claim. **weak**: the claim cites no unit of the evidence. **unsupported**: no cited unit entails it. **Hallucination rate** = unsupported / claims, pooled over answers (`hallucination_rate`). Supported means the claim is stated in the cited evidence. It does not mean the answer is correct.
 
+> *Corrected 2026-09-24 (judge cache replay):* iterative, hard: supported 249 → 250, unsupported 8 → 7, rate 3.1 % → 2.7 %; iterative overall 43 → 42 unsupported, 5.4 % → 5.3 %. One claim appears in two answers with an identical judge prompt, and its two stored judge replies differ: one is valid JSON followed by a stray `}`, which the parser rejects and scores as *no*. The old replay handed the two stored replies out in thread order; the cache is now keyed by answer and unit (commit "Judge cache keyed on prompt and answer id"), and a pre-keying entry is read by run index, so both answers now get the first, parseable reply. Numbers above are the corrected ones; the LLM cost below is the original run's (the re-render made no calls).
+
 | level | mode | answers | claims | supported | weak | unsupported | hallucination rate | answers with no claim |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | simple | baseline | 100 | 195 | 188 | 0 | 7 | 3.6 % | 12 |
 | simple | iterative | 100 | 239 | 216 | 0 | 23 | 9.6 % | 1 |
 | simple | full_context | 100 | 228 | 206 | 0 | 22 | 9.6 % | 1 |
 | hard | baseline | 100 | 205 | 191 | 0 | 14 | 6.8 % | 24 |
-| hard | iterative | 100 | 257 | 249 | 0 | 8 | 3.1 % | 6 |
+| hard | iterative | 100 | 257 | 250 | 0 | 7 | 2.7 % | 6 |
 | hard | full_context | 100 | 257 | 243 | 0 | 14 | 5.4 % | 6 |
 | very hard | baseline | 100 | 247 | 238 | 0 | 9 | 3.6 % | 15 |
 | very hard | iterative | 100 | 300 | 288 | 0 | 12 | 4.0 % | 7 |
 | very hard | full_context | 100 | 301 | 293 | 0 | 8 | 2.7 % | 6 |
 | overall | baseline | 300 | 647 | 617 | 0 | 30 | 4.6 % | 51 |
-| overall | iterative | 300 | 796 | 753 | 0 | 43 | 5.4 % | 14 |
+| overall | iterative | 300 | 796 | 754 | 0 | 42 | 5.3 % | 14 |
 | overall | full_context | 300 | 786 | 742 | 0 | 44 | 5.6 % | 13 |
 
 
