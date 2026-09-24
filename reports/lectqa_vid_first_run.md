@@ -1,3 +1,4 @@
+> Historical, not reproducible from current code: the first-run "ours" metric path was retired on 2026-09-24.
 # LectQA-Vid — target T1 — first run
 
 28 of 100 videos · 840 QA pairs per mode · modes ['baseline', 'linkrag'] · k=4 · answerer `gpt-5.4-2026-03-05` temperature=0.0 · repeats 1 · transcript: whisper-small · frames every 5s, OCR tesseract (their pipeline used Whisper large-v3 and Gemini captions)

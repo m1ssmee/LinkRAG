@@ -2,20 +2,14 @@
 
 from __future__ import annotations
 
-import importlib.util
+import sys
 from pathlib import Path
 
-
-def load():
-    path = Path(__file__).resolve().parents[1] / "scripts" / "adapters" / "lectqa_vid.py"
-    spec = importlib.util.spec_from_file_location("lectqa_vid", path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts" / "adapters"))
+from lectqa import common as L  # noqa: E402
 
 
 def test_strict_seconds_accepts_only_unambiguous_forms():
-    L = load()
     assert L.strict_seconds("00:01:20") == 80.0          # HH:MM:SS
     assert L.strict_seconds("01:20") == 80.0             # MM:SS
     assert L.strict_seconds("210.72") == 210.72          # plain seconds
@@ -28,7 +22,6 @@ def test_strict_seconds_accepts_only_unambiguous_forms():
 
 
 def test_gold_interval_rejects_out_of_range_and_reversed(monkeypatch):
-    L = load()
     monkeypatch.setitem(L._DURATION, "video_x", 272.0)
     assert L.gold_interval("video_x", {"timestamp_start": "00:00:09", "timestamp_end": "00:00:13"}) == ((9.0, 13.0), "ok")
     assert L.gold_interval("video_x", {"timestamp_start": "00:00:09", "timestamp_end": "00:00:09"}) == ((9.0, 10.0), "ok")

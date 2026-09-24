@@ -21,7 +21,7 @@ flagged *estimated*).
 | `eval_alignment.py`, `eval_deictic.py` | alignment / deixis against ear labels | no |
 | `gate_links.py` | relatedness gate over `links.jsonl`; flags failed links in place | judge |
 | `adapters/mavils.py` | target T2: their 20 lectures, their micro-F1, transcript + PDF only | no |
-| `adapters/lectqa_vid.py` | target T1: fetch / prepare / run on their QA pairs and levels | answerer |
+| `adapters/lectqa_vid.py` | target T1: entry point for fetch / prepare / run / audit / mcq / open / faith / v2 / frameslides; the steps live in `adapters/lectqa/` | answerer |
 
 ## Cost policy (DESIGN.md *Cost policy*)
 

@@ -24,7 +24,7 @@ frames:
 
 Note: dHash thresholds are set by eye on LectQA-Vid lectures (static slides, 360p), not
 tuned against an evaluation. The known interval of every slide is what lets the audio->slide
-alignment be checked for free (see scripts/adapters/lectqa_vid.py frameslides).
+alignment be checked for free (see scripts/adapters/lectqa/frameslides.py).
 """
 
 from __future__ import annotations

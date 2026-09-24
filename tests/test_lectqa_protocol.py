@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import collections
+import sys
+from pathlib import Path
 
 import numpy as np
 
 from linkrag.core import EvidenceUnit, Location
-from test_lectqa_timestamps import load
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts" / "adapters"))
+from lectqa import mcq, open_ended  # noqa: E402
 
 
 def test_shuffled_options_are_seeded_and_move_the_gold():
-    L = load()
+    L = mcq
     q = {"options": ["right", "w1", "w2", "w3"], "answer": "right"}
     assert L.shuffled(q, "video_1", 0) == L.shuffled(q, "video_1", 0)           # fixed seed
     pos = collections.Counter(L.shuffled(q, f"video_{v}", i)[1] for v in range(1, 21) for i in range(10))
@@ -26,7 +30,7 @@ class FakeCE:
 
 
 def test_t1_retrieve_threshold_oracle_filter_merge_and_top_l():
-    L = load()
+    L = open_ended
     unit = lambda n, a, b, text: EvidenceUnit(id=f"v:c{n}", modality="audio", content=text, source_file="v.m4a",
                                               location=Location(start_s=a, end_s=b))
     chunks = [unit(0, 0, 10, "a"), unit(1, 12, 20, "bb"), unit(2, 40, 50, "ccc"), unit(3, 90, 99, "dddd")]
