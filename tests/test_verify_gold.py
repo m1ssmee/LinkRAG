@@ -117,3 +117,15 @@ def test_nli_is_an_ablation_that_cannot_write_gold_or_stored_reports(tmp_path):
     assert verifier_label(cfg, "llm", 3) == ("openai/gpt-oss-120b", 3)
     set_max_cost(cfg, 0.5)                                                # reaches the whisper-1 check too
     assert cfg["cost"]["max_usd"] == 0.5 and cfg["eval"]["judge"]["max_cost_usd"] == 0.5
+
+
+def test_parse_json_ignores_trailing_content_but_still_rejects_malformed():
+    from linkrag.eval.verify_gold import parse_json
+    ok = '{"facts": [{"fact": "x", "supported": true, "span": "x"}], "verdict": "yes"}'
+    assert parse_json(ok + "}")["verdict"] == "yes"                    # the stray brace judges add
+    assert parse_json("Here you go:\n" + ok + "\nThanks!")["verdict"] == "yes"
+    assert parse_json("```json\n" + ok + "\n```")["verdict"] == "yes"
+    assert parse_json('{"facts": []} , "verdict": "yes"}') == {"facts": []}   # brace mid-reply: verdict lost
+    assert parse_json('{"verdict": }') == {}                           # genuinely malformed
+    assert parse_json("no json here") == {}
+    assert parse_json('[{"verdict": "yes"}]') == {"verdict": "yes"}   # the first object, as before the fix

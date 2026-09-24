@@ -159,17 +159,21 @@ def span_in_text(span: str, text: str) -> bool:
 
 
 def parse_json(text: str) -> dict[str, Any]:
-    """The model is told 'JSON only'; tolerate a fenced or prefixed reply anyway."""
+    """The model is told 'JSON only'; tolerate a fenced or prefixed reply anyway, and trailing
+    text after the object: judges sometimes add a stray '}'. The first JSON value from the first
+    '{' is decoded and the rest ignored (the old last-'}' slice rejected such replies and they
+    scored as 'no'). Callers read fields, so anything but an object is {}."""
     text = text.strip()
     if text.startswith("```"):
         text = re.sub(r"^```[a-z]*\s*|\s*```$", "", text)
-    start, end = text.find("{"), text.rfind("}")
-    if start < 0 or end < 0:
+    start = text.find("{")
+    if start < 0:
         return {}
     try:
-        return json.loads(text[start:end + 1])
+        obj, _ = json.JSONDecoder().raw_decode(text, start)
     except json.JSONDecodeError:
         return {}
+    return obj if isinstance(obj, dict) else {}
 
 
 def majority(votes: Sequence[str], positive: str) -> bool:

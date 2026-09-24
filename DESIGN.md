@@ -354,11 +354,14 @@ explicit instruction.
      (37.92, 41.49). So the replica loses about 5 points more than the controls, and the
      filter leaves 34 of 160 questions with no context. Their Table 7 reports the opposite
      (F1 falls to 11.40 without the filter).
-   - **Faithfulness** (unsupported / claims): replica 4.6 %, iterative 5.3 % (corrected
-     2026-09-24 from 5.4 %: a judge-cache replay artefact, see the report), full_context
-     5.6 %, on 647–796 claims per mode. The differences sit inside the ~1.1-point standard
-     error of a difference, so no mode is distinguishable. The full transcript's gain is not
-     paid for in unsupported claims.
+   - **Faithfulness** (unsupported / claims): replica 3.7 %, iterative 3.1 %, full_context
+     4.3 %, on 647–796 claims per mode. *Corrected 2026-09-24, twice: from 4.6 / 5.4 / 5.6 %.
+     First iterative 5.4 → 5.3 % (a judge-cache replay artefact). Then all three, after
+     `parse_json` stopped rejecting judge replies with a stray trailing `}`: 33 claims moved
+     from unsupported to supported (see the report).* The largest gap, iterative vs
+     full_context, is 1.2 points (z ≈ 1.25, p ≈ 0.2), inside the ~1-point standard error of a
+     difference, so no mode is distinguishable. The full transcript's gain is not paid for in
+     unsupported claims.
    - **Consequence.** LectQA-Vid lectures are 2–5 minutes long, and every transcript fits in
      the answerer's context. Retrieval can only lose information here, and no retrieval
      method can show a benefit over reading everything. LinkRAG's cross-file linking is also
