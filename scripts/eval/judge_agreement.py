@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -32,12 +33,29 @@ STORED = [("reports/gold_verified_pilot01.json", "llm:gpt-4.1-mini"),
           ("reports/gold_verified_pilot01.judge-gpt54.json", "llm:gpt-5.4")]
 
 
+@contextmanager
+def judge_env(backend: str):
+    """verify_gold resolves its judge from LINKRAG_JUDGE_BACKEND, and the answerer here is the
+    stored gpt-5.4, so LINKRAG_LLM_BACKEND is cleared. Both are restored on exit: the caller's
+    environment (a test run, a shell session) must not keep the candidate judge."""
+    saved = {k: os.environ.get(k) for k in ("LINKRAG_JUDGE_BACKEND", "LINKRAG_LLM_BACKEND")}
+    os.environ["LINKRAG_JUDGE_BACKEND"] = backend
+    os.environ.pop("LINKRAG_LLM_BACKEND", None)
+    try:
+        yield
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
 def judge_block(config: str, backend: str) -> dict:
     """The judge config this run would use, resolved exactly as verify_gold will."""
     from linkrag.core import load_config
-    os.environ["LINKRAG_JUDGE_BACKEND"] = backend
-    cfg = load_config(config)
-    return cfg["eval"]["judge"]
+    with judge_env(backend):
+        return load_config(config)["eval"]["judge"]
 
 
 def refuse_billing(judge: dict, max_cost: float, judge_cache_only: bool) -> None:
@@ -57,10 +75,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--only", default=None, help="comma-separated qids (a smoke run; kappa is then not comparable)")
     ap.add_argument("--out-dir", default="results")
     args = ap.parse_args(argv)
+    with judge_env(args.judge):
+        return run(args)
 
+
+def run(args: argparse.Namespace) -> int:
     judge = judge_block(args.config, args.judge)
     refuse_billing(judge, args.max_cost, args.judge_cache_only)
-    os.environ.pop("LINKRAG_LLM_BACKEND", None)        # the answerer is the stored gpt-5.4, replayed
     name = f"{args.judge}:{judge.get('model')}"
     raw = Path(args.out_dir) / f"judge_agreement_{args.judge}"
     raw.mkdir(parents=True, exist_ok=True)

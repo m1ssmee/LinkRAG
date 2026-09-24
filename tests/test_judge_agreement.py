@@ -22,7 +22,7 @@ def load(name):
 
 
 def test_judge_agreement_writes_a_kappa_report_from_a_mocked_judge(tmp_path, monkeypatch):
-    monkeypatch.delenv("LINKRAG_JUDGE_BACKEND", raising=False)   # restored after: the script sets it
+    monkeypatch.delenv("LINKRAG_JUDGE_BACKEND", raising=False)
     ja = load("judge_agreement")
     seen = {}
     stored = json.loads(Path("reports/gold_verified_pilot01.json").read_text())
@@ -44,6 +44,8 @@ def test_judge_agreement_writes_a_kappa_report_from_a_mocked_judge(tmp_path, mon
     monkeypatch.setenv("LINKRAG_LLM_BACKEND", "colab")   # must be dropped: the answerer is the stored one
     assert ja.main(["--judge", "groq", "--max-cost", "0", "--out-dir", str(tmp_path)]) == 0
     assert seen["judge_env"] == "groq" and seen["llm_env"] is None
+    import os                                              # and the caller's environment is back
+    assert "LINKRAG_JUDGE_BACKEND" not in os.environ and os.environ["LINKRAG_LLM_BACKEND"] == "colab"
     assert seen["argv"][seen["argv"].index("--answerer-model") + 1] == "gpt-5.4-2026-03-05"
     assert "--answerer-cache-only" in seen["argv"] and seen["argv"][seen["argv"].index("--entailment") + 1] == "llm"
     report = (tmp_path / "judge_agreement_groq.md").read_text()

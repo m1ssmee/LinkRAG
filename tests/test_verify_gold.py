@@ -101,7 +101,7 @@ def test_audit_sampler_stratifies_with_minimum():
     assert c == {"a": 10, "b": 3}
 
 
-def test_nli_is_an_ablation_that_cannot_write_gold_or_stored_reports(tmp_path):
+def test_nli_is_an_ablation_that_cannot_write_gold_or_stored_reports(tmp_path, monkeypatch):
     """DESIGN.md finding 11: NLI never decides gold or intake, and its reports say what it is."""
     import pytest
     from linkrag.core import load_config, set_max_cost
@@ -112,9 +112,11 @@ def test_nli_is_an_ablation_that_cannot_write_gold_or_stored_reports(tmp_path):
         refuse_nli_decisions("nli", "reports")
     refuse_nli_decisions("nli", tmp_path / "g.jsonl", tmp_path)          # scratch paths are fine
     refuse_nli_decisions("llm", "tests/regression/pilot01_questions.jsonl", "reports")
+    for var in ("LINKRAG_JUDGE_BACKEND", "LINKRAG_LLM_BACKEND"):        # the default judge, whatever ran before
+        monkeypatch.delenv(var, raising=False)
     cfg = load_config("configs/default.yaml")
     assert verifier_label(cfg, "nli", 3) == ("nli:cross-encoder/nli-deberta-v3-base", 1)
-    assert verifier_label(cfg, "llm", 3) == ("openai/gpt-oss-120b", 3)
+    assert verifier_label(cfg, "llm", 3) == ("gpt-4.1-mini-2025-04-14", 3)
     set_max_cost(cfg, 0.5)                                                # reaches the whisper-1 check too
     assert cfg["cost"]["max_usd"] == 0.5 and cfg["eval"]["judge"]["max_cost_usd"] == 0.5
 
