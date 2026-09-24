@@ -29,7 +29,7 @@ Everything else is a component or related work.
 | | Target | Benchmark | Their number we must beat | Our metric |
 |---|---|---|---|---|
 | **T1** | Intra-Video Temporal-Aware RAG — Shafiq, Ejaz, Shah, Kamal, Sohail, Aslam. *CMC* 88(2), art. 96, 2026. doi:10.32604/cmc.2026.081534 | **LectQA-Vid**: 100 CS lecture videos (2–5 min), 3,000 QA pairs (1,500 MCQ + 1,500 open-ended), 80/10/10 split; evaluation subset 1,000 (500 MCQ + 500 open) | Open-ended, *Overall* row of their Table 4 (all in %): **F1 23.52, semantic similarity 74.42** (all-MiniLM-L6-v2 cosine), ROUGE-1 29.76, BLEU 5.58, METEOR 32.41. MCQ, *Overall* row of Table 5: **accuracy 53.43**. Their multimodal-RAG-without-timestamps baseline (Table 6 *Overall*): F1 14.80, similarity 61.00. *Corrected 2026-09-23: this row previously gave semantic similarity 0.71, MCQ accuracy 56.30 % and a Table 6 baseline F1 of 19.62 %; the published tables (read as images from the full-text HTML) say 74.42 %, 53.43 % and 14.80 %.* | Same metrics, same split, same difficulty breakdown (Simple / Hard / Very Hard / Overall), plus evidence recall and modality coverage which they do not report. |
-| **T2** | MaViLS — Anderer, Reich, Wölfel. *Interspeech 2024*, pp. 1375–1379. doi:10.21437/Interspeech.2024-978. arXiv:2409.16765 | **MaViLS**: 20 lectures (MIT OCW, Tübingen, DeepMind), >22 h video, 12,830 segments; every spoken sentence hand-labelled with a slide index (−1 = no slide). github.com/andererka/MaViLS | Per-frame F1 against ground truth, ignoring −1 labels. *Average* row of their Table 1: **audio-transcript-only 0.53**, OCR-text-only 0.76, image-only 0.64, SIFT 0.56; Table 2 / §4.2: **all three features combined, λ_jump = 0.1: 0.82**. | Same F1 definition, per lecture and average. **Our text setting is their audio column** — a transcript aligned to a slide PDF — so 0.53 is the like-for-like number there. *Since 2026-09-24 (finding 14) we also use the video frames (19 of 20 lectures), so 0.82 is now a direct comparison: 0.765 vs their 0.80 on the 9 test lectures with video.* |
+| **T2** | MaViLS — Anderer, Reich, Wölfel. *Interspeech 2024*, pp. 1375–1379. doi:10.21437/Interspeech.2024-978. arXiv:2409.16765 | **MaViLS**: 20 lectures (MIT OCW, Tübingen, DeepMind), >22 h video, 12,830 segments; every spoken sentence hand-labelled with a slide index (−1 = no slide). github.com/andererka/MaViLS | Per-frame F1 against ground truth, ignoring −1 labels. *Average* row of their Table 1: **audio-transcript-only 0.53**, OCR-text-only 0.76, image-only 0.64, SIFT 0.56; Table 2 / §4.2: **all three features combined, λ_jump = 0.1: 0.82**. | Same F1 definition, per lecture and average. **Our text setting is their audio column** — a transcript aligned to a slide PDF — so 0.53 is the like-for-like number there. *Since 2026-09-24 (findings 14–15) we also use the video frames (19 of 20 lectures), image and frame OCR, so 0.82 is now a direct comparison: 0.810 vs their 0.80 on the 9 test lectures with video.* |
 
 What the targets already have, stated plainly so it is not re-claimed as ours:
 
@@ -409,6 +409,44 @@ explicit instruction.
      Frame OCR, the one feature of theirs we lack, is the next candidate. This is an
      alignment result only: the pilot corpus has no video, so no LinkRAG retrieval number
      changes.
+
+15. **MaViLS: with frame OCR, the three-feature alignment reaches parity with their
+   all-features result: 0.810 vs 0.80 on the 9 test lectures with video.**
+   (`results/external/mavils_frame_ocr_sanity.md`, `mavils_frame_ocr.md`, 2026-09-24;
+   LLM-free, $0.)
+   - **Caveats first.**
+     - *Parity, not a win.* The per-lecture differences to their published numbers run
+       from −0.23 (Reinforcement) to +0.24 (Phonetics); we win 5 lectures and lose 4. A
+       +0.01 mean over 9 lectures supports "matches", nothing stronger.
+     - *Coverage.* 9 test lectures: Climate policies has no video (finding 14).
+     - *Frames.* We read frame text from 320 px representative frames, one per dHash
+       segment, after a 3× upscale. MaViLS reads full-resolution frames at each sentence
+       timestamp. Sentence-time frames (task item 2) were skipped because the videos are no
+       longer available.
+     - *Their numbers.* The 0.80 is their published per-lecture figures, decoded by their
+       DP; ours use our DP.
+     - *Tuning.* Three quantities were tuned on the tune half: the text score (BM25), the
+       visual+frame_ocr weight, and the three-way weights. The image score and the
+       visual+theirs weight carry over from finding 14. Over all 19 lectures with video, tune
+       half included (so optimistic), the three-way reaches 0.801.
+   - **What changed.** `linkrag.link.visual.ocr_frame` reads each representative frame.
+     `text_similarity` scores the frame text against the page OCR (TF-IDF or BM25). Each
+     sentence takes its frame's row. `align()` gained `frame_ocr`, `visual+frame_ocr` and
+     `visual+frame_ocr+theirs`, the last via `fuse_many`.
+   - **Results, test half once.** Frame OCR alone scores 0.495: half the frames carry no
+     text, and the median word count is 0. visual+frame_ocr 0.765 is no better than
+     visual+theirs. **All three features together score 0.810**, up from 0.765, and beat
+     visual+theirs on 8 of 9 lectures. Tuned weights: visual 0.50, frame OCR 0.25, their
+     speech-to-slide text 0.25.
+   - **Where it helps and where it does not.**
+     - *Helps.* The largest wins over their result: Phonetics 0.89 vs 0.65, Computation
+       theory 0.96 vs 0.84, Short range 0.84 vs 0.80.
+     - *Does not help.* Camera-heavy Reinforcement (text on 28 % of frames) stays at 0.52
+       vs their 0.75, and Numerics at 0.71 vs 0.81.
+   - **Consequence.** Adding frame text closes the MaViLS gap to their all-features result,
+     at parity. What remains is camera-heavy video, full-resolution sentence-time frames
+     (which need the videos) and the missing Climate policies video. This is still an
+     alignment result only: the pilot corpus has no video, so no retrieval number changes.
 
 ### Design changes recorded against the verified-gold result (2026-09-21)
 
