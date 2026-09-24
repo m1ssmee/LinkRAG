@@ -9,6 +9,7 @@ flagged *estimated*).
 |---|---|---|
 | `ingest.py` | files → `EvidenceUnit`s → index + corpus manifest | no |
 | `build_links.py` | Evidence Linking Layer → `links.jsonl` stamped with the manifest | no |
+| `check_link_types.py` | link types per stored links file against the closed set; exit 1 on a retired type | no |
 | `ask.py` | one question, `--mode`, `--rerank`, `--show-evidence` | answerer |
 | `run_regression.py` | the verified question set, one mode, appended to `regression.md` | answerer |
 | `compare_retrieval.py` | mode × rerank matrix, per-type and per-question tables | answerer (iterative modes) |
