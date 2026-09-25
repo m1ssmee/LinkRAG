@@ -103,7 +103,6 @@ link:
     relatedness_z: 1.27
     null_shuffles: 30
     null_std_floor: 0.002
-    build_groups: false
     similarity: ours
     fusion_weight: 0.5
     min_score: 0.0

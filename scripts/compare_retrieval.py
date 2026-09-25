@@ -263,8 +263,8 @@ def main(argv: list[str] | None = None) -> int:
         for i in range(runs_n):
             vals = [per_q_full[(q, mode, method)][i] for q in qids if len(per_q_full.get((q, mode, method), [])) > i]
             per_run.append({k_: statistics.mean(v[k_] for v in vals) for k_ in ("recall", "prec", "mods")})
-        llm = statistics.mean(statistics.mean(calls_q[(q, mode)]) for q in qids)
-        return len(qids), per_run, llm
+        calls = statistics.mean(statistics.mean(calls_q[(q, mode)]) for q in qids)
+        return len(qids), per_run, calls
 
     def fmt_runs(per_run, key, pct=True):
         xs = [r[key] for r in per_run]
@@ -283,12 +283,12 @@ def main(argv: list[str] | None = None) -> int:
                 got = cell_by_type(bucket, mode, method)
                 if got is None:
                     continue
-                n, per_run, llm = got
+                n, per_run, calls_per_q = got
                 if mode in LLM_MODES and len(per_run) < 3:
                     md.append(f"| {bucket} | {n} | {mode} | {method} | REFUSED (n<3) | | | |")
                     continue
                 line = (f"| {bucket} | {n} | {mode} | {method} | {fmt_runs(per_run, 'recall')} | "
-                        f"{fmt_runs(per_run, 'prec')} | {fmt_runs(per_run, 'mods', pct=False)} | {llm:.1f} |")
+                        f"{fmt_runs(per_run, 'prec')} | {fmt_runs(per_run, 'mods', pct=False)} | {calls_per_q:.1f} |")
                 md.append(line)
                 print("  " + line.strip("| ").replace(" | ", "  "))
     md += ["", "Bucket sizes: " + ", ".join(

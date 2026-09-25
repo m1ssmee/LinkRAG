@@ -153,3 +153,23 @@ def test_both_granularities_are_requested(monkeypatch, tmp_path):
     grans = [v for k, v in sent["data"] if k == "timestamp_granularities[]"]
     assert set(grans) == {"word", "segment"}
     assert words[0].text == "Hi."
+
+
+def test_transcribe_script_passes_its_budget_to_the_guard(tmp_path, monkeypatch) -> None:
+    """--max-cost used to stop at the script's own estimate: transcribe()'s guard read
+    cost.max_usd, still $0, and refused every file whatever the flag said."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import transcribe_openai
+
+    seen = {}
+
+    def fake_transcribe(audio, cfg, prompt=None):
+        seen["budget"] = cfg["cost"]["max_usd"]
+        raise SystemExit(0)
+
+    monkeypatch.setattr(transcribe_openai, "transcribe", fake_transcribe)
+    with pytest.raises(SystemExit):
+        transcribe_openai.main([str(tmp_path / "talk.m4a"), "--out", str(tmp_path / "t.json"),
+                                "--no-prompt", "--max-cost", "0.75"])
+    assert seen["budget"] == 0.75

@@ -23,6 +23,7 @@ EDGE_STYLE = {
     "audio_slide": ("#00E676", "-"),
     "figure_text": ("#FFD54F", "-"),
     "deictic": ("#4FC3F7", "--"),
+    "same_slide": ("#CE93D8", ":"),
 }
 NODE_COLOUR = {"audio": "#1565C0", "text": "#2E7D32", "figure": "#EF6C00", "table": "#6A1B9A"}
 

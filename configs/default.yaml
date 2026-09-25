@@ -209,8 +209,6 @@ link:
     relatedness_z: 1.27
     null_shuffles: 30          # shuffled slide orders in the null (5 was too few: std unstable)
     null_std_floor: 0.002      # lower bound on the shuffled std before z
-    build_groups: false        # group Beamer-style build pages (each a superset of the last),
-                               # align at group level, assign builds by incremental content
     # Similarity features. MaViLS decomposition (reports/mavils_final.md): the gap to
     # their audio-only number is in the similarity features, not the decoder.
     #   ours           bge-m3 + BM25 + IDF-overlap hybrid (every recorded number)

@@ -15,7 +15,7 @@ import argparse
 import time
 from pathlib import Path
 
-from linkrag.core import load_config, setup_logging
+from linkrag.core import load_config, set_max_cost, setup_logging
 from linkrag.costs import empty_usage, price_for, record_run, usage_cost
 from linkrag.ingest.asr_openai import transcribe, write_transcript
 from linkrag.ingest.audio import build_asr_prompt, load_frozen_transcript
@@ -47,6 +47,7 @@ def main(argv: list[str] | None = None) -> int:
 
     setup_logging()
     cfg = load_config(args.config)
+    set_max_cost(cfg, args.max_cost)     # transcribe()'s pre-upload guard reads cost.max_usd
     audio = Path(args.audio)
     out = Path(args.out)
     if out.name.endswith(".frozen.json") and out.exists():

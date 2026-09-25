@@ -318,3 +318,17 @@ def test_ingest_files_records_failures(tmp_path: Path) -> None:
     bad.write_text("not a pdf")
     assert ingest_files([bad]) == []
     assert len(getattr(ingest_files, "last_failures")) == 1
+
+
+def test_local_asr_honours_freeze_to(tmp_path, monkeypatch) -> None:
+    """The local backend used to ignore `freeze_to`, so LectQA-Vid transcripts were never
+    frozen and a re-run would re-transcribe. Frozen words must replay to the same units."""
+    import linkrag.ingest.audio as audio_mod
+    words = (Word(0.0, 0.5, "Hello"), Word(0.5, 1.0, "world."), Word(1.2, 2.0, "Next."))
+    monkeypatch.setattr(audio_mod, "transcribe_segments",
+                        lambda *a, **k: [Segment(0.0, 2.0, "Hello world. Next.", words)])
+    frozen = tmp_path / "talk.frozen.json"
+    first = audio_mod.ingest_audio(tmp_path / "talk.m4a", freeze_to=frozen, window_seconds=15)
+    assert audio_mod.load_frozen_transcript(frozen) == list(words)
+    monkeypatch.setattr(audio_mod, "transcribe_segments", lambda *a, **k: pytest.fail("re-transcribed"))
+    assert audio_mod.ingest_audio(tmp_path / "talk.m4a", transcript=frozen, window_seconds=15) == first

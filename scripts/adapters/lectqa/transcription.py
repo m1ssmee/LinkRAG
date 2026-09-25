@@ -54,7 +54,7 @@ def prepare(ids: list[str], cfg: dict, dcfg: dict) -> None:
         if index_dir.exists():
             continue
         t0 = time.perf_counter()
-        frozen = PROCESSED / vid / "transcript.frozen.json"     # whisper runs once per video
+        frozen = PROCESSED / vid / f"{vid}.frozen.json"     # whisper runs once per video
         audio = ingest_audio(audio_path, model_size=cfg["models"]["whisper"], device=cfg["device"],
                              compute_type=cfg["models"]["whisper_compute_type"],
                              window_seconds=dcfg["audio_segment_seconds"], segmentation="sentence",

@@ -203,7 +203,8 @@ explicit instruction.
    - flatness scaling: inert at σ = 0.02 (identical paths; inspected).
    - abstention (min_sim 0.5055): +0–4 points precision-on-answered for 3–24 points
      of coverage; their F1 falls by construction (−1 is a label in their scorer).
-   - build-deck grouping (`align.build_groups`): detects 7 groups / 22 pages on
+   - build-deck grouping (the MaViLS adapter's `build_groups` decoder; the tuned flag is in
+     `mavils_tuned.json`, not a config key): detects 7 groups / 22 pages on
      Decarbonization, but on the tune half it lowers F1 (0.478 vs 0.484) → off; test
      0.462 vs 0.461. The Decarbonization gap itself was an input effect (text layer
      vs page OCR: 0.21 → 0.44, 0.55 at σ = 0.2), not a DP effect.

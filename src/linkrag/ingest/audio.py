@@ -260,6 +260,11 @@ def ingest_audio(
                 initial_prompt=initial_prompt,
             )
             words = [w for seg in segments for w in seg.words]
+            if freeze_to:
+                from linkrag.ingest.asr_openai import write_transcript
+                write_transcript(words, freeze_to, path, {"asr_backend": "local", "model": model_size,
+                                                          "initial_prompt": initial_prompt})
+                ingest_audio.last_transcript = str(freeze_to)   # type: ignore[attr-defined]
         if segmentation == "sentence":
             buckets = pack(split_sentences(words), window_seconds)
         else:  # "fixed" -- validated at entry
