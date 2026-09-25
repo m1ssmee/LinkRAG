@@ -28,3 +28,8 @@ tests/fixtures/
 
 # Grading material with student data: kept local, never published
 reports/LLL/
+
+# University admin documents and the API spend ledger: kept local, not published
+reports/Weekly_progress_annexure1.*
+reports/LinkRAG_progress_report.pdf
+reports/llm_ledger.jsonl
