@@ -8,16 +8,18 @@
    evidence for a question, synthesise a cited answer.
 3. Standard multimodal RAG indexes each modality **independently** and does plain
    top-k. Evidence arrives as a bag of unrelated chunks.
-4. LinkRAG's novelty is an **Evidence Linking Layer**: at indexing time we build
-   explicit, typed, scored links *across* modalities **and across files**.
+4. LinkRAG's design centres on an **Evidence Linking Layer**: at indexing time we build
+   explicit, typed, scored links *across* modalities **and across files**. It is a system
+   component; what the reported evidence supports is stated under *Contributions*.
 5. Link types: audio segment ↔ slide, figure ↔ explaining paragraph, deictic
    speech ("as you see here") ↔ the visual element it points at, figure ↔ own slide.
 6. Retrieval then **follows** those links out from the top-k seeds instead of
    stopping at them.
 7. The final evidence set is reranked for **complementarity** — the set is scored
    for coverage, not each unit for similarity.
-8. So an answer can be grounded in "what the lecturer said" *and* "the figure they
-   were pointing at" *and* "the paragraph that defines the term" — jointly.
+8. The design aim: an answer grounded in "what the lecturer said" *and* "the figure they
+   were pointing at" *and* "the paragraph that defines the term" — jointly. No reported
+   benchmark measures this aim yet (*Contributions*).
 9. Everything is CPU-first so it runs on a laptop; GPU is an optional speedup.
 10. Every stage runs in `baseline` or `linkrag` mode, so every claim is an ablation.
 
@@ -43,8 +45,9 @@ What the targets already have, stated plainly so it is not re-claimed as ours:
 - T1 already does **timestamp-constrained retrieval** and a cross-encoder rerank,
   and reports an ablation. What it cannot do: link to a slide deck or paper that
   is *not the video*, follow a relation from one retrieved unit to another, or
-  select for modality coverage. Its own Table 7 shows the temporal filter is worth
-  12 F1 points — that is the size of the structure signal we generalise.
+  select for modality coverage. Its own Table 7 reports the temporal filter as worth
+  12 F1 points. On our replica it is the opposite: eq. 22 costs 3.46 F1 [2.12, 4.91]
+  (`results/external/lectqa_attribution.md`).
 
 ### Components and related work (not targets)
 
@@ -367,9 +370,12 @@ explicit instruction.
      the answerer's context. Retrieval can only lose information here, and no retrieval
      method can show a benefit over reading everything. LinkRAG's cross-file linking is also
      inactive on one video (the v2 caption). What LectQA-Vid can support is the audit, the
-     replication (our retrieval beats a T1 replica by 5.5 F1 without reading timestamps), and
+     replication (our iterative pipeline beats a T1 replica by 5.5 F1 without reading
+     timestamps: a whole-pipeline difference, split by the attribution ablation into eq. 22
+     −3.46, the rest of the pipeline +3.73 and the re-query +1.74; `lectqa_attribution.md`), and
      the full-context ceiling. A retrieval claim needs material that does not fit in the
-     context.
+     context. *Corrected 2026-09-26: this sentence said "our retrieval beats a T1 replica by 5.5
+     F1", which credited retrieval with a difference between two whole pipelines.*
 
 14. **MaViLS: the video frames carry the alignment. A visual channel lifts our text-only
    F1 from about 0.49 to 0.76 and comes within 0.035 of their all-features result, but still
@@ -544,16 +550,62 @@ tier, and nothing bills without an explicit budget.
   and answerer. Moving the batch answerer from gpt-5.4 to gpt-5.4-mini makes new runs a
   new condition against the stored gpt-5.4 rows; say which answerer produced each row.
 
-## Our three novel components
+## Contributions (aligned to the reported evidence, 2026-09-26)
 
-1. **Evidence Linking Layer** (`src/linkrag/link/`) — typed, scored links at
-   index time, across modalities *and* across files. T1 links only by timestamp
-   inside one video; T2 aligns but does not retrieve.
-2. **Link-following retrieval** (`src/linkrag/retrieve/`) — top-k gives seeds;
-   traverse links to pull in the evidence a seed *depends on*, at zero LLM calls.
-3. **Complementarity-aware reranking** (`src/linkrag/retrieve/rerank.py`) — score
-   the evidence *set*: reward an uncovered modality or a linked unit, penalise a
-   restatement within a modality.
+What the reported tables support; each item names its table, and nothing here rests on pilot01.
+*Replaced 2026-09-26: this section was "Our three novel components" (Evidence Linking Layer,
+link-following retrieval, complementarity-aware reranking). Those are listed below as system
+components, because no reported table shows a benefit from them.*
+
+1. **Replication of T1 and a corrected comparison on LectQA-Vid**
+   (`results/external/lectqa_open_modes.md`, `lectqa_attribution.md`). T1's pipeline (§4.2–4.4)
+   replicated with the values their Table 3 gives (M, L and the merge gap are ours); one answerer
+   (gpt-5.4-mini-2026-03-17) for every mode; a 300-question stratified subset, 93 videos,
+   3 repeats, T1's metrics. Overall token F1: replica 31.23 ± 0.06, replica without eq. 22
+   34.69 ± 0.04, our RRF retrieval 34.96 ± 0.31, RRF with one re-query 36.70 ± 0.16, full
+   transcript 38.74 ± 0.23. The attribution ablation splits the replica-to-re-query gap: T1's
+   eq. 22 filter, which reads the gold interval at test time, costs the replica 3.46 F1
+   [2.12, 4.91] and leaves 34 questions with no context; RRF over the replica is +3.73
+   [+2.03, +5.50]; the re-query adds +1.74 [+0.76, +2.75]. The full transcript beats every
+   retrieval mode (+2.04 [+1.14, +2.99] over the re-query), so LectQA-Vid does not measure
+   the value of retrieval.
+2. **Benchmark audit of LectQA-Vid** (`lectqa_audit.md`, `lectqa_mcq_shuffled.md`). The correct
+   MCQ option is A in 1,484 of 1,489 published MCQs and the unique longest option in 1,409; a
+   no-video longest-option picker scores 94.4 % (T1 reports 53.43). Only 1,598 of the 2,832 QA
+   pairs of the 95 obtained videos have a usable gold interval. Every transcript fits in 2,048
+   tokens (140–1,544, median 780).
+3. **Multi-feature slide alignment at parity with MaViLS** (`mavils_final_round.md`,
+   `reports/mavils_final.md`). Image, frame-OCR and speech-to-slide text scores, from the frame
+   at each sentence's timestamp: 0.853 against their all-features 0.80 on the 9 test lectures
+   with video (6 wins, 3 losses; paired +0.055, 95 % CI [−0.050, +0.161]), i.e. parity. On their
+   own similarity matrix our decoder scores 0.520 against their decoder's 0.513 (all 20
+   lectures, text only). Bounded by n = 9 and a test half examined in three rounds (finding 16).
+4. **Claim-level verification** (`lectqa_faithfulness.md`). Every claim of an answer is checked
+   against the text of the units it cites, with a quotable span required. On LectQA-Vid the
+   three context modes have unsupported-claim rates of 3.7 / 3.1 / 4.3 % (647–796 claims per
+   mode; one judge run, direction only), so the full transcript's F1 gain is not paid for in
+   unsupported claims.
+
+### System components with development-only evidence
+
+The system is built around three components. They are implemented, ablatable (*The two-mode
+rule*) and tested, but no reported table shows a benefit from them:
+
+- **Evidence Linking Layer** (`src/linkrag/link/`): typed, scored links at index time, across
+  modalities and across files. Its `audio_slide` alignment is the component measured in
+  contribution 3.
+- **Link-following retrieval** (`src/linkrag/retrieve/`): top-k seeds expanded along links.
+- **Complementarity-aware reranking** (`src/linkrag/retrieve/rerank.py`): the evidence set scored
+  for modality coverage and link structure.
+
+On LectQA-Vid localisation the `linkrag` mode equals `baseline` by construction, since one video
+has no deck or paper to link to (finding 8, `lectqa_v2.md`); frame-derived slides and their links
+gave no gain (hit@1 43.2 % with them vs 45.6 % without, finding 12, `lectqa_frameslides.md`); and
+complementarity reranking lowered hit@3 (68.1 → 55.4 %, finding 8, scored before unusable
+timestamps were excluded). Their only positive evidence is on pilot01, a development lecture that
+is never reported (n = 25, 4 cross-modal; findings 1–5). Measuring them needs a benchmark whose
+evidence spans files and does not fit in the answerer's context; the dataset policy (results only
+on the two target papers' datasets) did not permit building one.
 
 ## Coding conventions
 
