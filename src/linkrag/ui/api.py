@@ -1011,8 +1011,12 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     setup_logging()
+    sample = Path(args.sample) if args.sample else None
+    if sample is not None and not (sample / "index" / "units.json").exists():
+        log.warning("no frozen corpus at %s: the sample lecture is off", sample)   # an image built without it
+        sample = None
     app = create_app(load_config(args.config), workdir=Path(args.workdir),
-                     sample=Path(args.sample) if args.sample else None, sample_title=args.sample_title,
+                     sample=sample, sample_title=args.sample_title,
                      answerer=args.answerer, max_cost=args.max_cost, strong=args.demo_strong,
                      ledger=Path(args.ledger) if args.ledger else None)
     # load the embedder and the sample while the page loads, not when someone first needs them
