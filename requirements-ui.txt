@@ -1,0 +1,8 @@
+# Lectern, the web UI (src/linkrag/ui/). Install on top of requirements.txt:
+#   pip install -r requirements.txt -r requirements-ui.txt -e .
+
+fastapi==0.141.1
+uvicorn==0.54.0
+python-multipart==0.0.32        # multipart form parsing for POST /upload
+av==18.1.0                      # PyAV: audio clips (generate.citations) + waveform peaks; used but never pinned
+
