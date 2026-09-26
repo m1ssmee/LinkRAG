@@ -142,10 +142,10 @@ def test_the_states_in_a_real_browser(server):
         page.get_by_role("switch", name="Compare with baseline").click()
         page.get_by_role("region", name="Baseline").wait_for(timeout=300_000)
         assert page.get_by_role("region", name="Lectern").is_visible()
-        missed = page.get_by_text("missed by baseline")
-        assert missed.count() >= 1
+        unretrieved = page.get_by_text("not retrieved by baseline")
+        assert unretrieved.count() >= 1
         _settle(page)
-        missed.first.scroll_into_view_if_needed()
+        unretrieved.first.scroll_into_view_if_needed()
         page.wait_for_timeout(300)
         page.screenshot(path=SHOTS / "state4_compare.png")
 

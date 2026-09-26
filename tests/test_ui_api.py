@@ -142,7 +142,7 @@ def test_ask_returns_verified_claims_citing_numbered_evidence(lecture):
     assert linked and all(e["link_type"] and e["via_unit"] for e in linked)
 
 
-def test_compare_numbers_both_answers_in_one_space_and_names_what_baseline_missed(lecture):
+def test_compare_numbers_both_answers_in_one_space_and_lists_what_baseline_did_not_retrieve(lecture):
     client, _, _ = lecture
     body = client.post("/ask", json={"question": QUESTION, "compare_baseline": True}).json()
     ours, base = body["evidence"], body["baseline"]["evidence"]

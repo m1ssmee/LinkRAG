@@ -185,7 +185,7 @@ export default function App() {
     return (side === 'baseline' ? qa.data.baseline : qa.data)?.answer_claims[Number(i)]
   }, [hover, qa])
   const highlight = new Set([...(hoveredClaim?.citations ?? []), ...(focusN != null ? [focusN] : [])])
-  const missed = new Set(qa?.data?.baseline?.missed_evidence ?? [])
+  const unretrieved = new Set(qa?.data?.baseline?.missed_evidence ?? [])
   const citedN = new Set((qa?.data?.answer_claims ?? []).flatMap((c) => c.citations))
   const ranges = items.filter((e) => e.modality === 'speech' && citedN.has(e.n)).map((e) => [e.location.start_s, e.location.end_s])
 
@@ -274,7 +274,7 @@ export default function App() {
               <Composer t={t} busy={qa?.loading} onAsk={(q) => ask(q)} />
             </div>
           </main>
-          <Evidence t={t} items={items} highlight={highlight} missed={missed} focusN={focusN}
+          <Evidence t={t} items={items} highlight={highlight} unretrieved={unretrieved} focusN={focusN}
             time={time} playing={playing} onPlay={playSegment} />
         </div>
         <Player t={t} timeline={timeline} audioRef={audioRef} time={time} playing={playing} ranges={ranges}

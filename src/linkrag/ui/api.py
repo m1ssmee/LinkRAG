@@ -23,8 +23,9 @@ keyed by both).
 An answer is `linkrag` mode with the configured reranker (complementarity over a pool of 20).
 "Compare with baseline" adds `baseline` mode beside it -- plain top-k, no links, no reranker --
 with the same config, answerer and judge. The two differ in links *and* reranking: the full
-system against plain retrieval. `missed_evidence` lists units in Lectern's evidence that the
-baseline's does not hold; there is no gold behind it, so it says "not retrieved", not "needed".
+system against plain retrieval. `missed_evidence` (tagged "not retrieved by baseline" on the page)
+lists units in Lectern's evidence that the baseline's does not hold. There is no gold behind it:
+it says the baseline did not retrieve a unit, not that the unit was needed.
 Nothing the UI shows is reportable (DESIGN.md reporting convention): mock verdicts are true by
 construction, and no timing here meets the measurement rules.
 
@@ -890,6 +891,7 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
                "verification_note": MOCK_NOTE if models.kind == "mock" else HINDI_NOTE if body.lang == "hi" else None}
         if base is not None:
             seen = {r.unit.id for r in base[0]}
+            # in Lectern's evidence, not retrieved by the baseline (no gold: not "needed")
             out["baseline"] = {**pack(c, *base, n_of),
                                "missed_evidence": [uid for uid in order[:len(lectern[0])] if uid not in seen]}
         return out

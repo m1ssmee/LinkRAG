@@ -21,7 +21,7 @@ function AudioRow({ item, t, time, playing, onPlay }) {
   )
 }
 
-function Card({ item, t, highlight, missed, time, playing, onPlay }) {
+function Card({ item, t, highlight, unretrieved, time, playing, onPlay }) {
   const [broken, setBroken] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const origin = item.baselineOnly ? t.baselineOnly
@@ -34,11 +34,11 @@ function Card({ item, t, highlight, missed, time, playing, onPlay }) {
         <span className="min-w-0 truncate text-[13px] font-medium leading-5 text-ink"><Place unit={item} t={t} /></span>
         <span className="ml-auto shrink-0 text-[12px] leading-5 text-muted">{origin}</span>
       </div>
-      {missed && (
-        <span className="mt-2 inline-block rounded-[4px] border border-line px-1.5 text-[11px] leading-[18px] text-muted">{t.missed}</span>
+      {unretrieved && (
+        <span className="mt-2 inline-block rounded-[4px] border border-line px-1.5 text-[11px] leading-[18px] text-muted">{t.notRetrieved}</span>
       )}
-      {/* dimmed to 40 % when the baseline missed it; full contrast again on hover or focus */}
-      <div className={missed ? 'opacity-40 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100' : ''}>
+      {/* dimmed to 40 % when the baseline did not retrieve it; full contrast again on hover or focus */}
+      <div className={unretrieved ? 'opacity-40 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100' : ''}>
         <p className="mt-2 text-[14px] leading-[22px] text-ink">{item.excerpt}</p>
         {item.crop_url && !broken && (
           <a href={withSession(item.crop_url)} target="_blank" rel="noreferrer" className="mt-2.5 block w-fit rounded-md">
@@ -56,7 +56,7 @@ function Card({ item, t, highlight, missed, time, playing, onPlay }) {
   )
 }
 
-export default function Evidence({ t, items, highlight, missed, focusN, time, playing, onPlay }) {
+export default function Evidence({ t, items, highlight, unretrieved, focusN, time, playing, onPlay }) {
   const rail = useRef(null)
   useEffect(() => {
     if (focusN != null) rail.current?.querySelector(`#evidence-${focusN}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
@@ -69,7 +69,7 @@ export default function Evidence({ t, items, highlight, missed, focusN, time, pl
       ) : (
         <ol className="mt-3 space-y-3">
           {items.map((item) => (
-            <Card key={item.n} item={item} t={t} highlight={highlight.has(item.n)} missed={missed.has(item.unit_id)}
+            <Card key={item.n} item={item} t={t} highlight={highlight.has(item.n)} unretrieved={unretrieved.has(item.unit_id)}
               time={time} playing={playing} onPlay={onPlay} />
           ))}
         </ol>
