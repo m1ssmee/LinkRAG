@@ -7,3 +7,5 @@ uvicorn==0.54.0
 python-multipart==0.0.32        # multipart form parsing for POST /upload
 av==18.1.0                      # PyAV: audio clips (generate.citations) + waveform peaks; used but never pinned
 
+# dev: tests/test_ui_e2e.py drives Chromium (then: playwright install chromium)
+playwright==1.63.0

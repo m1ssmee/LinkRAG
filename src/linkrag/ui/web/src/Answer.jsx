@@ -68,7 +68,7 @@ export function AnswerBlock({ label, answer, side, links, t, byN, hover, setHove
             {onWhy && (
               <>
                 {' '}
-                <button type="button" onClick={onWhy}
+                <button type="button" id="why-evidence" onClick={onWhy}
                   className="rounded text-ink underline decoration-line underline-offset-4 hover:decoration-ink">
                   {t.why}
                 </button>
@@ -119,9 +119,18 @@ export default function AnswerPane({ t, qa, hover, setHover, onCite, onWhy, byN 
       <div className="mt-8">
         {qa.loading && <p className="text-[14px] leading-[22px] text-muted" role="status">{t.working}</p>}
         {qa.error && <p className="text-[14px] leading-[22px] text-bad" role="alert">{qa.error}</p>}
-        {data && (
+        {data && !data.baseline && (
           <AnswerBlock label={t.answer} answer={data} side="lectern" links={data.links} t={t} byN={byN}
             hover={hover} setHover={setHover} onCite={onCite} onWhy={onWhy} />
+        )}
+        {data?.baseline && (
+          /* State 4: the same question answered twice, the same claim styling side by side */
+          <div className="grid grid-cols-2 gap-8">
+            <AnswerBlock label={t.baseline} answer={data.baseline} side="baseline" t={t} byN={byN}
+              hover={hover} setHover={setHover} onCite={onCite} />
+            <AnswerBlock label={t.lectern} answer={data} side="lectern" links={data.links} t={t} byN={byN}
+              hover={hover} setHover={setHover} onCite={onCite} onWhy={onWhy} />
+          </div>
         )}
       </div>
     </div>

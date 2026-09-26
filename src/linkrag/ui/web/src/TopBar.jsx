@@ -6,7 +6,7 @@ function Switch({ checked, onChange, label }) {
       className="flex items-center gap-2 rounded-md text-[13px] leading-5 text-ink">
       <span aria-hidden="true"
         className={`relative h-4 w-7 rounded-full transition-colors ${checked ? 'bg-ink' : 'bg-line'}`}>
-        <span className={`absolute top-0.5 size-3 rounded-full bg-white transition-transform ${checked ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+        <span className={`absolute top-0.5 left-0 size-3 rounded-full bg-white transition-transform ${checked ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
       </span>
       {label}
     </button>

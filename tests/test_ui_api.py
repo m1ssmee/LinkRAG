@@ -6,6 +6,7 @@ so nothing here can bill."""
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 import pymupdf
@@ -265,6 +266,13 @@ def test_sample_is_frozen_read_only_and_shared_per_session(tmp_path, stub_encode
     state = client.get("/state").json()["corpus"]
     assert state["sample"] and state["title"] == "Pilot"
     assert client.get("/stats").json()["by_type"] == {"audio_slide": 3}
+    for _ in range(100):            # the gates arrive in the background; the links are there at once
+        pairs = client.get("/pairs").json()
+        if not pairs["pending"]:
+            break
+        time.sleep(0.05)
+    assert not pairs["pending"] and pairs["pairs"][0]["kind"] == "audio_slide" and pairs["pairs"][0]["z"] is not None
+    assert list((tmp_path / "work").glob("sample_gates_*.json"))            # cached for the next start
     client.put("/pairs", json={"a": "talk.wav", "b": "deck.pdf", "setting": "unrelated"})
     other = TestClient(app, headers={"X-Session": "another-session-02"})
     with other.stream("POST", "/sample") as r:
@@ -293,3 +301,26 @@ def test_each_recording_deck_pair_gets_its_own_gate(tmp_path, monkeypatch, pdf_p
     assert pairs[("deck.pdf", "part1.wav")]["z"] is not None and pairs[("deck.pdf", "part2.wav")]["z"] is not None
     hindi = client.post("/ask", json={"question": QUESTION, "lang": "hi"}).json()
     assert hindi["verification_note"] == api.MOCK_NOTE          # the mock outranks the Hindi caveat
+
+
+def test_a_linked_pair_below_the_unsure_band_asks_for_confirmation(lecture, stub_encoder, tmp_path, monkeypatch,
+                                                                   pdf_path, wav_path):
+    """The lecture's audio x deck pair passes its gate (z above 1.27); with the unsure band
+    raised above its z (config ui.unsure_below_z) it shows as unsure until confirmed."""
+    client, _, _ = lecture
+    z = next(p for p in client.get("/pairs").json()["pairs"] if p["kind"] == "audio_slide")["z"]
+    cfg = _cfg()
+    cfg["ui"] = {"unsure_below_z": z + 1.0}
+    monkeypatch.setattr("linkrag.ingest.audio.transcribe_segments", _transcript)
+    app = api.create_app(cfg, workdir=tmp_path / "band", answerer="mock",
+                         encoder=stub_encoder([*SLIDES, *SPEECH, BODY, CAPTION, CROSS_REF, TABLE_REF]))
+    other = TestClient(app, headers={"X-Session": SID})
+    other.post("/upload", files=[("files", ("deck.pdf", _deck(tmp_path / "deck.pdf").read_bytes(), "application/pdf")),
+                                 ("files", ("notes.pdf", pdf_path.read_bytes(), "application/pdf")),
+                                 ("files", ("talk.wav", wav_path.read_bytes(), "audio/wav"))])
+    with other.stream("POST", "/build") as r:
+        _stream(r)
+    speech = next(p for p in other.get("/pairs").json()["pairs"] if p["kind"] == "audio_slide")
+    assert speech["gate"] == "related" and speech["state"] == "unsure"
+    confirmed = other.put("/pairs", json={"a": speech["a"], "b": speech["b"], "setting": "related"}).json()["pairs"]
+    assert next(p for p in confirmed if p["kind"] == "audio_slide")["state"] == "linked"

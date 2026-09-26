@@ -17,7 +17,8 @@ the directions and with the arguments `link_figures_to_text` uses. The links the
 the pipeline's single run over the whole lecture ("auto"). A pair can be forced related (its
 cross-file links from the same run with the gate off are added) or marked unrelated (every
 link between the two files is dropped). For a frozen corpus the links are the stored ones and
-the gates are computed now, with the current config, for display.
+the gates are computed by the current code and config, for display (cached under the workdir,
+keyed by both).
 
 An answer is `linkrag` mode with the configured reranker (complementarity over a pool of 20).
 "Compare with baseline" adds `baseline` mode beside it -- plain top-k, no links, no reranker --
@@ -50,6 +51,7 @@ import os
 import queue
 import re
 import shutil
+import sys
 import tempfile
 import threading
 import time
@@ -69,6 +71,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import linkrag
+import linkrag.link.align as align_module
+import linkrag.link.figure_text as figure_text_module
+import linkrag.link.pipeline as pipeline_module
 from linkrag.core import EvidenceUnit, Link, load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import LEDGER, BillingRefused, cached_completer, price_for, record_run, usage_cost
 from linkrag.eval.verify_gold import entailment_opts, span_in_text, verifier_label
@@ -242,6 +247,7 @@ class Corpus:
     ungated: list[Link]                     # the same run with the gate off: what "related" adds
     gates: dict[tuple[str, str], dict]      # file pair -> gate verdict and z
     sample: bool = False
+    gates_ready: threading.Event = field(default_factory=lambda: _done())
     unsure_below_z: float = UNSURE_BELOW_Z
     overrides: dict[tuple[str, str], str] = field(default_factory=dict)
     links: list[Link] = field(default_factory=list)
@@ -325,6 +331,12 @@ class Corpus:
             return []
         first = min(fname(u) for u in audio)
         return sorted((u for u in audio if fname(u) == first), key=lambda u: u.location.start_s or 0.0)
+
+
+def _done() -> threading.Event:
+    event = threading.Event()
+    event.set()
+    return event
 
 
 @dataclass
@@ -529,7 +541,11 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
     workdir = Path(workdir)
     models = Answerers(cfg, answerer, max_cost, workdir / "llm_cache")
     sessions: OrderedDict[str, Session] = OrderedDict()
-    sessions_lock, build_lock, sample_lock = threading.Lock(), threading.Lock(), threading.Lock()
+    sessions_lock, sample_lock = threading.Lock(), threading.Lock()
+    build_lock = threading.Lock()       # one upload build at a time: ASR and embedding take the CPU
+    # link_corpus hands results through function attributes (build_links.gate,
+    # link_figures_to_text.unrelated_pairs), so two runs at once could swap them
+    link_lock = threading.Lock()
     live_lock = threading.Lock()        # billed questions one at a time, so --max-cost holds
     sample_base: dict[str, Any] = {}
     rcfg = cfg["retrieve"]["rerank"]
@@ -540,6 +556,7 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
 
     app = FastAPI(title="Lectern", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.encoder = encoder
+    app.state.preload = lambda: sample and ensure_sample(SimpleNamespace(emit=lambda **_e: None))
 
     def session(request: Request) -> Session:
         """Sessions are keyed by an id the page sends (X-Session header, or ?s= on media URLs),
@@ -574,6 +591,10 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         if missing:
             job.emit(stage="link", warning=f"links need {missing}: answering from plain retrieval")
             return frozen or [], frozen or [], {}
+        with hold(link_lock, job):
+            return link_runs(job, index, frozen, audio, slides, texts, figures)
+
+    def link_runs(job, index, frozen, audio, slides, texts, figures):
         memo = memo_encoder(encoder, index)
         with stage(job, "link"):
             run = link_corpus(audio, slides, texts, figures, encoder=memo, cfg=cfg)
@@ -609,21 +630,21 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         return run.links, ungated, gates
 
     @contextmanager
-    def cpu(job):
-        """One build at a time: ASR and embedding saturate the CPU anyway."""
-        if not build_lock.acquire(blocking=False):
+    def hold(lock: threading.Lock, job):
+        """`lock`, telling the page when it has to wait for it."""
+        if not lock.acquire(blocking=False):
             job.emit(status="queued")
-            build_lock.acquire()
+            lock.acquire()
         try:
             yield
         finally:
-            build_lock.release()
+            lock.release()
 
     def build(job, s: Session) -> None:
         bcfg = copy.deepcopy(cfg)       # ingest writes figures and transcripts: into the session
         bcfg["ingest"]["figures_dir"] = str(s.dir / "figures")
         bcfg["ingest"]["frozen_transcript_dir"] = str(s.dir / "transcripts")
-        with cpu(job):
+        with hold(build_lock, job):
             with stage(job, "ingest"):
                 units = ingest_files(list(s.uploads.values()), bcfg)
                 for path, exc in getattr(ingest_files, "last_failures", []):
@@ -640,24 +661,56 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
                           unsure_below_z=unsure_below_z)
         s.stale = False
 
-    def load_sample(job, s: Session) -> None:
+    def sample_gates(index: Index, frozen: list[Link], gates: dict, ready: threading.Event, key: str) -> None:
+        """The sample's file-pair gates, in the background: the document-pair gate re-embeds
+        shuffled text (minutes of CPU), and the sample is usable without them. Cached under
+        the workdir by corpus, link config and gate code, so a restart does not pay again."""
+        cache = workdir / f"sample_gates_{key}.json" if key else None
+        try:
+            if cache is not None and cache.exists():
+                found = {tuple(row["pair"]): row["gate"] for row in json.loads(cache.read_text())}
+            else:
+                found = link_pipeline(SimpleNamespace(emit=lambda **_e: None), index, frozen=frozen)[2]
+                if cache is not None:
+                    cache.parent.mkdir(parents=True, exist_ok=True)
+                    cache.write_text(json.dumps([{"pair": list(p), "gate": g} for p, g in found.items()]))
+            gates.update(found)
+        except Exception:
+            log.exception("sample gates failed; pairs show links without a gate")
+        finally:
+            ready.set()
+
+    def ensure_sample(job) -> None:
+        """Load the frozen sample once per process; main() calls this at start-up, so the
+        gates are usually ready before anyone asks for the sample."""
         with sample_lock:
             if not sample_base:
-                with cpu(job):
-                    with stage(job, "index"):
-                        index = Index.load(sample / "index")
-                        if index.embedding_model != cfg["models"]["embedding"]:
-                            raise ValueError(f"the sample was embedded with {index.embedding_model}; "
-                                             f"questions would be embedded with {cfg['models']['embedding']}")
-                        manifest = load_manifest(sample / MANIFEST_NAME) or {}
-                        frozen = load_links(sample / "links.jsonl", expect_manifest=manifest.get("hash"))
-                        encoder([""])       # load the embedder now, not on the first question
-                    _auto, _ungated, gates = link_pipeline(job, index, frozen=frozen)
+                with stage(job, "index"):
+                    index = Index.load(sample / "index")
+                    if index.embedding_model != cfg["models"]["embedding"]:
+                        raise ValueError(f"the sample was embedded with {index.embedding_model}; "
+                                         f"questions would be embedded with {cfg['models']['embedding']}")
+                    manifest = load_manifest(sample / MANIFEST_NAME) or {}
+                    frozen = load_links(sample / "links.jsonl", expect_manifest=manifest.get("hash"))
+                    encoder([""])           # load the embedder now, not on the first question
+                gates, ready = {}, threading.Event()
+                # the cache stands for this corpus, embedder, link config and gate code; an
+                # unstamped corpus is not identified by anything, so it is never cached
+                code = b"".join(Path(m.__file__).read_bytes() for m in (align_module, figure_text_module,
+                                                                          pipeline_module, sys.modules[__name__]))
+                key = manifest.get("hash") and hashlib.sha256(
+                    json.dumps([manifest["hash"], index.embedding_model, cfg["link"]], sort_keys=True,
+                               default=str).encode() + code).hexdigest()[:16]
+                threading.Thread(target=sample_gates, args=(index, frozen, gates, ready, key),
+                                 name="lectern-sample-gates", daemon=True).start()
                 # frozen as stored (the gated=True load drops per-link relatedness failures,
                 # as scripts/ask.py does); the stored paths are relative to the project root
                 sample_base.update(title=sample_title, root=sample.parent.parent, index=index,
-                                   auto=frozen, ungated=frozen, gates=gates, sample=True,
+                                   auto=frozen, ungated=frozen, gates=gates, gates_ready=ready, sample=True,
                                    unsure_below_z=unsure_below_z)
+
+    def load_sample(job, s: Session) -> None:
+        ensure_sample(job)
         s.corpus = Corpus(**sample_base)
         s.uploads.clear()
         s.stale = False
@@ -787,7 +840,8 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
 
     @app.get("/pairs")
     def get_pairs(request: Request):
-        return {"pairs": corpus_of(session(request)).pairs()}
+        c = corpus_of(session(request))
+        return {"pairs": c.pairs(), "pending": not c.gates_ready.is_set()}
 
     @app.put("/pairs")
     def put_pairs(request: Request, body: PairBody):
@@ -800,7 +854,7 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         else:
             c.overrides[key] = body.setting
         c.relink()
-        return {"pairs": c.pairs(), "stats": c.stats()}
+        return {"pairs": c.pairs(), "pending": not c.gates_ready.is_set(), "stats": c.stats()}
 
     @app.get("/stats")
     def stats(request: Request):
@@ -961,8 +1015,9 @@ def main(argv: list[str] | None = None) -> int:
                      sample=Path(args.sample) if args.sample else None, sample_title=args.sample_title,
                      answerer=args.answerer, max_cost=args.max_cost, strong=args.demo_strong,
                      ledger=Path(args.ledger) if args.ledger else None)
-    # load the embedder while the page loads, not when the first lecture or question needs it
-    threading.Thread(target=app.state.encoder, args=([""],), name="lectern-warmup", daemon=True).start()
+    # load the embedder and the sample while the page loads, not when someone first needs them
+    threading.Thread(target=lambda: (app.state.encoder([""]), app.state.preload()), name="lectern-warmup",
+                     daemon=True).start()
     import uvicorn
     uvicorn.run(app, host=args.host, port=args.port)
     return 0
