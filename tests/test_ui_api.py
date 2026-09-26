@@ -122,7 +122,7 @@ def test_ask_returns_verified_claims_citing_numbered_evidence(lecture):
     client, _, _ = lecture
     client.put("/pairs", json={"a": "talk.wav", "b": "deck.pdf", "setting": "related"})
     body = client.post("/ask", json={"question": QUESTION}).json()
-    assert body["links"] > 0 and body["verification_note"] is None
+    assert body["links"] > 0 and body["verification_note"] == api.MOCK_NOTE
     evidence = {e["n"]: e for e in body["evidence"]}
     assert sorted(evidence) == list(range(1, len(evidence) + 1))
     assert not body["abstained"] and body["answer_claims"]
@@ -292,4 +292,4 @@ def test_each_recording_deck_pair_gets_its_own_gate(tmp_path, monkeypatch, pdf_p
     assert pairs[("deck.pdf", "part1.wav")]["kind"] == pairs[("deck.pdf", "part2.wav")]["kind"] == "audio_slide"
     assert pairs[("deck.pdf", "part1.wav")]["z"] is not None and pairs[("deck.pdf", "part2.wav")]["z"] is not None
     hindi = client.post("/ask", json={"question": QUESTION, "lang": "hi"}).json()
-    assert hindi["verification_note"] == api.HINDI_NOTE
+    assert hindi["verification_note"] == api.MOCK_NOTE          # the mock outranks the Hindi caveat

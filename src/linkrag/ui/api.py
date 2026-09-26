@@ -117,13 +117,17 @@ MAX_SESSION_BYTES = 500 << 20  # uploads per session; /tmp is the only writable 
 EXCERPT_CHARS = 360
 PEAK_BINS = 1200               # waveform resolution; the player resamples to the bars that fit
 PAGE_PX = 720                  # page renders: twice the 360 px evidence rail
-BAND_PT = 60.0                 # portrait pages are shown as a band this far above and below the box
+# A figure in the notes is cropped to its own region (padded, at least FIGURE_MIN_PT wide) so it
+# stays legible in the rail. Text keeps its whole page: a chunk's box is the union of its blocks,
+# which on a two-column page spans both columns, so a partial crop could show the wrong part.
+FIGURE_PAD_PT, FIGURE_MIN_PT = 18.0, 240.0
 HIGHLIGHT = {"slides": (0xB4, 0x53, 0x09), "notes": (0x40, 0x40, 0x40)}
 IMAGE_SUFFIXES = {s for s, kind in SUFFIXES.items() if kind == "image"}
 HINDI = ("\n- Write the answer and every claim in Hindi, in Devanagari script. Copy the unit ids "
          "exactly as given.")
 HINDI_NOTE = ("Hindi claims are checked against English evidence; that judge setup has not been "
               "measured, so these verdicts are unvalidated.")
+MOCK_NOTE = "Mock answerer and judge: claims are copied from the evidence, so every verdict holds by construction."
 SESSION_ID = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
 
 
@@ -337,8 +341,8 @@ class Session:
 # ----------------------------------------------------------------- media
 
 def render_page(unit: EvidenceUnit, src: Path, out: Path) -> Path:
-    """The unit's page with its box drawn in the modality colour. A slide is shown whole; a
-    portrait page as a band around the box, which is what fits a 360 px card legibly."""
+    """The unit's page with its box drawn in the modality colour: the whole page, except a
+    figure in the notes, which is cropped to its region (see FIGURE_*)."""
     import pymupdf
     out.parent.mkdir(parents=True, exist_ok=True)
     rgb = tuple(c / 255 for c in HIGHLIGHT[kind(unit)])
@@ -347,9 +351,11 @@ def render_page(unit: EvidenceUnit, src: Path, out: Path) -> Path:
         clip = page.rect
         if unit.location.bbox:
             box = pymupdf.Rect(unit.location.bbox) & page.rect
-            page.draw_rect(box, color=rgb, fill=rgb, fill_opacity=0.12, width=1.5)
-            if not is_slide_deck(unit):
-                clip = pymupdf.Rect(page.rect.x0, box.y0 - BAND_PT, page.rect.x1, box.y1 + BAND_PT) & page.rect
+            page.draw_rect(box, color=rgb, fill=rgb, fill_opacity=0.10, width=1.5)
+            if not is_slide_deck(unit) and unit.modality in ("figure", "table"):
+                grow = max(FIGURE_PAD_PT, (FIGURE_MIN_PT - box.width) / 2)
+                clip = pymupdf.Rect(box.x0 - grow, box.y0 - FIGURE_PAD_PT, box.x1 + grow,
+                                    box.y1 + FIGURE_PAD_PT) & page.rect
         zoom = PAGE_PX / clip.width
         page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), clip=clip).save(out)
     return out
@@ -429,6 +435,21 @@ def stream_job(session: Session, work: Callable[[Any], None]) -> StreamingRespon
 
 # ----------------------------------------------------------------- the app
 
+def _first_call_alone(encoder: Encoder) -> Encoder:
+    """The first call loads the model; lru_cache does not stop two threads loading it at once
+    (start-up warm-up and a sample load), which would hold bge-m3 in memory twice."""
+    lock, warm = threading.Lock(), threading.Event()
+
+    def encode(texts):
+        if not warm.is_set():
+            with lock:
+                out = encoder(texts)
+                warm.set()
+                return out
+        return encoder(texts)
+    return encode
+
+
 class AskBody(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     compare_baseline: bool = False
@@ -503,8 +524,8 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         if strong:
             cfg["models"]["llm"].update(model=STRONG_MODEL, allow_strong_in_batch=True)
         refuse_strong_in_batch(cfg)
-    encoder = encoder or default_encoder(cfg["models"]["embedding"], cfg["device"],
-                                         cfg["index"]["normalize_embeddings"])
+    encoder = encoder or _first_call_alone(default_encoder(cfg["models"]["embedding"], cfg["device"],
+                                                           cfg["index"]["normalize_embeddings"]))
     workdir = Path(workdir)
     models = Answerers(cfg, answerer, max_cost, workdir / "llm_cache")
     sessions: OrderedDict[str, Session] = OrderedDict()
@@ -518,6 +539,7 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         log.setLevel(logging.INFO)          # stage timings are the build's progress lines
 
     app = FastAPI(title="Lectern", docs_url=None, redoc_url=None, openapi_url=None)
+    app.state.encoder = encoder
 
     def session(request: Request) -> Session:
         """Sessions are keyed by an id the page sends (X-Session header, or ?s= on media URLs),
@@ -811,7 +833,7 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         # a lecture without links answers from plain retrieval: say so rather than label it linkrag
         out = {"question": body.question, **pack(c, *lectern, n_of), "links": graph.number_of_edges(),
                "cost_usd": round(s.cost, 6), "cost_known": s.cost_known,
-               "verification_note": HINDI_NOTE if body.lang == "hi" else None}
+               "verification_note": MOCK_NOTE if models.kind == "mock" else HINDI_NOTE if body.lang == "hi" else None}
         if base is not None:
             seen = {r.unit.id for r in base[0]}
             out["baseline"] = {**pack(c, *base, n_of),
@@ -939,6 +961,8 @@ def main(argv: list[str] | None = None) -> int:
                      sample=Path(args.sample) if args.sample else None, sample_title=args.sample_title,
                      answerer=args.answerer, max_cost=args.max_cost, strong=args.demo_strong,
                      ledger=Path(args.ledger) if args.ledger else None)
+    # load the embedder while the page loads, not when the first lecture or question needs it
+    threading.Thread(target=app.state.encoder, args=([""],), name="lectern-warmup", daemon=True).start()
     import uvicorn
     uvicorn.run(app, host=args.host, port=args.port)
     return 0

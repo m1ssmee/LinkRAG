@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0a0a0a;
+  --color-muted: #6b6b6b;
+  --color-hair: #ededed;
+  --color-line: #e5e5e5;
+  --color-fill: #f4f4f4;
+  --color-wash: #f3f6fd;
+  --color-cited: #c9d6f6;
+  --color-bad: #c62828;
+  --color-speech: #2f5bd3;
+  --color-speech-bg: #e3eafb;
+  --color-slides: #b45309;
+  --color-slides-bg: #fbeedd;
+  /* chip numbers only: #b45309 on #fbeedd is 4.39:1, under the 4.5:1 text minimum */
+  --color-slides-ink: #ae5008;
+  --color-notes: #404040;
+  --color-notes-bg: #f0f0f0;
+
+  --font-sans: "Geist", "Noto Sans Devanagari", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background: #ffffff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 26px;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-speech);
+    outline-offset: 2px;
+  }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .label {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

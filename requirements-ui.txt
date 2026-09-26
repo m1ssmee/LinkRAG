@@ -1,5 +1,6 @@
 # Lectern, the web UI (src/linkrag/ui/). Install on top of requirements.txt:
 #   pip install -r requirements.txt -r requirements-ui.txt -e .
+# The frontend is built separately: cd src/linkrag/ui/web && npm ci && npm run build
 
 fastapi==0.141.1
 uvicorn==0.54.0
