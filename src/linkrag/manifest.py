@@ -24,13 +24,10 @@ from linkrag.core import EvidenceUnit
 MANIFEST_NAME = "manifest.json"
 
 
-def file_digest(path: str | Path, chunk: int = 1 << 20) -> str:
+def file_digest(path: str | Path) -> str:
     """sha256 of a file's bytes, streamed -- corpus media runs to tens of MB."""
-    digest = hashlib.sha256()
     with open(path, "rb") as fh:
-        while block := fh.read(chunk):
-            digest.update(block)
-    return digest.hexdigest()
+        return hashlib.file_digest(fh, "sha256").hexdigest()
 
 
 def build_manifest(paths: Sequence[str | Path], units: Sequence[EvidenceUnit],

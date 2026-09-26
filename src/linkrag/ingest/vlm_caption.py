@@ -88,20 +88,8 @@ def describe_image(
     return text
 
 
-def vlm_config(cfg: dict[str, Any] | None) -> dict[str, Any]:
-    section = ((cfg or {}).get("ingest", {}) or {}).get("vlm_captions", {}) or {}
-    return {
-        "enabled": bool(section.get("enabled", False)),
-        "model": section.get("model", "llava:7b"),
-        "base_url": section.get("base_url", "http://localhost:11434"),
-        "max_words": int(section.get("max_words", 60)),
-        "cache_dir": section.get("cache_dir", "data/processed/vlm_captions"),
-        "timeout_s": int(section.get("timeout_s", 300)),
-    }
-
-
-def describe_if_enabled(image_path: str | Path, cfg: dict[str, Any] | None) -> str:
-    settings = vlm_config(cfg)
-    if not settings.pop("enabled"):
+def describe_if_enabled(image_path: str | Path, section: dict[str, Any] | None) -> str:
+    """`section` is config `ingest.vlm_captions`; off unless it says `enabled: true`."""
+    if not (section or {}).get("enabled"):
         return ""
-    return describe_image(image_path, **settings)
+    return describe_image(image_path, **{k: v for k, v in section.items() if k != "enabled"})

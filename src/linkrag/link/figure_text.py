@@ -55,8 +55,6 @@ DESCRIPTIVE_REF = re.compile(
     re.I,
 )
 
-DIRECTION_BELOW = {"below"}
-DIRECTION_ABOVE = {"above"}
 
 
 def _kind(word: str) -> str:
@@ -168,9 +166,9 @@ def figure_text_scores(
                         continue
                     below = fbox is not None and tbox is not None and tbox[3] <= fbox[1]
                     above = fbox is not None and tbox is not None and fbox[3] <= tbox[1]
-                    if ((direction in DIRECTION_BELOW and below)
-                            or (direction in DIRECTION_ABOVE and above)
-                            or direction not in DIRECTION_BELOW | DIRECTION_ABOVE):
+                    if ((direction == "below" and below)
+                            or (direction == "above" and above)
+                            or direction not in ("below", "above")):
                         reference = 0.7  # weaker than a numbered reference
                         why["descriptive"] = f"the {noun} {direction}"
                         break

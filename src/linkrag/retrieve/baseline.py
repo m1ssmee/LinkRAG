@@ -50,5 +50,3 @@ def retrieve_scored(
         t["sparse"] = len(sparse)
         t["returned"] = len(fused)
     return [(index.units[position], score) for position, score in fused]
-
-

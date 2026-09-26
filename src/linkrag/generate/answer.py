@@ -23,6 +23,7 @@ from typing import Any, Callable
 import requests
 
 from linkrag.core import EvidenceUnit, Mode, stage_timer
+from linkrag.costs import empty_usage
 
 Completer = Callable[[str, str], str]
 """(system, user) -> assistant text. Injectable so tests never hit a server."""
@@ -102,8 +103,7 @@ def judge_completer(cfg: dict[str, Any], backend: str) -> Completer:
 
     def unused(system: str, user: str) -> str:
         raise RuntimeError(f"judge called while eval.entailment.backend is {backend!r}")
-    unused.usage = {"calls": 0, "cached_calls": 0, "prompt_tokens": 0, "completion_tokens": 0,  # type: ignore[attr-defined]
-                    "estimated_tokens": 0}
+    unused.usage = empty_usage()  # type: ignore[attr-defined]
     return unused
 
 
@@ -145,8 +145,7 @@ def http_completer(llm_cfg: dict[str, Any], pricing: dict[str, Any] | None = Non
         headers["Authorization"] = f"Bearer {key}"
 
     limit = llm_cfg.get("max_tokens", 1024)
-    usage = {"calls": 0, "cached_calls": 0, "prompt_tokens": 0, "completion_tokens": 0,
-             "estimated_tokens": 0, "backend": backend}
+    usage = empty_usage() | {"backend": backend}
     # Older models take `max_tokens`; newer ones reject it and require
     # `max_completion_tokens`. Model *names* are not a usable signal for which --
     # the families change faster than any prefix list survives -- so discover it
@@ -268,10 +267,6 @@ class Answer:
     claims: list[Claim]
     raw: str
     malformed: bool = False             # JSON could not be parsed even after one retry
-
-    @property
-    def unsupported(self) -> list[Claim]:
-        return [c for c in self.claims if c.verdict == "unsupported"]
 
     def text(self, *, strict: bool = False) -> str:
         """The answer as shown to a reader. `strict` drops unsupported claims and

@@ -82,6 +82,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Sequence
@@ -104,14 +105,6 @@ class Alignment:
     method: str
     total_score: float
 
-    @property
-    def n(self) -> int:
-        return self.similarity.shape[0]
-
-    @property
-    def m(self) -> int:
-        return self.similarity.shape[1]
-
     def scores(self) -> list[float]:
         return [float(self.similarity[i, j]) for i, j in enumerate(self.path)]
 
@@ -125,10 +118,7 @@ class Alignment:
 def _idf(docs_tokens: Sequence[Sequence[str]]) -> dict[str, float]:
     """Smoothed inverse document frequency over the slide deck."""
     n = len(docs_tokens)
-    seen: dict[str, int] = {}
-    for tokens in docs_tokens:
-        for token in set(tokens):
-            seen[token] = seen.get(token, 0) + 1
+    seen = Counter(t for tokens in docs_tokens for t in set(tokens))
     return {t: math.log(1.0 + n / (1.0 + df)) for t, df in seen.items()}
 
 

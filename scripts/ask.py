@@ -10,7 +10,7 @@ import argparse
 from pathlib import Path
 
 from linkrag.core import load_config, set_max_cost, setup_logging, stage_timer
-from linkrag.eval import format_modality_distribution
+from linkrag.eval.metrics import format_modality_distribution
 from linkrag.costs import record_run
 from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer, judge_completer
 from linkrag.generate.citations import citations_for

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import record_run
-from linkrag.eval import describe_locator, format_modality_distribution, gold_coverage, gold_hits
+from linkrag.eval.metrics import describe_locator, format_modality_distribution, gold_coverage, gold_hits
 from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer, judge_completer
 from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer

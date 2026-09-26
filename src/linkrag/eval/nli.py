@@ -71,8 +71,7 @@ def _join_abbrev(parts: list[str]) -> list[str]:
     return out + ([cur] if cur else [])
 
 
-def entails(premise_text: str, hypothesis: str, *, device: str = "cpu",
-            margin: float = ENTAIL_MARGIN, model: str = MODEL) -> tuple[bool, str, float]:
+def entails(premise_text: str, hypothesis: str, *, device: str = "cpu") -> tuple[bool, str, float]:
     """(entailed, the premise sentence that carried it, its entailment logit).
 
     Scored per premise sentence and maximised, so a 30-second transcript unit is not
@@ -83,7 +82,7 @@ def entails(premise_text: str, hypothesis: str, *, device: str = "cpu",
     if not hypothesis:
         return False, "", float("-inf")
     cands = [c for c in sentences(premise_text) if len(c.split()) >= MIN_PREMISE_WORDS] or sentences(premise_text)
-    m = _model(model, device)
+    m = _model(MODEL, device)
     e = _entail_index(m)
     scores = np.asarray(m.predict([(c, hypothesis) for c in cands]), dtype="float32")
     if scores.ndim == 1:
@@ -91,7 +90,7 @@ def entails(premise_text: str, hypothesis: str, *, device: str = "cpu",
     ent = scores[:, e]
     best = int(np.argmax(ent))
     others = np.max(np.delete(scores[best], e))
-    return bool(ent[best] - others > margin), cands[best], float(ent[best])
+    return bool(ent[best] - others > ENTAIL_MARGIN), cands[best], float(ent[best])
 
 
 def entails_any(premise_text: str, hypotheses: Sequence[str], **kw) -> tuple[bool, str, list[bool]]:

@@ -40,6 +40,7 @@ import numpy as np
 
 from linkrag.core import EvidenceUnit, Link, Mode, stage_timer
 from linkrag.index import Encoder, embeddable_text, tokenize
+from linkrag.ingest.audio import TERMINAL
 from linkrag.link.align import _idf
 
 DEFAULT_CUES = ["here", "this", "that", "that one", "this one", "shown",
@@ -64,10 +65,8 @@ def expand_cues(
     determiners: Sequence[str] = DEFAULT_DETERMINERS,
 ) -> list[str]:
     """Base cues plus every "<determiner> <noun> <direction>" combination."""
-    phrases = list(cues)
-    phrases += [f"{det} {noun} {direction}"
-                for det in determiners for noun in object_nouns for direction in directions]
-    return phrases
+    return [*cues, *(f"{det} {noun} {direction}"
+                     for det in determiners for noun in object_nouns for direction in directions)]
 
 CONTEXT_WORDS = 12  # words either side of the cue that form its context window
 
@@ -84,7 +83,6 @@ DEFAULT_VISUAL_TERMS = [
 # Tier 1 explicit object deixis, tier 2 pronoun + visual context, tier 3 bare pronoun.
 DEFAULT_TIER_WEIGHTS = {1: 1.0, 2: 0.6, 3: 0.3}
 
-TERMINAL_PUNCT = re.compile(r"[.!?][\"')\]]?$")
 
 
 @dataclass(frozen=True)
@@ -158,10 +156,10 @@ def find_cues(
         lo, hi = max(0, i - CONTEXT_WORDS), min(len(tokens), i + n + CONTEXT_WORDS)
 
         s_lo = i
-        while s_lo > 0 and not TERMINAL_PUNCT.search(str(words[s_lo - 1][2])):
+        while s_lo > 0 and not TERMINAL.search(str(words[s_lo - 1][2])):
             s_lo -= 1
         s_hi = i + n - 1
-        while s_hi < len(words) - 1 and not TERMINAL_PUNCT.search(str(words[s_hi][2])):
+        while s_hi < len(words) - 1 and not TERMINAL.search(str(words[s_hi][2])):
             s_hi += 1
         sentence = " ".join(str(w[2]) for w in words[s_lo:s_hi + 1])
 
@@ -234,10 +232,8 @@ def resolve_deictic(
         fig_vec = np.asarray(encoder([embeddable_text(f) for f in figures]), dtype="float32")
         fig_vec /= np.maximum(np.linalg.norm(fig_vec, axis=1, keepdims=True), 1e-9)
 
-        contexts: list[tuple[int, Cue]] = []
-        for i, unit in enumerate(audio_units):
-            for cue in find_cues(unit, cues, visual_terms):
-                contexts.append((i, cue))
+        contexts: list[tuple[int, Cue]] = [(i, cue) for i, unit in enumerate(audio_units)
+                                           for cue in find_cues(unit, cues, visual_terms)]
         if not contexts:
             t["cues"] = 0
             t["links"] = 0
@@ -356,16 +352,8 @@ def deictic_pairs(links: Sequence[Link]) -> list[dict]:
 
 def tier_breakdown(pairs: Sequence[dict]) -> dict[int, dict[str, float]]:
     """Per-tier count and mean score over distinct pairs."""
-    out: dict[int, dict[str, float]] = {}
-    for row in pairs:
-        entry = out.setdefault(int(row["tier"]), {"count": 0, "total": 0.0})
-        entry["count"] += 1
-        entry["total"] += row["score"]
-    for entry in out.values():
-        entry["mean_score"] = entry["total"] / entry["count"] if entry["count"] else 0.0
-        del entry["total"]
-    return dict(sorted(out.items()))
-
+    from linkrag.link.graph import count_and_mean
+    return dict(sorted(count_and_mean((int(r["tier"]), r["score"]) for r in pairs).items()))
 
 def write_pairs_csv(
     pairs: Sequence[dict],

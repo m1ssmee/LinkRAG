@@ -98,7 +98,6 @@ class Index:
         if k == 0:
             return []
         scores = self.vectors @ np.asarray(query_vec, dtype="float32").ravel()
-        # argpartition is O(n) to find the top k, then sort just those k.
         # argpartition is O(n) but unordered *and* unstable, so ties inside the
         # partition depend on partition internals. Sort the whole array stably when
         # ties are plausible; the corpus is small enough that O(n log n) is free.

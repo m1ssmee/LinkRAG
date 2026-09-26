@@ -40,7 +40,7 @@ from typing import Any, Callable, Sequence
 
 from linkrag.core import EvidenceUnit
 from linkrag.eval.metrics import matches_locator
-from linkrag.generate.citations import mmss
+from linkrag.generate.citations import locator as locator_str
 
 Completer = Callable[[str, str], str]
 
@@ -180,14 +180,10 @@ def majority(votes: Sequence[str], positive: str) -> bool:
     return sum(v == positive for v in votes) * 2 > len(votes)
 
 
-def locator_str(unit: EvidenceUnit) -> str:
-    loc = unit.location
-    name = Path(unit.source_file).name
-    if loc.page is not None:
-        return f"{name} p.{loc.page}"
-    if loc.start_s is not None:
-        return f"{name} {mmss(loc.start_s)}-{mmss(loc.end_s or loc.start_s)}"
-    return name
+def reading_order(u: EvidenceUnit) -> tuple:
+    loc = u.location
+    return (loc.start_s if loc.start_s is not None else -1,
+            loc.page if loc.page is not None else -1, u.id)
 
 
 def source_of(unit: EvidenceUnit, deck_files: set[str]) -> str:
@@ -202,15 +198,10 @@ def full_contexts(units: Sequence[EvidenceUnit], deck_files: set[str]) -> dict[s
     for u in units:
         groups[source_of(u, deck_files)].append(u)
 
-    def order(u: EvidenceUnit):
-        loc = u.location
-        return (loc.start_s if loc.start_s is not None else -1,
-                loc.page if loc.page is not None else -1, u.id)
-
     out = {}
     for src in SOURCES:
         parts = [f"[{locator_str(u)} · {u.modality}]\n{u.content.strip()}"
-                 for u in sorted(groups[src], key=order) if u.content.strip()]
+                 for u in sorted(groups[src], key=reading_order) if u.content.strip()]
         out[src] = "\n\n".join(parts)
     out["all"] = "\n\n".join(f"===== {src.upper()} =====\n{out[src]}" for src in SOURCES)
     return out
@@ -348,10 +339,7 @@ def relabel(original_type: str, runs: dict[str, SourceRun]) -> tuple[str | None,
     if not all_ok and not single_ok:
         return None, "dropped: not answerable from the full corpus", []
     if single_ok:
-        if len(single_ok) == 1:
-            new_type = SOURCE_TYPE[single_ok[0]]
-        else:
-            new_type = "single_modality"
+        new_type = SOURCE_TYPE[single_ok[0]] if len(single_ok) == 1 else "single_modality"
         status = "kept" if new_type == original_type else f"relabelled from {original_type}"
         return new_type, status, single_ok
     # every single source failed, all sources passed => genuinely cross-modal

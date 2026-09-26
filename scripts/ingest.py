@@ -69,8 +69,8 @@ def main(argv: list[str] | None = None) -> int:
     with stage_timer("index.save", dir=out):
         index.save(out)
 
-    from linkrag.ingest import transcripts_used
-    manifest = build_manifest(args.files, units, derived=transcripts_used())
+    # frozen transcripts read or written: corpus-identifying inputs that are not corpus files
+    manifest = build_manifest(args.files, units, derived=list(getattr(ingest_files, "last_transcripts", [])))
     manifest_path = write_manifest(manifest, Path(out).parent / MANIFEST_NAME)
 
     by_modality: dict[str, int] = {}

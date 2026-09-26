@@ -241,7 +241,7 @@ def test_build_links_drops_low_scores(stub_encoder) -> None:
 def test_alignment_reports_its_own_diagnostics() -> None:
     S, true_path = _ordered_deck_with_one_back_jump()
     a = Alignment(path=true_path, similarity=S, method="monotonic", total_score=0.0)
-    assert a.n == 10 and a.m == 8
+    assert a.similarity.shape == (10, 8)
     assert a.slides_used() == 8
     assert a.back_jumps() == 1
 

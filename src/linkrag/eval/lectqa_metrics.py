@@ -36,6 +36,8 @@ from functools import lru_cache
 from statistics import mean
 from typing import Sequence
 
+from sklearn.metrics import precision_recall_fscore_support
+
 TOKEN = re.compile(r"[a-z0-9]+")
 SIM_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
@@ -54,11 +56,6 @@ def token_prf(pred: str, ref: str) -> tuple[float, float, float]:
         return 0.0, 0.0, 0.0
     prec, rec = inter / len(p), inter / len(r)
     return prec, rec, 2 * prec * rec / (prec + rec)
-
-
-def rouge1(pred: str, ref: str) -> float:
-    """Eq. 34: unigram recall over sets."""
-    return token_prf(pred, ref)[1]
 
 
 def bleu4(pred: str, ref: str) -> float:
@@ -106,7 +103,7 @@ def score_open(preds: Sequence[str], refs: Sequence[str], device: str = "cpu") -
             "precision": mean(x[0] for x in prf), "recall": mean(x[1] for x in prf), "f1": mean(x[2] for x in prf),
             "bleu": mean(bleu4(p, r) for p, r in zip(preds, refs)),
             "meteor": mean(meteor(p, r) for p, r in zip(preds, refs)),
-            "rouge1": mean(rouge1(p, r) for p, r in zip(preds, refs)),
+            "rouge1": mean(x[1] for x in prf),             # eq. 34: unigram recall over sets
             "sim": mean(similarity(preds, refs, device))} if preds else {"n": 0}
 
 
@@ -116,15 +113,8 @@ def score_mcq(pred: Sequence[str | None], gold: Sequence[str]) -> dict[str, floa
     if not n:
         return {"n": 0}
     labels = sorted(set(gold) | {p for p in pred if p is not None})
-    ps, rs, fs = [], [], []
-    for lab in labels:
-        tp = sum(p == lab and g == lab for p, g in zip(pred, gold))
-        fp = sum(p == lab and g != lab for p, g in zip(pred, gold))
-        fn = sum(g == lab and p != lab for p, g in zip(pred, gold))
-        pr = tp / (tp + fp) if tp + fp else 0.0
-        rc = tp / (tp + fn) if tp + fn else 0.0
-        ps.append(pr)
-        rs.append(rc)
-        fs.append(2 * pr * rc / (pr + rc) if pr + rc else 0.0)
+    ps, rs, fs, _ = precision_recall_fscore_support(gold, [p or "" for p in pred], labels=labels,
+                                                    average=None, zero_division=0)
+    ps, rs, fs = (list(map(float, x)) for x in (ps, rs, fs))
     return {"n": n, "accuracy": sum(p == g for p, g in zip(pred, gold)) / n,
             "precision": mean(ps), "recall": mean(rs), "f1": mean(fs)}

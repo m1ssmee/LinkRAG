@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from linkrag.ingest import ingest_file
-from linkrag.ingest.audio import Segment, Word, pack, segment_words, split_sentences
+from linkrag.ingest.audio import Word, pack, segment_words, split_sentences
 from linkrag.ingest.docx import ingest_docx
 from linkrag.ingest.pdf import _Block, chunk_page, find_caption, ingest_pdf
 
@@ -286,7 +286,7 @@ def test_ingest_audio_from_a_frozen_transcript_never_calls_whisper(
     def explode(*a, **k):
         raise AssertionError("whisper must not run when a transcript is frozen")
 
-    monkeypatch.setattr(audio_mod, "transcribe_segments", explode)
+    monkeypatch.setattr(audio_mod, "transcribe_words", explode)
 
     frozen = tmp_path / "tone.frozen.json"
     frozen.write_text(json.dumps({"words": [
@@ -325,10 +325,9 @@ def test_local_asr_honours_freeze_to(tmp_path, monkeypatch) -> None:
     frozen and a re-run would re-transcribe. Frozen words must replay to the same units."""
     import linkrag.ingest.audio as audio_mod
     words = (Word(0.0, 0.5, "Hello"), Word(0.5, 1.0, "world."), Word(1.2, 2.0, "Next."))
-    monkeypatch.setattr(audio_mod, "transcribe_segments",
-                        lambda *a, **k: [Segment(0.0, 2.0, "Hello world. Next.", words)])
+    monkeypatch.setattr(audio_mod, "transcribe_words", lambda *a, **k: list(words))
     frozen = tmp_path / "talk.frozen.json"
     first = audio_mod.ingest_audio(tmp_path / "talk.m4a", freeze_to=frozen, window_seconds=15)
     assert audio_mod.load_frozen_transcript(frozen) == list(words)
-    monkeypatch.setattr(audio_mod, "transcribe_segments", lambda *a, **k: pytest.fail("re-transcribed"))
+    monkeypatch.setattr(audio_mod, "transcribe_words", lambda *a, **k: pytest.fail("re-transcribed"))
     assert audio_mod.ingest_audio(tmp_path / "talk.m4a", transcript=frozen, window_seconds=15) == first

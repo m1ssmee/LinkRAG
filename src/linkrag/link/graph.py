@@ -108,24 +108,10 @@ def subgraph_around(
     """Everything within `hops` link-follows of `unit_id`, edges filtered the same way."""
     if unit_id not in graph:
         raise KeyError(f"{unit_id!r} is not in the graph")
-    seen = {unit_id}
-    frontier = [unit_id]
-    for _ in range(max(0, hops)):
-        nxt = []
-        for node in frontier:
-            for neighbour, _t, _s in neighbors(graph, node, link_types, min_score):
-                if neighbour not in seen:
-                    seen.add(neighbour)
-                    nxt.append(neighbour)
-        frontier = nxt
-        if not frontier:
-            break
-    sub = graph.subgraph(seen).copy()
-    stale = [(u, v, k) for u, v, k, d in sub.edges(keys=True, data=True)
-             if (link_types and d["link_type"] not in set(link_types)) or d["score"] < min_score]
-    sub.remove_edges_from(stale)
-    return sub
-
+    wanted = set(link_types) if link_types else None
+    view = nx.subgraph_view(graph, filter_edge=lambda u, v, k: (
+        (wanted is None or graph.edges[u, v, k]["link_type"] in wanted) and graph.edges[u, v, k]["score"] >= min_score))
+    return nx.ego_graph(view, unit_id, radius=max(0, hops), undirected=True).copy()
 
 def export_graphml(graph: nx.MultiDiGraph, path: str | Path) -> Path:
     """GraphML for Gephi/yEd/Cytoscape.
@@ -136,27 +122,28 @@ def export_graphml(graph: nx.MultiDiGraph, path: str | Path) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     clean = graph.copy()
-    for _n, data in clean.nodes(data=True):
+    for data in [d for _n, d in clean.nodes(data=True)] + [d for *_e, d in clean.edges(data=True)]:
         for k, v in list(data.items()):
             if not isinstance(v, (str, int, float, bool)):
                 data[k] = str(v)
-    for _u, _v, data in clean.edges(data=True):
-        for k, val in list(data.items()):
-            if not isinstance(val, (str, int, float, bool)):
-                data[k] = str(val)
     clean.graph.pop("dropped_links", None)
     nx.write_graphml(clean, str(path))
     return path
 
 
-def summarise(graph: nx.MultiDiGraph) -> dict[str, dict[str, float]]:
-    """Per-link-type count and mean score."""
-    stats: dict[str, dict[str, float]] = {}
-    for _u, _v, data in graph.edges(data=True):
-        row = stats.setdefault(data["link_type"], {"count": 0, "total": 0.0})
+def count_and_mean(keyed_scores) -> dict:
+    """{key: {"count", "mean_score"}} over (key, score) pairs, in first-seen key order."""
+    stats: dict = {}
+    for key, score in keyed_scores:
+        row = stats.setdefault(key, {"count": 0, "total": 0.0})
         row["count"] += 1
-        row["total"] += data["score"]
+        row["total"] += score
     for row in stats.values():
         row["mean_score"] = row["total"] / row["count"] if row["count"] else 0.0
         del row["total"]
     return stats
+
+
+def summarise(graph: nx.MultiDiGraph) -> dict[str, dict[str, float]]:
+    """Per-link-type count and mean score."""
+    return count_and_mean((d["link_type"], d["score"]) for _u, _v, d in graph.edges(data=True))

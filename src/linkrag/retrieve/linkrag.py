@@ -176,7 +176,6 @@ def retrieve_linkrag(
     return ranked
 
 
-
 def expansion_report(results: Sequence[RetrievedUnit], graph: nx.MultiDiGraph) -> tuple[int, int]:
     """(expanded units, seeds that had at least one graph edge).
 

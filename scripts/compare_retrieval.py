@@ -22,7 +22,7 @@ from pathlib import Path
 
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import record_run
-from linkrag.eval import matches_locator
+from linkrag.eval.metrics import matches_locator
 from linkrag.generate.answer import answer_json, http_completer, judge_completer
 from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer

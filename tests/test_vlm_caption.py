@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import requests
 
-from linkrag.ingest.vlm_caption import describe_if_enabled, describe_image, vlm_config
+from linkrag.ingest.vlm_caption import describe_if_enabled, describe_image
 
 
 class _Resp:
@@ -33,8 +33,8 @@ def test_disabled_by_default_and_never_calls_the_model(image, monkeypatch) -> No
         raise AssertionError("the VLM must not be called when disabled")
 
     monkeypatch.setattr(requests, "post", explode)
-    assert describe_if_enabled(image, {"ingest": {}}) == ""
-    assert vlm_config(None)["enabled"] is False
+    assert describe_if_enabled(image, None) == ""
+    assert describe_if_enabled(image, {"enabled": False, "model": "llava:7b"}) == ""
 
 
 def test_description_is_truncated_to_max_words(image, tmp_path, monkeypatch) -> None:

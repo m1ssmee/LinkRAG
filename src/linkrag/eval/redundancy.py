@@ -35,7 +35,7 @@ from typing import Any, Callable, Sequence
 import numpy as np
 
 from linkrag.core import EvidenceUnit
-from linkrag.eval.verify_gold import JUDGE_SYSTEM, majority, parse_json, span_in_text
+from linkrag.eval.verify_gold import JUDGE_SYSTEM, majority, parse_json, reading_order, span_in_text
 from linkrag.index import Encoder, embeddable_text
 
 Completer = Callable[[str, str], str]
@@ -67,7 +67,6 @@ _BULLET = re.compile(r"\s*[•·▪◦\-–]\s+|\n+")
 
 def split_sentences(text: str, *, bullets: bool = False, min_words: int = MIN_WORDS) -> list[str]:
     """Sentences (or bullet items for slide text) with at least `min_words` words."""
-    text = " ".join(text.split()) if not bullets else text
     parts: list[str] = []
     chunks = _BULLET.split(text) if bullets else [text]
     for chunk in chunks:
@@ -89,12 +88,7 @@ def sentences_by_role(units: Sequence[EvidenceUnit]) -> dict[str, list[tuple[str
     out: dict[str, list[tuple[str, str]]] = {"transcript": [], "deck": [], "paper": []}
     seen: dict[str, set[str]] = {r: set() for r in out}
 
-    def order(u: EvidenceUnit):
-        loc = u.location
-        return (loc.start_s if loc.start_s is not None else -1,
-                loc.page if loc.page is not None else -1, u.id)
-
-    for u in sorted(units, key=order):
+    for u in sorted(units, key=reading_order):
         role = role_of(u)
         # deck figure OCR is noise-heavy and mostly duplicates the slide text; the
         # deck *text* units are the claims a deck makes. Figures still serve as

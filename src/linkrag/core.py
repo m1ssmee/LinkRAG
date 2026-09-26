@@ -171,7 +171,6 @@ def stage_timer(stage: str, **fields: Any) -> Iterator[dict[str, Any]]:
             units = ...
             t["units"] = len(units)
     """
-    fields = dict(fields)
     start = time.perf_counter()
     try:
         yield fields

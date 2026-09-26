@@ -140,5 +140,4 @@ def confident_rate(frame_page: np.ndarray, margin: float) -> float:
     """Share of frames whose best page beats the runner-up by more than `margin`."""
     if frame_page.shape[1] < 2 or not len(frame_page):
         return float("nan")
-    top2 = np.sort(frame_page, axis=1)[:, -2:]
-    return float(np.mean(top2[:, 1] - top2[:, 0] > margin))
+    return float(np.mean(frame_margin(frame_page) > margin))

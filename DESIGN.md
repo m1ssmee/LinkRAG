@@ -752,7 +752,7 @@ the bugs they surfaced: `docs/pilot01_history.md`.
 ## Standing instruments (report these every phase)
 
 1. **Modality distribution of the retrieved set, per question.** `format_modality_
-   distribution` in `linkrag.eval`; printed by `scripts/ask.py` and by the regression
+   distribution` in `linkrag.eval.metrics`; printed by `scripts/ask.py` and by the regression
    runner. A retrieval gain that only reshuffles within one modality is not the
    cross-modal gain this project claims — so the composition is reported, not just a score.
 2. **The pilot01 regression set.** `tests/regression/pilot01_questions.jsonl` holds
