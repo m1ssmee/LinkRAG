@@ -91,7 +91,7 @@ def test_end_to_end_with_scripted_judge():
 
 
 def test_audit_sampler_stratifies_with_minimum():
-    import importlib.util, sys
+    import importlib.util
     spec = importlib.util.spec_from_file_location("audit_sample", "scripts/eval/audit_sample.py")
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     rows = [{"type": "a", "i": i} for i in range(100)] + [{"type": "b", "i": i} for i in range(3)]

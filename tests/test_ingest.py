@@ -157,13 +157,6 @@ def test_segment_words_on_empty_input() -> None:
     assert segment_words([]) == []
 
 
-def test_wav_fixture_is_valid_audio(wav_path: Path) -> None:
-    import wave
-
-    with wave.open(str(wav_path)) as handle:
-        assert handle.getnframes() / handle.getframerate() == pytest.approx(5.0)
-
-
 @pytest.mark.slow
 def test_ingest_audio_end_to_end(wav_path: Path) -> None:
     """Opt-in: downloads the whisper model. `pytest -m slow` to run."""

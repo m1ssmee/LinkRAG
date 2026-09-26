@@ -13,6 +13,8 @@ from typing import Sequence
 import numpy as np
 import pytest
 
+from linkrag.core import EvidenceUnit, Location
+
 FIXTURES = Path(__file__).parent / "fixtures"
 
 BODY = (
@@ -104,8 +106,6 @@ def wav_path(fixtures_dir: Path) -> Path:
 @pytest.fixture
 def deictic_audio_unit():
     """An audio unit whose speech points at a visual: "this arrow here"."""
-    from linkrag.core import EvidenceUnit, Location
-
     sentence = ("so this arrow here shows the attention weights concentrating "
                 "on the subject token")
     words = [[i * 0.5, (i + 1) * 0.5, w] for i, w in enumerate(sentence.split())]
@@ -144,9 +144,23 @@ def stub_encoder():
     return make
 
 
-def pytest_configure(config: pytest.Config) -> None:
-    config.addinivalue_line("markers", "slow: downloads a model or otherwise takes minutes")
-
-
 tesseract_missing = shutil.which("tesseract") is None
 requires_tesseract = pytest.mark.skipif(tesseract_missing, reason="tesseract binary not installed")
+
+
+# Evidence-unit factories shared by the linking tests (plain functions, not fixtures).
+def _audio(aid, sentence, start=0.0, deck=False):
+    ws = [[start + i * 0.5, start + (i + 1) * 0.5, w] for i, w in enumerate(sentence.split())]
+    return EvidenceUnit(id=aid, modality="audio", content=sentence, source_file="talk.mp3",
+                        location=Location(start_s=ws[0][0], end_s=ws[-1][1]),
+                        metadata={"words": ws, "slide_deck": deck})
+
+
+def _fig(fid, page, caption="", deck=True):
+    return EvidenceUnit(id=fid, modality="figure", content=caption, source_file="deck.pdf",
+                        location=Location(page=page), metadata={"slide_deck": deck})
+
+
+def _txt(tid, page, content="slide text", deck=True):
+    return EvidenceUnit(id=tid, modality="text", content=content, source_file="deck.pdf",
+                        location=Location(page=page), metadata={"slide_deck": deck})

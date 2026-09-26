@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from functools import partial
+
 import pytest
 
+from conftest import _audio as _audio_unit, _fig as _fig_unit, _txt as _txt_unit
 from linkrag.core import EvidenceUnit, Link, Location
 from linkrag.link.deictic import (
-    DEFAULT_CUES,
     find_cues,
     resolve_deictic,
     slide_map_from_links,
@@ -19,21 +21,7 @@ from linkrag.link.figure_text import (
 )
 
 
-def _fig(fid, page, caption=""):
-    return EvidenceUnit(id=fid, modality="figure", content=caption,
-                        source_file="deck.pdf", location=Location(page=page))
-
-
-def _txt(tid, page, content):
-    return EvidenceUnit(id=tid, modality="text", content=content,
-                        source_file="deck.pdf", location=Location(page=page))
-
-
-def _audio(aid, words, start=0.0):
-    ws = [[start + i * 0.5, start + (i + 1) * 0.5, w] for i, w in enumerate(words.split())]
-    return EvidenceUnit(id=aid, modality="audio", content=words, source_file="talk.mp3",
-                        location=Location(start_s=ws[0][0], end_s=ws[-1][1]),
-                        metadata={"words": ws})
+_fig, _txt, _audio = (partial(f, deck=False) for f in (_fig_unit, _txt_unit, _audio_unit))
 
 
 # ------------------------------------------------------------- figure numbers

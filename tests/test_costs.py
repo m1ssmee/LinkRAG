@@ -219,7 +219,6 @@ def test_colab_backend_against_a_local_openai_compatible_server(monkeypatch, tmp
     """backend colab: URL from LINKRAG_COLAB_BASE_URL, no key sent (not even the base
     block's OPENAI_API_KEY), $0 in the ledger tagged backend=colab, one-line failure
     when the URL is unset -- for both answerer and judge."""
-    import json
     import threading
     from http.server import BaseHTTPRequestHandler, HTTPServer
     import pytest

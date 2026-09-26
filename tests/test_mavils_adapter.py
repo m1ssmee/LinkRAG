@@ -16,10 +16,10 @@ spec.loader.exec_module(m)
 
 def test_their_f1_counts_abstention_as_wrong():
     gt = np.array([-1, 1, 1, 2, 2])
-    assert m.their_prf(gt, np.array([5, 1, 1, 2, 2]))[2] == 1.0
-    f_wrong_in_set = m.their_prf(gt, np.array([5, 1, 2, 2, 2]))[2]     # wrong slide that IS a GT label
-    f_wrong_out = m.their_prf(gt, np.array([5, 1, 3, 2, 2]))[2]        # wrong slide never labelled
-    f_abst = m.their_prf(gt, np.array([5, 1, -1, 2, 2]))[2]
+    assert m.their_f1(gt, np.array([5, 1, 1, 2, 2])) == 1.0
+    f_wrong_in_set = m.their_f1(gt, np.array([5, 1, 2, 2, 2]))     # wrong slide that IS a GT label
+    f_wrong_out = m.their_f1(gt, np.array([5, 1, 3, 2, 2]))        # wrong slide never labelled
+    f_abst = m.their_f1(gt, np.array([5, 1, -1, 2, 2]))
     # -1 is in labels (unique of the unfiltered column): an abstention is a false
     # positive like any in-set wrong slide; an out-of-set wrong slide only costs recall.
     assert f_abst == f_wrong_in_set == 0.75 and f_wrong_out > f_abst
