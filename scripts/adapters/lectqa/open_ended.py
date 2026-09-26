@@ -332,6 +332,14 @@ def faithfulness(cfg: dict, src: Path, out: Path, *, max_cost: float, dry_run: b
 METRICS = (("f1", "F1"), ("sim", "Sim"), ("bleu", "BLEU"), ("meteor", "METEOR"), ("rouge1", "R1"))
 
 
+def paired_cell(diffs) -> str:
+    """Mean paired difference and its 95 % bootstrap CI over questions (10,000 resamples, seed 20260923)."""
+    d = np.array(diffs)
+    boots = np.random.default_rng(20260923).choice(d, (10000, len(d))).mean(axis=1)
+    lo, hi = np.percentile(boots, [2.5, 97.5])
+    return f"{d.mean():+.2f} [{lo:+.2f}, {hi:+.2f}]"
+
+
 def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict, llm: dict, repeats: int,
                 out: Path, footer: list[str]) -> int:
     import statistics as st
@@ -400,11 +408,8 @@ def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict
     for a, b in (("full_context", "iterative"), ("full_context", "baseline"), ("iterative", "baseline")):
         cells = []
         for level in (*LEVELS, "overall"):
-            d = np.array([100 * (st.mean(m[a]) - st.mean(m[b])) for (_, lv), m in f1.items()
-                          if level == "overall" or lv == level])
-            boots = np.random.default_rng(20260923).choice(d, (10000, len(d))).mean(axis=1)
-            lo, hi = np.percentile(boots, [2.5, 97.5])
-            cells.append(f"{d.mean():+.2f} [{lo:+.2f}, {hi:+.2f}]")
+            cells.append(paired_cell([100 * (st.mean(m[a]) - st.mean(m[b])) for (_, lv), m in f1.items()
+                                      if level == "overall" or lv == level]))
         L.append(f"| {a} − {b} | " + " | ".join(cells) + " |")
     L.append("")
     one = [r for r in rows if r["rep"] == 0]

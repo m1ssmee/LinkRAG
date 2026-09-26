@@ -34,6 +34,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from lectqa.attribution import attribution, attribution_rerender  # noqa: E402
 from lectqa.acquisition import coverage, fetch  # noqa: E402
 from lectqa.common import video_ids  # noqa: E402
 from lectqa.frameslides import frameslides  # noqa: E402
@@ -48,7 +49,7 @@ from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setu
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("step", choices=["fetch", "prepare", "run", "v2", "frameslides", "coverage", "audit", "mcq",
-                                     "open", "faith"])
+                                     "open", "faith", "attribution"])
     ap.add_argument("--runs", type=int, default=3, help="faith: judge runs per check (majority)")
     ap.add_argument("--rest", type=int, default=None, help="open: how many non-subset questions (seeded order)")
     ap.add_argument("--report-only", action="store_true", help="open: re-render the report from the stored answers")
@@ -91,6 +92,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.step == "open":
         return open_modes(ids, cfg, dcfg, external / "lectqa_open_modes.md", max_cost=args.max_cost,
                           dry_run=args.dry_run, rest=args.rest)
+    if args.step == "attribution" and args.report_only:
+        return attribution_rerender(ids, cfg, external / "lectqa_open_modes.jsonl", external / "lectqa_attribution.md")
+    if args.step == "attribution":
+        return attribution(ids, cfg, external / "lectqa_open_modes.jsonl", external / "lectqa_attribution.md",
+                           max_cost=args.max_cost, dry_run=args.dry_run)
     if args.step == "faith":
         return faithfulness(cfg, external / "lectqa_open_modes.jsonl", external / "lectqa_faithfulness.md",
                             max_cost=args.max_cost, dry_run=args.dry_run, runs=args.runs)
