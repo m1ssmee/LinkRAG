@@ -36,7 +36,7 @@ LINK_TYPES: frozenset[str] = frozenset(get_args(LinkType))
 def check_link_type(link_type: str) -> str:
     """The closed set of link types. Retired names (deictic_visual, figure_paragraph, from
     before the Phase 3 renames) raise. Enforced when a `Link` is built, so also on load
-    (`link.align.load_links`); `scripts/check_link_types.py` surveys stored files."""
+    (`link.align.load_links`)."""
     if link_type not in LINK_TYPES:
         raise ValueError(f"unknown link_type {link_type!r}: use one of {sorted(LINK_TYPES)}")
     return link_type

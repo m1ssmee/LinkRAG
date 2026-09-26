@@ -15,12 +15,11 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
-from linkrag.eval.redundancy import DEFAULT_PAIRS, intake_gate, redundancy, role_of, summarise, write_report
+from linkrag.eval.redundancy import DEFAULT_PAIRS, files_by_role, intake_gate, redundancy, summarise, write_report
 from linkrag.eval.verify_gold import dump_json, entailment_opts
 from linkrag.generate.answer import judge_completer
 from linkrag.index import Index, default_encoder
@@ -82,11 +81,7 @@ def main(argv: list[str] | None = None) -> int:
                              Path("data/processed/verify_cache") / manifest.get("hash", args.name) / str(jcfg.get("model")))
     pairs = [p for p in DEFAULT_PAIRS if args.notes or "paper" not in p]
 
-    roles: dict[str, list[str]] = defaultdict(list)
-    for u in units:
-        n = Path(u.source_file).name
-        if n not in roles[role_of(u)]:
-            roles[role_of(u)].append(n)
+    roles = files_by_role(units)
     print(f"{args.name}: {len(units)} units · " + ", ".join(f"{r}={v}" for r, v in roles.items()))
 
     print(f"entailment backend: {ent['backend']}")

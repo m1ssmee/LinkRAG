@@ -230,6 +230,14 @@ def align_naive(similarity: np.ndarray) -> list[int]:
     return [int(j) for j in similarity.argmax(axis=1)]
 
 
+def monotonic_decoder(a: dict[str, Any]) -> Callable[[np.ndarray], list[int]]:
+    """`align_monotonic` with the penalties of config `link.align` (the section as a dict)."""
+    return lambda S: align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
+                                     back_penalty=a["back_penalty"], max_back=a["max_back"],
+                                     start_prior_mu=a.get("start_prior_mu", 0.0),
+                                     flatness_scaling=a.get("flatness_scaling", 0.0))
+
+
 def align_monotonic(
     similarity: np.ndarray,
     *,

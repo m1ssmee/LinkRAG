@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from linkrag.core import EvidenceUnit, Link
-from linkrag.link.align import Alignment, align, align_monotonic, align_naive, build_links
+from linkrag.link.align import Alignment, align, align_naive, build_links, monotonic_decoder
 from linkrag.link.deictic import expand_cues, resolve_deictic, slide_map_from_links
 from linkrag.link.figure_text import link_figures_to_text
 from linkrag.link.same_slide import link_same_slide
@@ -42,11 +42,7 @@ def link_corpus(audio: Sequence[EvidenceUnit], slides: Sequence[EvidenceUnit], t
         similarity=acfg.get("similarity", "ours"), fusion_weight=acfg.get("fusion_weight", 0.5),
         device=cfg["device"],
     )
-    decode = (align_naive if method == "naive" else
-              lambda S: align_monotonic(S, jump_penalty=acfg["jump_penalty"], skip_penalty=acfg["skip_penalty"],
-                                        back_penalty=acfg["back_penalty"], max_back=acfg["max_back"],
-                                        start_prior_mu=acfg.get("start_prior_mu", 0.0),
-                                        flatness_scaling=acfg.get("flatness_scaling", 0.0)))
+    decode = align_naive if method == "naive" else monotonic_decoder(acfg)
     links = build_links(audio, slides, result, min_score=acfg["min_score"],
                         min_segment_sim=acfg.get("min_segment_sim"),
                         relatedness_z=acfg.get("relatedness_z"), decode=decode,

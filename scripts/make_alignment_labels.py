@@ -64,7 +64,6 @@ def build_classes(slides) -> dict[int, set[int]]:
 
 def label_segment(seg_start: float, seg_end: float, slides, outro):
     duration = max(seg_end - seg_start, 1e-9)
-    ambiguous = False
 
     if outro and overlap(seg_start, seg_end, *outro) / duration > 0.5:
         return None, "qa", bool(_near_boundary(seg_start, seg_end, slides, outro))
@@ -79,16 +78,10 @@ def label_segment(seg_start: float, seg_end: float, slides, outro):
     best_overlap, neg_slide = max(scored, default=(0.0, None))
     best_slide = None if neg_slide is None else -neg_slide
 
-    straddled = [s for s in slides if s["zero_length"] and seg_start <= s["start"] <= seg_end]
-    if straddled:
-        ambiguous = True
-
     if best_overlap <= 0.0:
         return None, "talk", True
-
-    if _near_boundary(seg_start, seg_end, slides, outro):
-        ambiguous = True
-    return best_slide, "talk", ambiguous
+    straddled = any(s["zero_length"] and seg_start <= s["start"] <= seg_end for s in slides)
+    return best_slide, "talk", straddled or bool(_near_boundary(seg_start, seg_end, slides, outro))
 
 
 def _near_boundary(seg_start: float, seg_end: float, slides, outro) -> bool:

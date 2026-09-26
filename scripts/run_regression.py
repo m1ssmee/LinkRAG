@@ -25,8 +25,8 @@ from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, check_gold_manifest, load_manifest
 from linkrag.link.align import load_links
 from linkrag.link.graph import build_graph
-from linkrag.retrieve.baseline import retrieve_scored
-from linkrag.retrieve.linkrag import expansion_report, retrieve_linkrag
+from linkrag.retrieve.iterative import retrieve_pool
+from linkrag.retrieve.linkrag import expansion_report
 
 QUESTIONS = Path("tests/regression/pilot01_questions.jsonl")
 
@@ -38,26 +38,11 @@ def retrieve_for_mode(mode, question, index, *, encoder, graph, cfg):
     did not: --mode only changed a prompt suffix while retrieval stayed baseline,
     so a report could label itself `linkrag` over baseline retrieval.
     """
-    if mode == "linkrag":
-        lcfg = cfg["retrieve"]["linkrag"]
-        results = retrieve_linkrag(
-            question, index, graph, encoder=encoder, mode="linkrag",
-            k_seed=lcfg["k_seed"], k_final=lcfg["k_final"], hops=lcfg["hops"],
-            link_types=lcfg["link_types"], min_link_score=lcfg["min_link_score"],
-            decay=lcfg["decay"], candidates=cfg["retrieve"]["candidates"],
-            rrf_k=cfg["retrieve"]["rrf_k"],
-            normalise_seeds=lcfg.get("normalise_seeds", False),
-            expansion=cfg["retrieve"].get("expansion", "additive"))
-        # additive returns the whole pool; this runner has no reranker, so "by score"
-        results = results[:lcfg["k_final"]]
-        expanded, seeded = expansion_report(results, graph)
-        return [r.unit for r in results], expanded, seeded
-
-    scored = retrieve_scored(question, index, encoder=encoder,
-                             top_k=cfg["retrieve"]["top_k"],
-                             candidates=cfg["retrieve"]["candidates"],
-                             rrf_k=cfg["retrieve"]["rrf_k"])
-    return [u for u, _ in scored], 0, 0
+    pool = cfg["retrieve"]["linkrag"]["k_final"] if mode == "linkrag" else cfg["retrieve"]["top_k"]
+    results, _ = retrieve_pool(mode, question, index, graph, encoder=encoder, cfg=cfg, complete=None, pool=pool)
+    results = results[:pool]        # additive returns the whole pool; this runner has no reranker, so "by score"
+    expanded, seeded = expansion_report(results, graph) if mode == "linkrag" else (0, 0)
+    return [r.unit for r in results], expanded, seeded
 
 
 def main(argv: list[str] | None = None) -> int:

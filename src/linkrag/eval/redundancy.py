@@ -83,6 +83,16 @@ def role_of(unit: EvidenceUnit) -> str:
     return "deck" if unit.metadata.get("slide_deck") else "paper"
 
 
+
+def files_by_role(units: Sequence[EvidenceUnit]) -> dict[str, list[str]]:
+    """role -> source file names, in first-seen order."""
+    out: dict[str, list[str]] = {}
+    for u in units:
+        names = out.setdefault(role_of(u), [])
+        if Path(u.source_file).name not in names:
+            names.append(Path(u.source_file).name)
+    return out
+
 def sentences_by_role(units: Sequence[EvidenceUnit]) -> dict[str, list[tuple[str, str]]]:
     """role -> [(sentence, unit_id)], in reading order, deduplicated within a role."""
     out: dict[str, list[tuple[str, str]]] = {"transcript": [], "deck": [], "paper": []}

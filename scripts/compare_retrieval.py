@@ -268,10 +268,7 @@ def main(argv: list[str] | None = None) -> int:
 
     def fmt_runs(per_run, key, pct=True):
         xs = [r[key] for r in per_run]
-        if len(xs) == 1:
-            return f"{xs[0]:.1%}" if pct else f"{xs[0]:.2f}"
-        m, sd = statistics.mean(xs), statistics.stdev(xs)
-        return f"{m:.1%} ± {sd:.1%}" if pct else f"{m:.2f}"
+        return fmt(xs) if pct else f"{statistics.mean(xs):.2f}"
 
     md += ["", "### By verified question type", "",
            "| type | n | mode | rerank | recall@k | precision@k | modalities | LLM calls / q |",
