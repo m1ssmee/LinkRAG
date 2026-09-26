@@ -254,15 +254,15 @@ Climate policies, which has no video, scores 0.79 audio-only and 0.93 all-featur
 ### 2b. Where the text-only gap is: features, not the decoder
 
 *Table 2b. Text-only alignment, similarity matrix × decoder.*
-- *Dataset:* MaViLS. **TODO:** the allowed sources don't state the lecture set these three numbers were computed on (the README gives no n); `reports/mavils_final.md` has it.
+- *Dataset:* MaViLS, **all 20 lectures** (`reports/mavils_final.md` §2; resolved 2026-09-26, was a TODO).
 - *Protocol:* their F1; sentence granularity; slide text is page OCR.
 - *Matrices:* "theirs" is distiluse-base-multilingual-cased cosine; "ours" is the bge-m3 + BM25 + IDF hybrid.
-- *LLM-free, $0. Source:* README T2 row.
+- *LLM-free, $0. Source:* README T2 row and `reports/mavils_final.md` §2 (which gives 0.461 for ours × our DP; the README rounds it to 0.46).
 
 | similarity matrix ↓ \ decoder → | their DP | our DP |
 |---|---:|---:|
 | theirs (distiluse) | 0.513 | **0.520** |
-| ours (hybrid) | **TODO:** not in the allowed sources (it is in `reports/mavils_final.md`) | 0.46 |
+| ours (hybrid) | 0.425 | 0.46 |
 
 **Conclusion.** On their own similarity matrix, our decoder scores at least as well as theirs (0.520 vs 0.513). So the gap to their numbers lies in the similarity features, not in the decoder (README T2 row). Fusing the two text matrices, with the weight set on the tune half, reaches 0.520 on the test half against their 0.51 there (README).
 

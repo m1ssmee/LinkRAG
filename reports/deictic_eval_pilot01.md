@@ -110,7 +110,9 @@ deictic module then had nothing valid to choose from.
 
 **Quote these with n attached.** Precision rests on 15 pairs from 8 scorable windows (tier 2: 10, tier 3: 5).
 
-**The tiering is doing work here.** Tier 3 scores 80% against tier 3's 80%, on referent-level ground truth rather than the slide-agreement proxy used earlier.
+**The tiers do not separate here.** Every tier scores 80% on referent-level ground truth, so this evaluation cannot credit the tiering with a precision gain.
+
+*Corrected 2026-09-26: this line read "The tiering is doing work here. Tier 3 scores 80% against tier 3's 80%", a template slip when the tiers tie (`scripts/eval_deictic.py` now says so).*
 
 **The binding constraint has moved.** Before slide-figure clustering only 3 of 10 windows were scorable, because most slides yielded no figure unit at all. Now 8 are. What remains unresolvable is a table (no table extraction) and the live demo, which has no correct referent by construction.
 

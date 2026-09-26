@@ -67,10 +67,14 @@ python scripts/build_links.py      # Evidence Linking Layer -> data/processed/li
 python scripts/ask.py "what did the lecturer say about attention?" --mode linkrag --show-evidence
 ```
 
-Answering needs an LLM. The default config points at Ollama
-(`ollama serve`, then `ollama pull llama3.1:8b`); any OpenAI-compatible endpoint
-works by setting `models.llm.base_url`, `model`, and `api_key_env` in
-`configs/default.yaml`. `--mode baseline|linkrag|iterative|linkrag_iter` and `--rerank none|mmr|complementarity` are all implemented; `--mode linkrag` needs `python scripts/build_links.py` to have run first.
+Answering needs an LLM. The default config uses OpenAI `gpt-5.4-mini-2026-03-17`
+(key from `OPENAI_API_KEY`); any OpenAI-compatible endpoint (Ollama, vLLM, Groq, a Colab-served
+model) works by setting `models.llm.base_url`, `model` and `api_key_env` in
+`configs/default.yaml`, or by selecting one of `models.llm_backends`. Every run is capped by
+`--max-cost` (default $0: cache replays and free backends only). `ask.py` takes
+`--mode baseline|linkrag` and `--rerank none|mmr|complementarity`; `scripts/compare_retrieval.py`
+also runs `iterative` and `linkrag_iter`. `--mode linkrag` needs `python scripts/build_links.py`
+to have run first.
 
 ## Layout
 

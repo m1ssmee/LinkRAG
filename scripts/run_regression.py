@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Standing instrument #2: re-run the pilot01 Q1-Q4 set and append to reports/regression.md.
+"""Standing instrument #2: re-run the pilot01 regression set and append to reports/regression.md.
 
-Every phase runs this so the same four questions can be shown improving (or not)
-over time. Gold evidence is matched by file+page / file+time-overlap, never by
+Every phase runs this so the same questions (the 25 machine-verified ones since 2026-09-21;
+Q1-Q4 before that) can be shown improving (or not) over time. Gold evidence is matched by file+page / file+time-overlap, never by
 unit id -- ids are regenerated whenever ASR or chunking settings change.
 
     python scripts/run_regression.py --phase "phase2 audio-slide alignment"
@@ -168,9 +168,9 @@ def main(argv: list[str] | None = None) -> int:
     lines = []
     if new:
         lines += [
-            "# Regression — pilot01 Q1–Q4",
+            "# Regression — pilot01 regression set",
             "",
-            "The same four questions, re-run every phase. Gold evidence is matched by",
+            "The same questions, re-run every phase. Gold evidence is matched by",
             "file+page or file+time-overlap, not by unit id. `modality` is the retrieved",
             "set's composition — a gain that only reshuffles within one modality is not",
             "the cross-modal gain LinkRAG claims.",
