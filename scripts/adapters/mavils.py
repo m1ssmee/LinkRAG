@@ -37,12 +37,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score
 
 from linkrag.core import EvidenceUnit, Location, load_config, setup_logging
+from linkrag.eval.lectqa_metrics import tokens
 from linkrag.index import default_encoder
 from linkrag.ingest.pdf import ingest_pdf
-from linkrag.link.align import (abstain, align_monotonic, align_naive, distiluse_similarity, fuse_similarity,
+from linkrag.link.align import (abstain, align_monotonic, monotonic_decoder, align_naive, distiluse_similarity, fuse_similarity,
                                 relatedness_gate, similarity_matrix)
 
 # ground-truth stem -> (slides PDF, their Table 1 name, Table 1 audio F1, Table 2 combined F1 @ lambda 0.1)
@@ -93,13 +94,19 @@ def protocol_note() -> str:
 
 # ----------------------------------------------------------------- their metric
 
-def their_prf(gt: np.ndarray, pred: np.ndarray) -> tuple[float, float, float]:
+def write_report(path, L: list[str]) -> Path:
+    """Write a report's lines and echo them."""
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return out
+
+
+def their_f1(gt: np.ndarray, pred: np.ndarray) -> float:
     labels = np.unique(gt)                       # unfiltered, -1 included -- theirs
     mask = gt != -1
-    kw = {"labels": labels, "average": "micro", "zero_division": 0}
-    return (float(precision_score(gt[mask], pred[mask], **kw)),
-            float(recall_score(gt[mask], pred[mask], **kw)),
-            float(f1_score(gt[mask], pred[mask], **kw)))
+    return float(f1_score(gt[mask], pred[mask], labels=labels, average="micro", zero_division=0))
 
 
 def answered_metrics(gt: np.ndarray, pred: np.ndarray) -> tuple[float, float]:
@@ -209,8 +216,6 @@ def similarity_for(stem: str, *, window: float, slide_text: str, cfg: dict, enco
     return S, np.array(owner), gt, pages, status
 
 
-
-
 # ----------------------------------------------------------------- their code, verbatim
 
 def their_dp():
@@ -252,11 +257,6 @@ def decode_theirs(S, pages, owner, jump_penalty: float = 0.1) -> np.ndarray:
 
 # ----------------------------------------------------------------- build decks
 
-def _tokens(text: str) -> list[str]:
-    import re
-    return re.findall(r"[a-z0-9]+", text.lower())
-
-
 def build_groups(page_texts: list[str], min_tokens: int = 5) -> list[list[int]]:
     """Consecutive pages whose token multiset is a superset of the previous page's
     (with at least `min_tokens` tokens) form one build group. Returns index groups
@@ -265,7 +265,7 @@ def build_groups(page_texts: list[str], min_tokens: int = 5) -> list[list[int]]:
     groups: list[list[int]] = []
     prev: Counter | None = None
     for i, text in enumerate(page_texts):
-        cur = Counter(_tokens(text))
+        cur = Counter(tokens(text))
         if prev is not None and sum(prev.values()) >= min_tokens and not (prev - cur):
             groups[-1].append(i)
         else:
@@ -290,13 +290,13 @@ def assign_within_group(rows: list[int], group: list[int], page_texts: list[str]
     from collections import Counter
     deltas, prev = [], Counter()
     for j in group:
-        cur = Counter(_tokens(page_texts[j]))
+        cur = Counter(tokens(page_texts[j]))
         deltas.append(set(cur - prev) or set(cur))       # first build: its whole text
         prev = cur
     mass = [max(sum(idf.get(t, 1.0) for t in d), 1e-9) for d in deltas]
     sub = np.zeros((len(rows), len(group)))
     for r, i in enumerate(rows):
-        toks = set(_tokens(sentence_texts[i]))
+        toks = set(tokens(sentence_texts[i]))
         for b, d in enumerate(deltas):
             sub[r, b] = sum(idf.get(t, 1.0) for t in toks & d) / mass[b]
     local = align_monotonic(sub, jump_penalty=0.0, skip_penalty=0.0, back_penalty=1.0, max_back=0)
@@ -316,11 +316,10 @@ def decode_with_builds(S, pages, owner, a: dict, *, page_texts: list[str], sente
     gpath = align_monotonic(G, jump_penalty=a["jump_penalty"], skip_penalty=sig, back_penalty=a["back_penalty"],
                             max_back=a["max_back"], start_prior_mu=a.get("start_prior_mu", 0.0), flatness_scaling=flat)
     path = [-1] * S.shape[0]
-    seg_texts = sentence_texts  # window=0: one row per sentence
     for g_idx, group in enumerate(groups):
         rows = [i for i, p in enumerate(gpath) if p == g_idx]
         if rows:
-            for i, j in zip(rows, assign_within_group(rows, group, page_texts, seg_texts, idf)):
+            for i, j in zip(rows, assign_within_group(rows, group, page_texts, sentence_texts, idf)):
                 path[i] = j
     path = abstain(S, path, min_sim)
     pred = np.array([pages[j] if j >= 0 else -1 for j in path])[owner]
@@ -374,7 +373,7 @@ def cmd_run(args, cfg, encoder) -> int:
              "n": int((gt != -1).sum()), "slides": len(pages), "text_layer": status["text_layer"], "ocr_pages": status["ocr_pages"]}
         for v in ("naive", "dp"):
             pred = decode(S, pages, owner, a, variant=v, min_sim=None, flat=0.0)
-            r[f"{v}_f1"] = their_prf(gt, pred)[2]
+            r[f"{v}_f1"] = their_f1(gt, pred)
             r[f"{v}_paired"] = paired(gt, pred)
         rows.append(r)
         print(f"{r['name']:<20} n={r['n']:4d} slides={r['slides']:3d} layer={r['text_layer']:<7} "
@@ -403,9 +402,7 @@ def cmd_run(args, cfg, encoder) -> int:
              f"{mean('their_audio'):.2f} | {mean('their_all'):.2f} | {mean('dp_f1') - mean('their_audio'):+.2f} |")
     wins = sum(r["dp_f1"] > r["their_audio"] for r in rows)
     L += ["", f"`dp` above their audio-only on {wins}/{len(rows)} lectures.", ""]
-    out = Path(args.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text("\n".join(L) + "\n")
+    out = write_report(args.out, L)
     out.with_suffix(".json").write_text(json.dumps(rows, indent=1))
     print(f"\nmean dp {mean('dp_f1'):.3f} · naive {mean('naive_f1'):.3f} · their audio {mean('their_audio'):.2f}\nwrote {out}")
     return 0
@@ -467,7 +464,7 @@ def cmd_study(args, cfg, encoder) -> int:
             cells = []
             for v in VARIANTS:
                 pred = decode(S, pages, owner, a, variant=v, min_sim=best_sim, flat=best_flat)
-                f1 = their_prf(gt, pred)[2]
+                f1 = their_f1(gt, pred)
                 agg[v].append(f1)
                 if "abstain" in v:
                     p, c = answered_metrics(gt, pred)
@@ -478,10 +475,7 @@ def cmd_study(args, cfg, encoder) -> int:
         L.append("| **mean** | | " + " | ".join(f"**{np.mean(agg[v]):.3f}**" for v in VARIANTS)
                  + f" | {np.mean([LECTURES[s][2] for s in split[half]]):.2f} |")
         L.append("")
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L[-14:]))
-    print(f"wrote {out}")
+    write_report(args.out, L)
     return 0
 
 
@@ -517,7 +511,7 @@ def cmd_inspect(args, cfg, encoder) -> int:
     text_of = {u.location.page: " ".join(u.content.split()) for u in slides}
     contrast = S.max(axis=1) - S.mean(axis=1)
     L = [f"## Inspection — {name} (`{stem}`)", "",
-         f"their F1: dp {their_prf(gt, pred)[2]:.2f}, naive {their_prf(gt, naive)[2]:.2f}, their audio {LECTURES[stem][2]:.2f} · "
+         f"their F1: dp {their_f1(gt, pred):.2f}, naive {their_f1(gt, naive):.2f}, their audio {LECTURES[stem][2]:.2f} · "
          f"{len(gt)} sentences ({int((gt == -1).sum())} unlabelled) · {len(pages)} pages, text layer {status['text_layer']} "
          f"({status['text_layer_pages']}/{status['pages']} pages with text) · GT slide range {gt[gt != -1].min()}–{gt.max()} · "
          f"mean row contrast (max−mean) {contrast.mean():.3f} · slide text: {args.slide_text}", "",
@@ -536,16 +530,14 @@ def cmd_inspect(args, cfg, encoder) -> int:
         shown += 1
         if shown == 10:
             break
-    out = Path(args.out if args.out else f"reports/mavils_inspect_{stem}.md")
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L[:4]))
+    out = write_report(args.out if args.out else f"reports/mavils_inspect_{stem}.md", L)
     print(f"wrote {out} and {png}")
     return 0
 
 
 def paired_means(pairs) -> tuple[float, float, float]:
     """Mean their-F1, precision-on-answered and coverage over (gt, pred) pairs, one per lecture."""
-    f1s = [their_prf(g, p)[2] for g, p in pairs]
+    f1s = [their_f1(g, p) for g, p in pairs]
     prs, covs = zip(*(answered_metrics(g, p) for g, p in pairs))
     return float(np.mean(f1s)), float(np.mean(prs)), float(np.mean(covs))
 
@@ -558,7 +550,7 @@ def paired_mean_cell(pairs) -> tuple[float, str]:
 
 def paired(gt: np.ndarray, pred: np.ndarray) -> str:
     """The two numbers every alignment table carries: their F1, and precision-on-answered / coverage."""
-    f1 = their_prf(gt, pred)[2]
+    f1 = their_f1(gt, pred)
     pr, cov = answered_metrics(gt, pred)
     return f"{f1:.2f} ({pr:.2f} / {cov:.2f})"
 
@@ -630,9 +622,7 @@ def cmd_final(args, cfg, encoder) -> int:
                 S, owner, gt, pages = getS(s_)
                 if dec_name == "theirs":
                     return decode_theirs(S, pages, owner)
-                return np.array([pages[j] for j in align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
-                                                                   back_penalty=a["back_penalty"], max_back=a["max_back"],
-                                                                   start_prior_mu=a.get("start_prior_mu", 0.0))])[owner]
+                return decode(S, pages, owner, a, variant="dp", min_sim=None, flat=0.0)
             cells[(sim_name, dec_name)] = (mean_f1(stems, fn), mean_paired(stems, fn), mean_paired(tune, fn), mean_paired(test, fn))
             row.append(cells[(sim_name, dec_name)][1])
         L.append(f"| {sim_name} | {row[0]} | {row[1]} |")
@@ -676,22 +666,17 @@ def cmd_final(args, cfg, encoder) -> int:
     L += ["## 4. Test half — reported once", "",
           f"| lecture | text layer | build decks | naive | dp (pilot σ) | dp (σ = {best_sigma}) | dp + builds (σ = {best_sigma}) | their audio |",
           "|---|---|---|---:|---:|---:|---:|---:|"]
-    agg = {k: [] for k in ("naive", "dp0", "dps", "dpb")}
+    agg = ("naive", "dp0", "dps", "dpb")
     for s_ in test:
         gt = data[s_][2]
         preds = {"naive": naive(s_), "dp0": dp(s_), "dps": dp(s_, sigma=best_sigma), "dpb": dp(s_, sigma=best_sigma, builds=True)}
-        for k, v in preds.items():
-            agg[k].append(v)
         L.append(f"| {LECTURES[s_][1]} | {texts[s_][2]['text_layer']} | {flag(s_)} | " +
                  " | ".join(paired(gt, preds[k]) for k in ("naive", "dp0", "dps", "dpb")) + f" | {LECTURES[s_][2]:.2f} |")
     means = {k: mean_paired(test, lambda s_, k=k: {"naive": naive, "dp0": dp, "dps": lambda x: dp(x, sigma=best_sigma),
                                                    "dpb": lambda x: dp(x, sigma=best_sigma, builds=True)}[k](s_)) for k in agg}
     L.append(f"| **mean** | | | **{means['naive']}** | **{means['dp0']}** | **{means['dps']}** | **{means['dpb']}** | {np.mean([LECTURES[s_][2] for s_ in test]):.2f} |")
     L.append("")
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L))
-    print(f"wrote {out}")
+    write_report(args.out, L)
     return 0
 
 
@@ -748,13 +733,12 @@ def cmd_fused(args, cfg, encoder) -> int:
           "## Test half — reported once", "",
           f"| lecture | text layer | ours | theirs | fused_max | fused_weighted (w={best_w}) | their audio (paper) |",
           "|---|---|---:|---:|---:|---:|---:|"]
-    agg = {k: [] for k in ("ours", "theirs", "fused_max", "fused_weighted")}
+    agg = ("ours", "theirs", "fused_max", "fused_weighted")
     for s_ in test:
         status = ours[s_][4]
         cells = []
         for k in agg:
             gt, pred = run(s_, k, best_w)
-            agg[k].append(their_prf(gt, pred)[2])
             cells.append(paired(gt, pred))
         L.append(f"| {LECTURES[s_][1]} | {status['text_layer']} | " + " | ".join(cells) + f" | {LECTURES[s_][2]:.2f} |")
     means = {k: mean_paired(test, k, best_w)[1] for k in agg}
@@ -762,10 +746,7 @@ def cmd_fused(args, cfg, encoder) -> int:
     all_means = {k: mean_paired(sorted(LECTURES), k, best_w)[1] for k in agg}
     L += ["", "All 20 lectures (for the comparison against the paper's 0.53 and our 0.46; contains the tune half, so the fused columns are optimistic): "
           + ", ".join(f"{k} {v}" for k, v in all_means.items()) + ".", ""]
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L))
-    print(f"wrote {out}")
+    write_report(args.out, L)
     return 0
 
 
@@ -778,9 +759,7 @@ def cmd_gate(args, cfg, encoder) -> int:
     shuffles = int(args.shuffles)
     floor = float(a.get("null_std_floor", 0.0))
     figures_dir = Path(args.figures_dir)
-    dp = lambda S: align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
-                                   back_penalty=a["back_penalty"], max_back=a["max_back"],
-                                   start_prior_mu=a.get("start_prior_mu", 0.0))
+    dp = monotonic_decoder(a)
     gate = lambda S: relatedness_gate(S, dp, shuffles=shuffles, z=2.0, jump_penalty=a["jump_penalty"],
                                       skip_penalty=a["skip_penalty"], back_penalty=a["back_penalty"],
                                       null_std_floor=floor)
@@ -805,7 +784,7 @@ def cmd_gate(args, cfg, encoder) -> int:
         S, owner_, _, pages, _ = similarity_for(stem, window=args.window, slide_text="ocr", cfg=cfg,
                                                 encoder=encoder, figures_dir=figures_dir)
         pred = np.array([pages[j] for j in dp(S)])[owner_]
-        f1[stem] = their_prf(gt[stem], pred)[2]
+        f1[stem] = their_f1(gt[stem], pred)
         print(f"prepared {name(stem)}: {len(units)} windows, {len(sl)} slides, F1 {f1[stem]:.2f}")
 
     def S_for(audio_stem, deck_stem):
@@ -905,12 +884,11 @@ def cmd_gate(args, cfg, encoder) -> int:
           + ("**The rejected pairs are the low-contrast decks** (mutually similar slides), which is the mechanism the ML for health "
              "inspection shows: a shuffled slide order admits a monotone path nearly as good as the true one."
              if rej and med_c_rej > med_c_acc else "Rejected and accepted decks do not separate on column contrast."), ""]
-    out.write_text("\n".join(L) + "\n")
+    write_report(out, L)
     json.dump({"related": {s_: related[s_]["z"] for s_ in stems}, "related_detail": {s_: {k: v for k, v in related[s_].items() if k != "null_scores"} for s_ in stems},
                "f1": f1, "contrast": contrast,
                "cross": {f"{au}|{dk}": z_ for (au, dk), z_ in cross.items()}, "chosen_z": chosen},
               open(out.with_suffix(".json"), "w"), indent=1)
-    print("\n".join(L[:8]))
     print(f"chosen z {chosen:.2f}, FA {fa(chosen):.1%}, FR {fr(chosen):.0%}, rho {rho:.2f}\nwrote {out}")
     return 0
 
@@ -922,9 +900,7 @@ def cmd_gate_gran(args, cfg, encoder) -> int:
     a = cfg["link"]["align"]
     floor = float(a.get("null_std_floor", 0.0))
     figures_dir = Path(args.figures_dir)
-    dp = lambda S: align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
-                                   back_penalty=a["back_penalty"], max_back=a["max_back"],
-                                   start_prior_mu=a.get("start_prior_mu", 0.0))
+    dp = monotonic_decoder(a)
     gate = lambda S: relatedness_gate(S, dp, shuffles=int(args.shuffles), z=float(a["relatedness_z"]),
                                       jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
                                       back_penalty=a["back_penalty"], null_std_floor=floor)
@@ -984,8 +960,7 @@ def cmd_gate_gran(args, cfg, encoder) -> int:
                "**Hypothesis not confirmed** — finer granularity does not raise z for the rejected pairs (and the pooled "
                "correlation is driven by the granularity change itself, not by per-lecture n/m). No adaptive re-windowing is added; "
                "`align.gate_min_windows_per_slide` is not introduced."), ""]
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
+    out = write_report(args.out, L)
     json.dump({s_: {tag: {"z": v[0], "n": v[1], "m": v[2]} for tag, v in res[s_].items()} for s_ in stems}, open(out.with_suffix(".json"), "w"), indent=1)
     print("\n".join(L[-12:]))
     print(f"wrote {out}")
@@ -1098,12 +1073,11 @@ def sentence_visual_for(stem: str, cfg: dict, figures_dir: Path) -> dict | None:
     """sentence x page matrices from the frame at each sentence timestamp (sentence_frames_for):
     SwiftFormer image score, frame-OCR TF-IDF and BM25 against the page OCR text, plus each
     frame's OCR word count. OCR per frame is cached by the JPEG's hash; the matrices per lecture."""
-    import hashlib
     import math
     from concurrent.futures import ThreadPoolExecutor
     from PIL import Image
     from linkrag.index import tokenize
-    from linkrag.link.visual import ocr_frame, render_pages, swiftformer_features, text_similarity
+    from linkrag.link.visual import render_pages, swiftformer_features, text_similarity
     path = CACHE / "sentence_visual" / f"{stem}.npz"
     if path.exists():
         z = np.load(path)
@@ -1112,17 +1086,8 @@ def sentence_visual_for(stem: str, cfg: dict, figures_dir: Path) -> dict | None:
     if src is None:
         return None
     jpgs = sorted(src.glob("*.jpg"))
-    cache = CACHE / "frame_ocr"
-    cache.mkdir(parents=True, exist_ok=True)
-
-    def ocr_one(p: Path) -> str:
-        f = cache / f"{hashlib.sha1(p.read_bytes()).hexdigest()}.txt"
-        if not f.exists():
-            im = Image.open(p)
-            f.write_text(ocr_frame(im, scale=max(1, math.ceil(OCR_SIDE / max(im.size)))))
-        return f.read_text()
     with ThreadPoolExecutor(max_workers=8) as ex:
-        texts = list(ex.map(ocr_one, jpgs))
+        texts = list(ex.map(lambda p: cached_ocr(p, lambda im: max(1, math.ceil(OCR_SIDE / max(im.size)))), jpgs))
     pages = render_pages(REPO / "data" / "lectures" / LECTURES[stem][0])
     for p in pages:
         p.thumbnail((FRAME_SIDE, FRAME_SIDE))
@@ -1169,24 +1134,27 @@ def frame_page_for(stem: str, cfg: dict) -> dict[str, np.ndarray]:
 TEXT_MARGIN = {"tfidf": 0.05, "bm25": 0.10}
 
 
+def cached_ocr(path: Path, scale_for=None) -> str:
+    """`ocr_frame` of an image, cached under CACHE/frame_ocr/<sha1 of the file>.txt; `scale_for(im)`
+    picks the upscale (default: ocr_frame's own)."""
+    import hashlib
+    from PIL import Image
+    from linkrag.link.visual import ocr_frame
+    f = CACHE / "frame_ocr" / f"{hashlib.sha1(path.read_bytes()).hexdigest()}.txt"
+    if not f.exists():
+        f.parent.mkdir(parents=True, exist_ok=True)
+        im = Image.open(path)
+        f.write_text(ocr_frame(im, **({"scale": scale_for(im)} if scale_for else {})))
+    return f.read_text()
+
+
 def frame_ocr_for(stem: str) -> list[str]:
     """OCR of every representative frame (`linkrag.link.visual.ocr_frame`, 3x upscale), in
     slide-index order, cached per frame under CACHE/frame_ocr/<sha1 of the PNG>.txt."""
-    import hashlib
     from concurrent.futures import ThreadPoolExecutor
-    from PIL import Image
-    from linkrag.link.visual import ocr_frame
-    cache = CACHE / "frame_ocr"
-    cache.mkdir(parents=True, exist_ok=True)
-
-    def one(png: Path) -> str:
-        f = cache / f"{hashlib.sha1(png.read_bytes()).hexdigest()}.txt"
-        if not f.exists():
-            f.write_text(ocr_frame(Image.open(png)))
-        return f.read_text()
     frames = sorted((CACHE / "frames" / stem).glob("s*.png"))
     with ThreadPoolExecutor(max_workers=8) as ex:          # tesseract runs as a subprocess
-        return list(ex.map(one, frames))
+        return list(ex.map(cached_ocr, frames))
 
 
 def frame_text_page_for(stem: str, figures_dir: Path) -> dict[str, np.ndarray]:
@@ -1238,9 +1206,7 @@ def cmd_frame_ocr(args, cfg, encoder) -> int:
                  f"{np.median([r[3] for r in rows]):.0f} | {np.mean([r[4]['tfidf'] for r in rows]):.2f} | "
                  f"{np.mean([r[4]['bm25'] for r in rows]):.2f} | {np.mean([r[5] for r in rows]):.2f} |")
     L += ["", "Climate policies has no video (see `mavils_frames.md`), so no frames."]
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L))
+    write_report(args.out, L)
     return 0
 
 
@@ -1292,9 +1258,7 @@ def cmd_visual_frames(args, cfg, encoder) -> int:
                  f"{np.mean([r[4]['swiftformer'] for r in rows]):.2f} | {np.mean([r[5] for r in rows]):.2f} |")
     if missing:
         L += ["", f"**No video found for {len(missing)} lecture(s):** " + ", ".join(missing) + "."]
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L))
+    write_report(args.out, L)
     return 1 if missing else 0
 
 
@@ -1433,7 +1397,7 @@ def cmd_visual(args, cfg, encoder) -> int:
         cells, f1 = [], {}
         for col in VISUAL_COLS:
             g, p = run(s_, col, vm, wcol(col))
-            f1[col] = their_prf(g, p)[2]
+            f1[col] = their_f1(g, p)
             cells.append(paired(g, p))
         wins["vs_theirs_all"][f1[best_col] < LECTURES[s_][3]] += 1
         wins["vs_ours"][f1[best_col] < f1["ours"]] += 1
@@ -1458,9 +1422,7 @@ def cmd_visual(args, cfg, encoder) -> int:
           f"*ours* on {wins['vs_ours'][0]} (loses {wins['vs_ours'][1]}); a tie counts as a win.", "",
           f"All {len(with_video)} lectures with video (contains the tune half, so the tuned columns are optimistic): "
           + ", ".join(f"{c} {v}" for c, v in all_means.items()) + ".", ""]
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L))
+    write_report(args.out, L)
     return 0
 
 
@@ -1528,7 +1490,7 @@ def cmd_visibility_gate(args, cfg, encoder) -> int:
         cells = "— | — | —"
         if half == "tune":
             p0, p1 = pred(s_, None), pred(s_, g)
-            cells = (f"{their_prf(d['gt'], p0)[2]:.3f} | {their_prf(d['gt'], p1)[2]:.3f} | "
+            cells = (f"{their_f1(d['gt'], p0):.3f} | {their_f1(d['gt'], p1):.3f} | "
                      f"{int(np.sum(p0 != p1))} of {len(p0)}")
         L.append(f"| {LECTURES[s_][1]} | {half} | {len(vis)} | {frac:.0%} | {cells} |")
     low = [s_ for s_ in tune if float(np.mean(~slide_visible(data[s_]["frame_words"], data[s_]["frame_margin"][vm], **g))) < 0.10]
@@ -1536,9 +1498,7 @@ def cmd_visibility_gate(args, cfg, encoder) -> int:
     L += ["", f"Tune lectures with < 10 % speaker frames: {', '.join(LECTURES[s_][1] for s_ in low) or 'none'}; "
           f"predictions unchanged by the gate on {len(unchanged)} of {len(low)}"
           + (f" (changed: {', '.join(LECTURES[s_][1] for s_ in low if s_ not in unchanged)})." if len(unchanged) < len(low) else ".")]
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L))
+    write_report(args.out, L)
     return 0
 
 
@@ -1564,7 +1524,7 @@ def cmd_final_round(args, cfg, encoder) -> int:
         d = dd[s_]
         pred = decode(three_way(d, vm, tm, w, gate), d["pages"], d["owner"], a, variant="dp", min_sim=None, flat=0.0,
                       sigma=sigma)
-        return their_prf(d["gt"], pred)[2], answered_metrics(d["gt"], pred)
+        return their_f1(d["gt"], pred), answered_metrics(d["gt"], pred)
 
     def mean(dd, stems_, w, gate):
         return float(np.mean([f1(dd, s_, w, gate)[0] for s_ in stems_]))
@@ -1636,9 +1596,7 @@ def cmd_final_round(args, cfg, encoder) -> int:
           f"{LECTURES['reinforcement_learning'][3]:.2f}. Numerics: {best_f1.get('numerics', float('nan')):.2f} vs their "
           f"{LECTURES['numerics'][3]:.2f}.", "",
           "Climate policies (test half) has no video in their Kaggle zip and is outside every mean here."]
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L))
+    write_report(args.out, L)
     return 0
 
 
@@ -1724,7 +1682,7 @@ def cmd_visual_ocr(args, cfg, encoder) -> int:
         cells, f1 = [], {}
         for col in OCR_COLS:
             g, p = run(s_, col, **kw.get(col, {}))
-            f1[col] = their_prf(g, p)[2]
+            f1[col] = their_f1(g, p)
             cells.append(paired(g, p))
         wins["theirs_all"][f1[best_col] < LECTURES[s_][3]] += 1
         wins["visual+theirs"][f1[best_col] < f1["visual+theirs"]] += 1
@@ -1743,9 +1701,7 @@ def cmd_visual_ocr(args, cfg, encoder) -> int:
           f"{PAPER_ALL_FEATURES} is their 20-lecture average.", "",
           f"All {len(with_video)} lectures with video (contains the tune half, so the tuned columns are optimistic): "
           + ", ".join(f"{c} {v}" for c, v in all_means.items()) + ".", ""]
-    out = Path(args.out)
-    out.write_text("\n".join(L) + "\n")
-    print("\n".join(L))
+    write_report(args.out, L)
     return 0
 
 

@@ -10,8 +10,7 @@ from pathlib import Path
 from linkrag.costs import cached_completer, price_for, record_run, usage_cost
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, default_encoder
-from linkrag.retrieve.baseline import retrieve_scored
-from linkrag.retrieve.linkrag import RetrievedUnit
+from linkrag.retrieve.iterative import retrieve_pool
 
 from lectqa.common import LEVELS, MCQ_SYSTEM, PROCESSED, THEIRS, evidence_block, load_qa, mcq_choice
 
@@ -45,9 +44,7 @@ def mcq_prompts(ids: list[str], cfg: dict, dcfg: dict, encoder) -> list[dict]:
         index = Index.load(index_dir)
         mcqs = [q for q in qa.get(vid, []) if q["kind"] == "mcq"]
         for i, q in enumerate(mcqs):
-            res = [RetrievedUnit(unit=u, score=s, origin="seed")
-                   for u, s in retrieve_scored(q["question"], index, encoder=encoder, top_k=k,
-                                               candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"])]
+            res, _ = retrieve_pool("baseline", q["question"], index, None, encoder=encoder, cfg=cfg, complete=None, pool=k)
             opts, gold = shuffled(q, vid, i)
             listing = "\n".join(f"{'ABCD'[j]}. {o}" for j, o in enumerate(opts))
             user = f"Evidence:\n{evidence_block(res)}\n\nQuestion: {q['question']}\n{listing}\n\nLetter:"

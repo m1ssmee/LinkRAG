@@ -13,7 +13,6 @@ from linkrag.core import EvidenceUnit, Link
 from linkrag.retrieve.linkrag import RetrievedUnit
 
 
-
 RAW = Path("data/raw/lectqa_vid")
 
 
@@ -53,12 +52,9 @@ def load_qa() -> dict[str, list[dict]]:
     mcq = json.loads((RAW / "mcq_questions.json").read_text())
     opn = json.loads((RAW / "open_ended_questions.json").read_text())
     out: dict[str, list[dict]] = collections.defaultdict(list)
-    for vid, qs in mcq.items():
-        for q in qs:
-            out[vid].append({**q, "kind": "mcq", "level": q["level"].replace("_", " ")})
-    for vid, qs in opn.items():
-        for q in qs:
-            out[vid].append({**q, "kind": "open", "level": q["level"].replace("_", " ")})
+    for kind, per_video in (("mcq", mcq), ("open", opn)):
+        for vid, qs in per_video.items():
+            out[vid] += [{**q, "kind": kind, "level": q["level"].replace("_", " ")} for q in qs]
     return out
 
 
