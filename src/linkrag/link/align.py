@@ -357,7 +357,7 @@ def path_objective(similarity: np.ndarray, path: Sequence[int], *, jump_penalty:
 
 def relatedness_gate(similarity: np.ndarray, decode: Callable[[np.ndarray], list[int]], *,
                      jump_penalty: float = 0.05, skip_penalty: float = 0.02, back_penalty: float = 0.15,
-                     shuffles: int = 5, z: float = 2.0, seed: int = 20260923,
+                     z: float, shuffles: int = 5, seed: int = 20260923,
                      null_std_floor: float = 0.0) -> dict[str, Any]:
     """Is this audio track about this deck at all?
 

@@ -195,7 +195,7 @@ def figure_text_scores(
 
 
 def document_pair_gate(figures: Sequence[EvidenceUnit], texts: Sequence[EvidenceUnit], *,
-                       encoder: Encoder, shuffles: int = 5, z: float = 2.0,
+                       encoder: Encoder, z: float, shuffles: int = 5,
                        seed: int = 20260923, cache_dir: str | Path | None = None) -> dict:
     """Are document A's figures about document B's text at all?
 
@@ -272,7 +272,7 @@ def link_figures_to_text(
     page_decay: float = 2.0,
     layout_max_gap_pt: float = 220.0,
     reference_page_window: int = 1,
-    relatedness_z: float | None = 2.0,
+    relatedness_z: float | None = None,
     relatedness_shuffles: int = 5,
     gate_cache_dir: str | Path | None = None,
 ) -> list[Link]:

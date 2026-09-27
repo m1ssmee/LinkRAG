@@ -760,6 +760,7 @@ def cmd_gate(args, cfg, encoder) -> int:
     floor = float(a.get("null_std_floor", 0.0))
     figures_dir = Path(args.figures_dir)
     dp = monotonic_decoder(a)
+    # z=2.0 only fills the recorded gate dicts; this study reads each pair's z and chooses the threshold
     gate = lambda S: relatedness_gate(S, dp, shuffles=shuffles, z=2.0, jump_penalty=a["jump_penalty"],
                                       skip_penalty=a["skip_penalty"], back_penalty=a["back_penalty"],
                                       null_std_floor=floor)

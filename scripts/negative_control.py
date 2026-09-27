@@ -68,7 +68,7 @@ def mavils_false_rejections(cfg: dict, args) -> list[str]:
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     a = cfg["link"]["align"]
-    z = float(a.get("relatedness_z") or 2.0)
+    z = float(a["relatedness_z"])      # config link.align.relatedness_z, the one place it is set
     dp = monotonic_decoder(a)
     rows = []
     tag = "sentence" if not args.window else f"w{int(args.window)}"
