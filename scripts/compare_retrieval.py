@@ -26,7 +26,7 @@ from linkrag.eval.metrics import matches_locator
 from linkrag.generate.answer import answer_json, http_completer, judge_completer
 from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
-from linkrag.index import Index, default_encoder
+from linkrag.index import Index, default_encoder, memoised
 from linkrag.link.align import load_links
 from linkrag.link.graph import build_graph
 from linkrag.manifest import MANIFEST_NAME, load_manifest
@@ -115,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     pool = max(int(rcfg.get("pool", k)), k)
 
     index = Index.load(args.index or cfg["index"]["store_dir"])
-    encoder = default_encoder(index.embedding_model, cfg["device"], index.normalize)
+    encoder = memoised(default_encoder(index.embedding_model, cfg["device"], index.normalize))  # one encode per question
     encoder([""])
     index_dir = Path(args.index or cfg["index"]["store_dir"])
     manifest = load_manifest(index_dir.parent / MANIFEST_NAME) or {}

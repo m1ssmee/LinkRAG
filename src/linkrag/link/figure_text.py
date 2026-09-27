@@ -196,7 +196,7 @@ def figure_text_scores(
 
 def document_pair_gate(figures: Sequence[EvidenceUnit], texts: Sequence[EvidenceUnit], *,
                        encoder: Encoder, shuffles: int = 5, z: float = 2.0,
-                       seed: int = 20260923) -> dict:
+                       seed: int = 20260923, cache_dir: str | Path | None = None) -> dict:
     """Are document A's figures about document B's text at all?
 
     Statistic: mean over A's figures of the best cosine to any of B's text units.
@@ -204,9 +204,29 @@ def document_pair_gate(figures: Sequence[EvidenceUnit], texts: Sequence[Evidence
     re-embedded, `shuffles` times. Related iff the true statistic exceeds the null
     mean by `z` null standard deviations -- the same shape of test as the
     audio-slide gate (`align.relatedness_gate`), with a word shuffle standing in for
-    the slide-order shuffle because there is no sequence to permute."""
+    the slide-order shuffle because there is no sequence to permute.
+
+    `cache_dir` caches the raw statistic and nulls (not z or the verdict), keyed by the inputs,
+    seed, shuffle count, the encoder's model/device/normalisation and the library versions -- a
+    deterministic function of those, so a warm run is byte-identical and skips 1 + `shuffles`
+    re-embeddings of the whole text. Only encoders that declare their model are cached."""
     import random
     fig_text = [embeddable_text(f) for f in figures]
+    originals = [t.content for t in texts]
+    cache = None
+    if cache_dir and getattr(encoder, "model", None):
+        import hashlib
+        import json
+        import sentence_transformers
+        import torch
+        import transformers
+        key = json.dumps([fig_text, originals, shuffles, seed, encoder.model, encoder.device, encoder.normalize,
+                          np.__version__, torch.__version__, transformers.__version__,
+                          sentence_transformers.__version__])
+        cache = Path(cache_dir) / f"{hashlib.sha256(key.encode()).hexdigest()}.json"
+    if cache is not None and cache.exists():
+        stored = json.loads(cache.read_text())
+        return _gate_verdict(stored["score"], stored["nulls"], z)
     f_vec = np.asarray(encoder(fig_text), dtype="float32")
     f_vec /= np.maximum(np.linalg.norm(f_vec, axis=1, keepdims=True), 1e-9)
 
@@ -215,7 +235,6 @@ def document_pair_gate(figures: Sequence[EvidenceUnit], texts: Sequence[Evidence
         t_vec /= np.maximum(np.linalg.norm(t_vec, axis=1, keepdims=True), 1e-9)
         return float((f_vec @ t_vec.T).max(axis=1).mean())
 
-    originals = [t.content for t in texts]
     true = stat(originals)
     words = [w for t in originals for w in t.split()]
     lengths = [len(t.split()) for t in originals]
@@ -228,6 +247,13 @@ def document_pair_gate(figures: Sequence[EvidenceUnit], texts: Sequence[Evidence
             out.append(" ".join(words[pos:pos + n]) or "(empty)")
             pos += n
         nulls.append(stat(out))
+    if cache is not None:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps({"score": true, "nulls": nulls}))
+    return _gate_verdict(true, nulls, z)
+
+
+def _gate_verdict(true: float, nulls: list[float], z: float) -> dict:
     mean, std = float(np.mean(nulls)), float(np.std(nulls))
     zscore = (true - mean) / std if std > 1e-12 else (float("inf") if true > mean else 0.0)
     return {"score": true, "null_mean": mean, "null_std": std, "z": zscore, "threshold_z": z,
@@ -248,6 +274,7 @@ def link_figures_to_text(
     reference_page_window: int = 1,
     relatedness_z: float | None = 2.0,
     relatedness_shuffles: int = 5,
+    gate_cache_dir: str | Path | None = None,
 ) -> list[Link]:
     """figure_text Links.
 
@@ -286,7 +313,8 @@ def link_figures_to_text(
                         continue
                     g = document_pair_gate([f for f in figures if doc_of(f) == fd],
                                            [x for x in texts if doc_of(x) == td], encoder=encoder,
-                                           shuffles=relatedness_shuffles, z=relatedness_z)
+                                           shuffles=relatedness_shuffles, z=relatedness_z,
+                                           cache_dir=gate_cache_dir)
                     pair_ok[(fd, td)] = g["related"]
                     if not g["related"]:
                         unrelated.append({"figures_from": fd, "text_from": td, "link_type": "figure_text",

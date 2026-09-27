@@ -149,3 +149,27 @@ def test_null_std_floor_bounds_z():
     g_floor = relatedness_gate(S, DP, null_std_floor=0.01)
     assert g["null_std"] == 0.0 and g_floor["null_std_used"] == 0.01
     assert abs(g_floor["z"]) < 1e-9 and not g_floor["related"]
+
+
+def test_document_pair_gate_cache_replays_the_same_verdict(tmp_path, stub_encoder) -> None:
+    """The cache holds the raw statistic and nulls; a warm call embeds nothing and returns the same dict.
+    An encoder that does not declare its model is never cached."""
+    from linkrag.core import EvidenceUnit, Location
+    from linkrag.link.figure_text import document_pair_gate
+    figs = [EvidenceUnit(id=f"f{i}", modality="figure", content=c, source_file="a.pdf", location=Location(page=i + 1))
+            for i, c in enumerate(["attention heatmap", "loss curve"])]
+    texts = [EvidenceUnit(id=f"t{i}", modality="text", content=c, source_file="b.pdf", location=Location(page=i + 1))
+             for i, c in enumerate(["the attention heatmap shows weights", "training loss falls", "unrelated words"])]
+    base = stub_encoder([u.content for u in figs + texts])
+    calls = []
+
+    def enc(texts_):
+        calls.append(len(texts_))
+        return base(texts_)
+    cold = document_pair_gate(figs, texts, encoder=enc, cache_dir=tmp_path)
+    assert calls and not list(tmp_path.iterdir())                  # no model declared: not cached
+    enc.model, enc.device, enc.normalize = "stub", "cpu", True
+    first = document_pair_gate(figs, texts, encoder=enc, cache_dir=tmp_path)
+    calls.clear()
+    warm = document_pair_gate(figs, texts, encoder=enc, cache_dir=tmp_path)
+    assert calls == [] and warm == first == cold

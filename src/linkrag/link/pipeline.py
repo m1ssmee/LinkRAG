@@ -67,7 +67,7 @@ def link_corpus(audio: Sequence[EvidenceUnit], slides: Sequence[EvidenceUnit], t
         weights=fcfg["weights"], page_decay=fcfg["page_decay"],
         layout_max_gap_pt=fcfg["layout_max_gap_pt"],
         reference_page_window=fcfg["reference_page_window"],
-        relatedness_z=acfg.get("relatedness_z"),
+        relatedness_z=acfg.get("relatedness_z"), gate_cache_dir=fcfg.get("gate_cache_dir"),
     )
     unrelated_pairs += getattr(link_figures_to_text, "unrelated_pairs", [])
     scfg = lcfg["same_slide"]

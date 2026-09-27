@@ -183,3 +183,19 @@ def test_dense_ties_break_by_position(stub_encoder) -> None:
     query = stub_encoder(contents)(["same text here"])[0]
     hits = index.dense_search(query, k=4)
     assert [p for p, _ in hits] == [0, 1, 2, 3]
+
+
+def test_memoised_encoder_calls_once_per_text_and_returns_copies() -> None:
+    import numpy as np
+    from linkrag.index import memoised
+    calls = []
+
+    def enc(texts):
+        calls.append(list(texts))
+        return np.ones((len(texts), 3), dtype="float32")
+    m = memoised(enc)
+    a = m(["q"])
+    a /= 2                                          # a caller normalising in place
+    assert np.array_equal(m(["q"]), np.ones((1, 3)))
+    m(["q", "r"])                                   # batches pass through
+    assert calls == [["q"], ["q", "r"]]
