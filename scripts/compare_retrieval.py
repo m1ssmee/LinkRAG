@@ -22,11 +22,11 @@ from pathlib import Path
 
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import record_run
-from linkrag.eval import matches_locator
+from linkrag.eval.metrics import matches_locator
 from linkrag.generate.answer import answer_json, http_completer, judge_completer
 from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
-from linkrag.index import Index, default_encoder
+from linkrag.index import Index, default_encoder, memoised
 from linkrag.link.align import load_links
 from linkrag.link.graph import build_graph
 from linkrag.manifest import MANIFEST_NAME, load_manifest
@@ -115,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     pool = max(int(rcfg.get("pool", k)), k)
 
     index = Index.load(args.index or cfg["index"]["store_dir"])
-    encoder = default_encoder(index.embedding_model, cfg["device"], index.normalize)
+    encoder = memoised(default_encoder(index.embedding_model, cfg["device"], index.normalize))  # one encode per question
     encoder([""])
     index_dir = Path(args.index or cfg["index"]["store_dir"])
     manifest = load_manifest(index_dir.parent / MANIFEST_NAME) or {}
@@ -268,10 +268,7 @@ def main(argv: list[str] | None = None) -> int:
 
     def fmt_runs(per_run, key, pct=True):
         xs = [r[key] for r in per_run]
-        if len(xs) == 1:
-            return f"{xs[0]:.1%}" if pct else f"{xs[0]:.2f}"
-        m, sd = statistics.mean(xs), statistics.stdev(xs)
-        return f"{m:.1%} ± {sd:.1%}" if pct else f"{m:.2f}"
+        return fmt(xs) if pct else f"{statistics.mean(xs):.2f}"
 
     md += ["", "### By verified question type", "",
            "| type | n | mode | rerank | recall@k | precision@k | modalities | LLM calls / q |",

@@ -81,41 +81,13 @@ def crop_page(unit: EvidenceUnit, out_dir: Path = CITATION_DIR, dpi: int = CROP_
 
 def clip_audio(unit: EvidenceUnit, out_dir: Path = CITATION_DIR, pad_s: float = 0.25) -> Path | None:
     """Cut [start-pad, end+pad] from the source media into an .m4a next to the crops."""
-    import av
+    from linkrag.ingest.asr_openai import cut
     src = Path(unit.source_file)
     if unit.location.start_s is None or not src.exists():
         return None
-    out = out_dir / f"{unit.id.replace(':', '_')}.m4a"
-    if out.exists():
-        return out
-    out.parent.mkdir(parents=True, exist_ok=True)
     start = max(0.0, float(unit.location.start_s) - pad_s)
     end = float(unit.location.end_s or start) + pad_s
-    with av.open(str(src)) as inp:
-        stream = inp.streams.audio[0]
-        with av.open(str(out), "w") as outp:
-            # A decoder can report a generic layout ("1 channels"); the AAC encoder
-            # rejects it. Name it by channel count instead of copying the source.
-            channels = getattr(stream.layout, "nb_channels", None) or stream.codec_context.channels or 1
-            ostream = outp.add_stream("aac", rate=stream.codec_context.sample_rate or 44100)
-            ostream.layout = "mono" if channels == 1 else "stereo"
-            resampler = av.audio.resampler.AudioResampler(format=ostream.format, layout=ostream.layout,
-                                                          rate=ostream.rate)
-            inp.seek(int(start / stream.time_base), stream=stream)
-            for frame in inp.decode(stream):
-                t = float(frame.pts * stream.time_base) if frame.pts is not None else 0.0
-                if t < start:
-                    continue
-                if t > end:
-                    break
-                frame.pts = None
-                for resampled in resampler.resample(frame):
-                    for packet in ostream.encode(resampled):
-                        outp.mux(packet)
-            for packet in ostream.encode(None):
-                outp.mux(packet)
-    return out
-
+    return cut(src, start, end, out_dir / f"{unit.id.replace(':', '_')}.m4a")
 
 def cite(unit: EvidenceUnit, out_dir: Path = CITATION_DIR, *, media: bool = True) -> Citation:
     """One inspectable citation for one unit."""

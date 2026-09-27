@@ -31,9 +31,9 @@ def _unrelated_matrix(n=30, m=10, seed=1):
 
 
 def test_gate_passes_related_and_rejects_unrelated():
-    g = relatedness_gate(_related_matrix(), DP)
+    g = relatedness_gate(_related_matrix(), DP, z=2.0)
     assert g["related"] and g["z"] > 2.0 and g["score"] > g["null_mean"]
-    u = relatedness_gate(_unrelated_matrix(), DP)
+    u = relatedness_gate(_unrelated_matrix(), DP, z=2.0)
     assert not u["related"], u
     assert len(u["null_scores"]) == 5
 
@@ -108,9 +108,9 @@ def test_synthetic_unrelated_deck_gets_no_cross_document_semantic_links():
     unrelated = [EvidenceUnit(id=f"bio:p{i}:t0", modality="text", content=c, source_file="bio.pdf",
                               location=Location(page=i))
                  for i, c in enumerate(["mitosis cell enzyme", "protein membrane dna", "enzyme dna cell membrane"], start=1)]
-    assert document_pair_gate(figs, related, encoder=enc)["related"]
-    assert not document_pair_gate(figs, unrelated, encoder=enc)["related"]
-    links = link_figures_to_text(figs, related + unrelated, encoder=enc, threshold=0.0,
+    assert document_pair_gate(figs, related, encoder=enc, z=2.0)["related"]
+    assert not document_pair_gate(figs, unrelated, encoder=enc, z=2.0)["related"]
+    links = link_figures_to_text(figs, related + unrelated, encoder=enc, threshold=0.0, relatedness_z=2.0,
                                  weights={"reference": 0.3, "layout": 0.15, "page": 0.15, "dense": 0.25, "overlap": 0.15})
     dst_docs = {l.dst_id.split(":")[0] for l in links}
     assert "deck" in dst_docs and "bio" not in dst_docs
@@ -145,7 +145,31 @@ def test_null_std_floor_bounds_z():
     """A degenerate null (all shuffles identical) must not produce an infinite z."""
     S = np.zeros((6, 3))
     S[:, 0] = 0.5                       # every column order gives the same path score
-    g = relatedness_gate(S, DP, null_std_floor=0.0)
-    g_floor = relatedness_gate(S, DP, null_std_floor=0.01)
+    g = relatedness_gate(S, DP, z=2.0, null_std_floor=0.0)
+    g_floor = relatedness_gate(S, DP, z=2.0, null_std_floor=0.01)
     assert g["null_std"] == 0.0 and g_floor["null_std_used"] == 0.01
     assert abs(g_floor["z"]) < 1e-9 and not g_floor["related"]
+
+
+def test_document_pair_gate_cache_replays_the_same_verdict(tmp_path, stub_encoder) -> None:
+    """The cache holds the raw statistic and nulls; a warm call embeds nothing and returns the same dict.
+    An encoder that does not declare its model is never cached."""
+    from linkrag.core import EvidenceUnit, Location
+    from linkrag.link.figure_text import document_pair_gate
+    figs = [EvidenceUnit(id=f"f{i}", modality="figure", content=c, source_file="a.pdf", location=Location(page=i + 1))
+            for i, c in enumerate(["attention heatmap", "loss curve"])]
+    texts = [EvidenceUnit(id=f"t{i}", modality="text", content=c, source_file="b.pdf", location=Location(page=i + 1))
+             for i, c in enumerate(["the attention heatmap shows weights", "training loss falls", "unrelated words"])]
+    base = stub_encoder([u.content for u in figs + texts])
+    calls = []
+
+    def enc(texts_):
+        calls.append(len(texts_))
+        return base(texts_)
+    cold = document_pair_gate(figs, texts, encoder=enc, z=2.0, cache_dir=tmp_path)
+    assert calls and not list(tmp_path.iterdir())                  # no model declared: not cached
+    enc.model, enc.device, enc.normalize = "stub", "cpu", True
+    first = document_pair_gate(figs, texts, encoder=enc, z=2.0, cache_dir=tmp_path)
+    calls.clear()
+    warm = document_pair_gate(figs, texts, encoder=enc, z=2.0, cache_dir=tmp_path)
+    assert calls == [] and warm == first == cold

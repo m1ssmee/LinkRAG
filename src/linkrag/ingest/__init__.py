@@ -115,18 +115,11 @@ def dedupe_ids(units: list[EvidenceUnit]) -> list[EvidenceUnit]:
     return units
 
 
-def transcripts_used() -> list[str]:
-    """Frozen transcripts the last ingest read or wrote -- corpus-identifying inputs
-    that are not corpus files, so `build_manifest(..., derived=...)` can hash them."""
-    return list(getattr(ingest_files, "last_transcripts", []))
-
-
 def ingest_files(
     paths: list[str | Path],
     cfg: dict[str, Any] | None = None,
     *,
     mode: Mode = "baseline",
-    skip_failures: bool = True,
 ) -> list[EvidenceUnit]:
     """Documents first, then audio -- so the slide deck's vocabulary can prime
     whisper's decoder before the lecture is transcribed (`ingest.asr_vocab_from_
@@ -145,8 +138,6 @@ def ingest_files(
         try:
             return ingest_file(path, cfg, mode=mode, **kw)
         except Exception as exc:
-            if not skip_failures:
-                raise
             log.warning("skipped %s: %s: %s", path, type(exc).__name__, exc)
             failures.append((path, exc))
             return []

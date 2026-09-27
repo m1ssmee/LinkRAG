@@ -1,6 +1,6 @@
 # Results against the two target papers (draft)
 
-Draft of 2026-09-25, for the mentor report now and the paper's results section later.
+Draft of 2026-09-25, revised 2026-09-27 with the attribution ablation (`lectqa_attribution.md`), for the mentor report now and the paper's results section later.
 
 **Where the numbers come from.** Every number below is copied from one of four sources: `results/external/*.md`, `results/external/*.json`, `DESIGN.md` findings 12–16, and the target rows of `README.md`. Each is cited where it is used. The one exception is the total API spend at the end, which comes from `reports/llm_ledger.jsonl`. Where a number is not in those sources, the text says **TODO** and states what is missing; nothing is filled in by estimate.
 
@@ -11,20 +11,20 @@ Draft of 2026-09-25, for the mentor report now and the paper's results section l
 ## Summary
 
 *Table S. Headline comparison. The detailed tables and their sources are in §1 and §2.*
-- *LectQA-Vid:* 300-question stratified open-ended subset (100 per difficulty), 93 videos, 3 repeats; answerer gpt-5.4-mini-2026-03-17 at temperature 0; T1's metric suite (eqs. 29–35); spend $3.34.
+- *LectQA-Vid:* 300-question stratified open-ended subset (100 per difficulty), 93 videos, 3 repeats; answerer gpt-5.4-mini-2026-03-17 at temperature 0; T1's metric suite (eqs. 29–35); spend $3.34 for the three original modes plus $1.13 for the attribution ablation.
 - *MaViLS:* the 9 test-half lectures with video; their F1 protocol; LLM-free, $0.
 - *Their numbers:* as published.
 
 | paper | dataset | their number | our number | protocol | verdict |
 |---|---|---|---|---|---|
-| T1, Intra-Video Temporal-Aware RAG | LectQA-Vid, open-ended | Table 4 overall F1 23.52 (their unnamed answerer, not comparable with ours) | replica of their pipeline **31.23 ± 0.06**; ours (iterative) **36.70 ± 0.16**; full transcript **38.74 ± 0.23** | one answerer for all three modes; their metrics | **Ours exceeds the replica of their pipeline**: +5.47 F1, 95 % CI [+3.80, +7.24], and the CI excludes zero at every difficulty. **The benchmark cannot measure retrieval value**: the full transcript beats both (+2.04 [+1.14, +2.99] over ours), and every transcript fits a 2,048-token window. |
+| T1, Intra-Video Temporal-Aware RAG | LectQA-Vid, open-ended | Table 4 overall F1 23.52 (their unnamed answerer, not comparable with ours) | replica of their pipeline **31.23 ± 0.06**, and **34.69 ± 0.04** without its eq. 22 filter; ours: RRF **34.96 ± 0.31**, RRF + one re-query **36.70 ± 0.16**; full transcript **38.74 ± 0.23** | one answerer for every mode; their metrics | **Ours (RRF + re-query) exceeds T1's pipeline without its oracle filter by +2.00 F1, 95 % CI [+0.88, +3.21].** Eq. 22 reads the gold timestamps at inference (160 of 300 questions), costs the replica 3.46 F1 [2.12, 4.91] and leaves 34 questions with no context; without it the two retrieval pipelines are level (RRF − replica +0.27 [−1.13, +1.63]); the re-query adds +1.74 [+0.76, +2.75]. **The benchmark cannot measure retrieval value**: the full transcript beats every mode (+2.04 [+1.14, +2.99] over ours), and every transcript fits a 2,048-token window. |
 | T1 | LectQA-Vid, MCQ | Table 5 accuracy 53.43 | 95.33 with shuffled options | baseline retrieval, one run | **Not a retrieval measure.** A no-video "pick the longest option" rule scores 94.4. |
 | T2, MaViLS | MaViLS, 9 test lectures with video | all-features **0.80** on the same lectures (0.82 is their 20-lecture average) | **0.853** (image + frame OCR + speech-to-slide text, frames at each sentence's timestamp) | their F1, sentence granularity; test half run once per round | **Parity**: +0.055, 95 % CI [−0.050, +0.161] |
 
-**Total project API spend:** $22.05 recorded across 55 priced ledger rows (2026-09-21 to 2026-09-23).
-- Six more rows carry no price: five gpt-5.4 rows and one free-tier Groq row. So the true total is higher than $22.05 by an unrecorded amount.
+**Total project API spend:** $23.18 recorded across 56 priced ledger rows (2026-09-21 to 2026-09-26; the attribution ablation of 2026-09-26 added $1.13).
+- Six more rows carry no price: five gpt-5.4 rows and one free-tier Groq row. So the true total is higher than $23.18 by an unrecorded amount.
 - The ledger also does not credit OpenAI's automatic prompt-cache discount, so each priced row is an upper bound.
-- All MaViLS work and all re-renders since 2026-09-24 cost $0.
+- All MaViLS work and all re-renders since 2026-09-24 cost $0; the one paid run since then is the attribution ablation.
 
 ---
 
@@ -38,7 +38,7 @@ Draft of 2026-09-25, for the mentor report now and the paper's results section l
   - The open-ended comparison runs on a stratified 300-question subset.
   - The single run on the other 1,118 open-ended questions was not made: the dry run estimated $7.43 against the item's $3.50 cap (`lectqa_open_modes.md`, "Scope").
 - **The baseline is our replica of their pipeline, not their code**, which is unpublished. The choices the paper leaves open are ours (§1b).
-- **Their eq. 22 filter reads the gold timestamps**, an oracle. It is usable on only 160 of the 300 subset questions (§1e).
+- **Their eq. 22 filter reads the gold timestamps at inference**, an oracle, on the 160 of 300 subset questions with a usable stamp. Our headline comparison is therefore against the replica with eq. 22 off (§1c, Table 1c-iii).
 - **Faithfulness uses one judge run per check**, so it is *direction only*. It was corrected twice on 2026-09-24 (§1f).
 
 ### 1a. Their published numbers
@@ -134,12 +134,38 @@ The modes abstained (answered "not found") on 51 (replica), 14 (ours) and 13 (fu
 
 **Full-set single-run means: TODO.** They were not produced. The single run on the 1,118 non-subset open-ended questions did not fit the item's $3.50 cap (estimated $7.43 with the subset), so every open-ended number here comes from the 300-question subset.
 
+*Table 1c-iii. Attribution ablation: re-query vs pipeline vs eq. 22.*
+- *Same subset, answerer, prompt, repeats and metrics as Table 1c-i.* Two new modes: T1's replica with eq. 22 off (the gold interval is never read), and our plain RRF baseline (bge-m3 dense + BM25, top-4, no re-query). The replica, iterative and full-context rows are the stored answers of Table 1c-i.
+- *Spend:* $1.1281 (1,781 calls, 547 replayed from the reply cache where a new mode's evidence equalled a stored run's). *Source:* `lectqa_attribution.md`.
+
+| mode | simple F1 | hard F1 | very hard F1 | overall F1 | overall Sim | abstained (of 300) |
+|---|---:|---:|---:|---:|---:|---:|
+| T1 replica (eq. 22 on) | 41.34 ± 0.08 | 28.06 ± 0.30 | 24.28 ± 0.20 | 31.23 ± 0.06 | 57.32 ± 0.01 | 51 |
+| T1 replica, eq. 22 off | 43.39 ± 0.16 | 35.21 ± 0.14 | 25.48 ± 0.09 | 34.69 ± 0.04 | 63.03 ± 0.18 | 21 |
+| ours: RRF, no re-query | 42.64 ± 0.37 | 34.66 ± 0.14 | 27.58 ± 0.51 | 34.96 ± 0.31 | 63.92 ± 0.11 | 15 |
+| ours: RRF + one re-query | 46.30 ± 0.27 | 36.26 ± 0.44 | 27.53 ± 0.13 | 36.70 ± 0.16 | 65.79 ± 0.39 | 14 |
+| full transcript | 48.88 ± 0.40 | 38.39 ± 0.41 | 28.94 ± 0.16 | 38.74 ± 0.23 | 66.88 ± 0.09 | 13 |
+
+Paired differences, token F1 points, 95 % bootstrap CI over questions (as Table 1c-ii):
+
+| difference | what it isolates | simple | hard | very hard | overall |
+|---|---|---:|---:|---:|---:|
+| **ours (RRF + re-query) − replica, eq. 22 off** | **ours vs T1's pipeline without its oracle** | +2.91 [+0.48, +5.58] | +1.05 [−0.83, +2.95] | +2.06 [+0.70, +3.49] | **+2.00 [+0.88, +3.21]** |
+| replica (eq. 22 on) − replica, eq. 22 off | the eq. 22 filter | −2.05 [−4.31, −0.03] | −7.15 [−10.48, −4.17] | −1.19 [−2.54, −0.00] | −3.46 [−4.91, −2.12] |
+| RRF − replica, eq. 22 off | the two retrieval pipelines, neither reading timestamps | −0.75 [−3.96, +2.40] | −0.55 [−2.75, +1.52] | +2.10 [+0.48, +3.72] | +0.27 [−1.13, +1.63] |
+| RRF + re-query − RRF | the re-query (same index, same top-4) | +3.66 [+1.69, +5.92] | +1.60 [−0.02, +3.41] | −0.04 [−1.29, +1.15] | +1.74 [+0.76, +2.75] |
+| RRF − replica (eq. 22 on) | the rest of the pipeline, eq. 22 included | +1.30 [−2.33, +4.90] | +6.60 [+3.51, +9.92] | +3.29 [+1.49, +5.14] | +3.73 [+2.03, +5.50] |
+
+**Eq. 22 at inference.** It read the gold interval on 160 of the 300 questions and left 34 of them with no context at all. On those 34 the replica scores 1.73 F1 with eq. 22 and 27.63 without it (6 stay empty without it: nothing clears T1's cosine threshold of 0.6), against 28.95 for our RRF (repeat 0).
+
 ### 1d. Verdicts
 
 The caveats above apply to both sentences.
 
-1. **On the 300-question stratified subset of LectQA-Vid, our retrieval (iterative) beats our replication of T1's pipeline by +5.47 token-F1 points (95 % CI +3.80 to +7.24), and the interval excludes zero at every difficulty** (simple +4.95, hard +8.20, very hard +3.25; Table 1c-ii). It does so without reading any timestamp, while the replica's eq. 22 filter reads the gold timestamps.
-2. **Giving the answerer the whole transcript beats both retrieval pipelines** (+2.04 [+1.14, +2.99] over ours, +7.51 [+5.72, +9.40] over the replica), **so LectQA-Vid cannot measure the value of retrieval.**
+1. **On the 300-question stratified subset of LectQA-Vid, our retrieval with one re-query beats our replication of T1's pipeline without its oracle filter by +2.00 token-F1 points (95 % CI +0.88 to +3.21)** (simple +2.91, hard +1.05 with a CI that includes zero, very hard +2.06; Table 1c-iii).
+   - T1's eq. 22 filter reads the gold timestamps at inference (160 of 300 questions). It costs the replica 3.46 F1 [2.12, 4.91] and leaves 34 questions with no context, so the +5.47 [+3.80, +7.24] against the replica *with* eq. 22 (Table 1c-ii) overstates the retrieval comparison.
+   - Without eq. 22, the two retrieval pipelines are level overall (RRF − replica +0.27 [−1.13, +1.63]; very hard +2.10 [+0.48, +3.72]). The re-query adds +1.74 [+0.76, +2.75].
+2. **Giving the answerer the whole transcript beats every retrieval mode** (+2.04 [+1.14, +2.99] over ours, +7.51 [+5.72, +9.40] over the replica), **so LectQA-Vid cannot measure the value of retrieval.**
    - The reason is context fit (`lectqa_audit.md` §(e)). Full transcripts run from 140 to 1,544 o200k tokens, median 780, n = 95, and all 95 fit in a 2,048-token window.
    - The answerer's own context window is not reported by the API. Every current OpenAI window is far larger than the longest transcript.
    - On lectures this short, retrieval can only lose information.
@@ -172,7 +198,7 @@ All LLM-free, $0 (`lectqa_audit.md`, except where another file is named).
 
 The relatedness gate rejected the speech-to-deck alignment on **49 of 95** videos: 16 of 19 slide talks, 11 of 29 mixed, 22 of 47 animated explainers. Frame-derived slides gave no localisation gain: hit@1 43.2 % with slides vs 45.6 % without (DESIGN finding 12).
 
-**Eq. 22 hurts their own pipeline.** Setup: repeat 0 of the subset; the two groups are different questions, so the other modes are the control (`lectqa_open_modes.md`).
+**Eq. 22 hurts their own pipeline.** The controlled ablation is Table 1c-iii (−3.46 F1 [−4.91, −2.12] with eq. 22 on vs off, same questions). The first, uncontrolled look below split repeat 0 by question group; the two groups are different questions, so the other modes are the control (`lectqa_open_modes.md`).
 - *Where eq. 22 applies* (usable gold stamp, n = 160): the replica scores 27.54 F1, against 35.71 for ours and 36.76 for full context on the same questions.
 - *Where it doesn't* (n = 140): 35.45, against 37.92 and 41.49.
 - So the replica loses about five points more than the controls where its oracle filter is on, and the filter leaves 34 of those 160 questions with no context at all.
@@ -254,15 +280,15 @@ Climate policies, which has no video, scores 0.79 audio-only and 0.93 all-featur
 ### 2b. Where the text-only gap is: features, not the decoder
 
 *Table 2b. Text-only alignment, similarity matrix × decoder.*
-- *Dataset:* MaViLS. **TODO:** the allowed sources don't state the lecture set these three numbers were computed on (the README gives no n); `reports/mavils_final.md` has it.
+- *Dataset:* MaViLS, **all 20 lectures** (`reports/mavils_final.md` §2; resolved 2026-09-26, was a TODO).
 - *Protocol:* their F1; sentence granularity; slide text is page OCR.
 - *Matrices:* "theirs" is distiluse-base-multilingual-cased cosine; "ours" is the bge-m3 + BM25 + IDF hybrid.
-- *LLM-free, $0. Source:* README T2 row.
+- *LLM-free, $0. Source:* README T2 row and `reports/mavils_final.md` §2 (which gives 0.461 for ours × our DP; the README rounds it to 0.46).
 
 | similarity matrix ↓ \ decoder → | their DP | our DP |
 |---|---:|---:|
 | theirs (distiluse) | 0.513 | **0.520** |
-| ours (hybrid) | **TODO:** not in the allowed sources (it is in `reports/mavils_final.md`) | 0.46 |
+| ours (hybrid) | 0.425 | 0.46 |
 
 **Conclusion.** On their own similarity matrix, our decoder scores at least as well as theirs (0.520 vs 0.513). So the gap to their numbers lies in the similarity features, not in the decoder (README T2 row). Fusing the two text matrices, with the weight set on the tune half, reaches 0.520 on the test half against their 0.51 there (README).
 

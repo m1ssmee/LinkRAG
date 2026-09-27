@@ -24,17 +24,6 @@ class Word:
     text: str
 
 
-@dataclass(frozen=True)
-class Segment:
-    """One whisper decoding segment -- roughly a sentence or clause, ending on
-    punctuation far more often than an arbitrary time offset does."""
-
-    start: float
-    end: float
-    text: str
-    words: tuple[Word, ...] = ()
-
-
 # Whisper conditions on at most ~224 prompt tokens; past that the tail is dropped.
 ASR_PROMPT_MAX_TERMS = 75
 
@@ -163,29 +152,19 @@ def pack(groups: list[list[Word]], window_seconds: float = 30.0) -> list[list[Wo
     return buckets
 
 
-def transcribe_segments(
+def transcribe_words(
     path: str | Path,
     *,
     model_size: str = "small",
     device: str = "cpu",
     compute_type: str = "int8",
     initial_prompt: str | None = None,
-) -> list[Segment]:
+) -> list[Word]:
     model = _load_model(model_size, device, compute_type)
     segments, _info = model.transcribe(
         str(path), word_timestamps=True, initial_prompt=initial_prompt or None
     )
-    return [
-        Segment(
-            s.start,
-            s.end,
-            s.text.strip(),
-            tuple(Word(w.start, w.end, w.word.strip()) for w in (s.words or [])),
-        )
-        for s in segments
-    ]
-
-
+    return [Word(w.start, w.end, w.word.strip()) for s in segments for w in (s.words or [])]
 
 
 def load_frozen_transcript(path: str | Path) -> list[Word]:
@@ -255,11 +234,10 @@ def ingest_audio(
                 write_transcript(words, freeze_to, path, meta)
                 ingest_audio.last_transcript = str(freeze_to)   # type: ignore[attr-defined]
         else:
-            segments = transcribe_segments(
+            words = transcribe_words(
                 path, model_size=model_size, device=device, compute_type=compute_type,
                 initial_prompt=initial_prompt,
             )
-            words = [w for seg in segments for w in seg.words]
             if freeze_to:
                 from linkrag.ingest.asr_openai import write_transcript
                 write_transcript(words, freeze_to, path, {"asr_backend": "local", "model": model_size,

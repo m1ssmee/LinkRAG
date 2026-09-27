@@ -9,25 +9,6 @@ linkrag:  scores ours; a component that can't be ablated this way isn't done.
 
 Standing instruments (reported by every phase, see DESIGN.md):
   1. modality distribution of the retrieved set, per question
-  2. the pilot01 Q1-Q4 regression set, appended to reports/regression.md
+  2. the pilot01 regression set, appended to reports/regression.md
 """
 
-from __future__ import annotations
-
-from linkrag.eval.metrics import (
-    describe_locator,
-    format_modality_distribution,
-    gold_coverage,
-    gold_hits,
-    matches_locator,
-    modality_distribution,
-)
-
-__all__ = [
-    "describe_locator",
-    "format_modality_distribution",
-    "gold_coverage",
-    "gold_hits",
-    "matches_locator",
-    "modality_distribution",
-]

@@ -18,7 +18,7 @@ def test_tokens_and_set_based_token_prf_eqs_29_30():
 
 
 def test_rouge1_is_unigram_recall_eq_34():
-    assert M.rouge1("the cat sat", "the cat sat on the mat") == pytest.approx(3 / 5)
+    assert M.token_prf("the cat sat", "the cat sat on the mat")[1] == pytest.approx(3 / 5)   # eq. 34 = unigram recall
 
 
 def test_bleu4_eq_31_hand_computed():

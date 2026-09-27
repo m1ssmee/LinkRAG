@@ -8,7 +8,9 @@ Numbers refer to the corpus and gold set as they stood at tag `v0-pilot`
 rules, execution rule, rejected approaches -- stay in `DESIGN.md`.
 
 Corpus: Hsieh et al., *Focus*, OSDI '18 -- 22.9-min talk audio, 27-slide deck,
-19-page paper. Manifest `2f3b35f27e86caf8`, 209 units, 354 links.
+19-page paper. Manifest `2f3b35f27e86caf8`, 209 units, 311 links (audio_slide 51, deictic 126,
+figure_text 103, same_slide 31). *Corrected 2026-09-26: this line said 354 links, the count before
+the deictic file/page fix of 2026-09-21 (deictic 169 → 126; `reports/regression.md`).*
 
 ## Phase-1 pilot (`data/raw/pilot01`, run 2026-09-06)
 
@@ -184,6 +186,10 @@ unit, one is a table, one is the external demo. Within those: precision **6/6 = 
 detection recall **3/5 = 60%**, and **0 false positives** on the slide-24 known
 negative. All six scorable pairs are tier 3, so this evaluation says nothing about
 whether tiering helps. **The binding constraint is figure extraction, not deixis.**
+
+*Superseded (commit `ee04859`, 2026-09-07, after deck-figure clustering): 8 scorable windows,
+precision 12/15 = 80 %, recall 12/14 = 86 %, tiers 2 and 3 both at 80 %
+(`reports/deictic_eval_pilot01.md`). The 6/6 and 3/5 above are the pre-clustering evaluation.*
 
 Artifacts: `data/processed/links.jsonl` (51 audio_slide Links), `links.npz`
 (similarity + path, so plotting and eval skip re-embedding),

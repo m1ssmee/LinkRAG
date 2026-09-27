@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import sys
 from pathlib import Path
 
@@ -69,13 +70,11 @@ def main(argv: list[str] | None = None) -> int:
     with stage_timer("index.save", dir=out):
         index.save(out)
 
-    from linkrag.ingest import transcripts_used
-    manifest = build_manifest(args.files, units, derived=transcripts_used())
+    # frozen transcripts read or written: corpus-identifying inputs that are not corpus files
+    manifest = build_manifest(args.files, units, derived=list(getattr(ingest_files, "last_transcripts", [])))
     manifest_path = write_manifest(manifest, Path(out).parent / MANIFEST_NAME)
 
-    by_modality: dict[str, int] = {}
-    for unit in units:
-        by_modality[unit.modality] = by_modality.get(unit.modality, 0) + 1
+    by_modality = dict(Counter(unit.modality for unit in units))
     print(f"indexed {len(units)} units -> {out}  {by_modality}")
     print(f"corpus manifest {manifest['hash']} -> {manifest_path}")
     failed = getattr(ingest_files, "last_failures", [])

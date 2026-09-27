@@ -65,19 +65,8 @@ def main(argv: list[str] | None = None) -> int:
             prompt = build_asr_prompt(texts)
             print(f"vocabulary prompt from {len(slides)} deck(s), {len(prompt.split(','))} terms")
 
-    minutes = 0.0
-    try:
-        import av
-        with av.open(str(audio)) as c:
-            minutes = (float(c.duration) / 1e6) / 60 if c.duration else 0.0
-    except Exception:
-        pass
+    # transcribe() prices the whole file against --max-cost (set_max_cost above) before the first upload
     price = price_for(str(cfg["ingest"]["asr_openai"]["model"]), cfg["models"].get("pricing"))
-    est = (minutes * float(price.get("per_minute", 0))) if price else None
-    print(f"{audio.name}: {minutes:.1f} min · estimated cost {'$%.2f' % est if est is not None else 'unknown'} "
-          f"· cap ${args.max_cost:.2f}")
-    if est is not None and est > args.max_cost:
-        raise SystemExit(f"estimated ${est:.2f} exceeds --max-cost ${args.max_cost:.2f}")
 
     t0 = time.perf_counter()
     words, meta = transcribe(audio, cfg, prompt=prompt)

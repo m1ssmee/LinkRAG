@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Standing instrument #2: re-run the pilot01 Q1-Q4 set and append to reports/regression.md.
+"""Standing instrument #2: re-run the pilot01 regression set and append to reports/regression.md.
 
-Every phase runs this so the same four questions can be shown improving (or not)
-over time. Gold evidence is matched by file+page / file+time-overlap, never by
+Every phase runs this so the same questions (the 25 machine-verified ones since 2026-09-21;
+Q1-Q4 before that) can be shown improving (or not) over time. Gold evidence is matched by file+page / file+time-overlap, never by
 unit id -- ids are regenerated whenever ASR or chunking settings change.
 
     python scripts/run_regression.py --phase "phase2 audio-slide alignment"
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import record_run
-from linkrag.eval import describe_locator, format_modality_distribution, gold_coverage, gold_hits
+from linkrag.eval.metrics import describe_locator, format_modality_distribution, gold_coverage, gold_hits
 from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer, judge_completer
 from linkrag.eval.verify_gold import entailment_opts
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
@@ -25,8 +25,8 @@ from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, check_gold_manifest, load_manifest
 from linkrag.link.align import load_links
 from linkrag.link.graph import build_graph
-from linkrag.retrieve.baseline import retrieve_scored
-from linkrag.retrieve.linkrag import expansion_report, retrieve_linkrag
+from linkrag.retrieve.iterative import retrieve_pool
+from linkrag.retrieve.linkrag import expansion_report
 
 QUESTIONS = Path("tests/regression/pilot01_questions.jsonl")
 
@@ -38,26 +38,11 @@ def retrieve_for_mode(mode, question, index, *, encoder, graph, cfg):
     did not: --mode only changed a prompt suffix while retrieval stayed baseline,
     so a report could label itself `linkrag` over baseline retrieval.
     """
-    if mode == "linkrag":
-        lcfg = cfg["retrieve"]["linkrag"]
-        results = retrieve_linkrag(
-            question, index, graph, encoder=encoder, mode="linkrag",
-            k_seed=lcfg["k_seed"], k_final=lcfg["k_final"], hops=lcfg["hops"],
-            link_types=lcfg["link_types"], min_link_score=lcfg["min_link_score"],
-            decay=lcfg["decay"], candidates=cfg["retrieve"]["candidates"],
-            rrf_k=cfg["retrieve"]["rrf_k"],
-            normalise_seeds=lcfg.get("normalise_seeds", False),
-            expansion=cfg["retrieve"].get("expansion", "additive"))
-        # additive returns the whole pool; this runner has no reranker, so "by score"
-        results = results[:lcfg["k_final"]]
-        expanded, seeded = expansion_report(results, graph)
-        return [r.unit for r in results], expanded, seeded
-
-    scored = retrieve_scored(question, index, encoder=encoder,
-                             top_k=cfg["retrieve"]["top_k"],
-                             candidates=cfg["retrieve"]["candidates"],
-                             rrf_k=cfg["retrieve"]["rrf_k"])
-    return [u for u, _ in scored], 0, 0
+    pool = cfg["retrieve"]["linkrag"]["k_final"] if mode == "linkrag" else cfg["retrieve"]["top_k"]
+    results, _ = retrieve_pool(mode, question, index, graph, encoder=encoder, cfg=cfg, complete=None, pool=pool)
+    results = results[:pool]        # additive returns the whole pool; this runner has no reranker, so "by score"
+    expanded, seeded = expansion_report(results, graph) if mode == "linkrag" else (0, 0)
+    return [r.unit for r in results], expanded, seeded
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -168,9 +153,9 @@ def main(argv: list[str] | None = None) -> int:
     lines = []
     if new:
         lines += [
-            "# Regression — pilot01 Q1–Q4",
+            "# Regression — pilot01 regression set",
             "",
-            "The same four questions, re-run every phase. Gold evidence is matched by",
+            "The same questions, re-run every phase. Gold evidence is matched by",
             "file+page or file+time-overlap, not by unit id. `modality` is the retrieved",
             "set's composition — a gain that only reshuffles within one modality is not",
             "the cross-modal gain LinkRAG claims.",

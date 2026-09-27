@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 from linkrag.core import load_config
 from linkrag.generate.verify import ABSTENTION
 from linkrag.index import build_index
-from linkrag.ingest.audio import Segment, Word
+from linkrag.ingest.audio import Word
 from linkrag.link.align import save_links
 from linkrag.manifest import build_manifest, manifest_hash, write_manifest
 from linkrag.ui import api
@@ -42,17 +42,15 @@ def _cfg() -> dict:
     return cfg
 
 
-def _transcript(*_args, **_kwargs) -> list[Segment]:
+def _transcript(*_args, **_kwargs) -> list[Word]:
     """Whisper's output shape: 1 s sentences with 0.8 s pauses, one audio unit each."""
-    segments, t = [], 0.0
+    words, t = [], 0.0
     for sentence in SPEECH:
-        words = []
         for w in sentence.split():
             words.append(Word(round(t, 2), round(t + 0.1, 2), w))
             t += 0.1
-        segments.append(Segment(words[0].start, words[-1].end, sentence, tuple(words)))
         t += 0.8
-    return segments
+    return words
 
 
 def _deck(path: Path) -> Path:
@@ -73,7 +71,7 @@ def lecture(tmp_path, monkeypatch, pdf_path, wav_path, stub_encoder):
     and talk.wav narrating the deck."""
     encode = stub_encoder([*SLIDES, *SPEECH, BODY, CAPTION, CROSS_REF, TABLE_REF,
                            "Attention weights concentrate on the subject token."])
-    monkeypatch.setattr("linkrag.ingest.audio.transcribe_segments", _transcript)
+    monkeypatch.setattr("linkrag.ingest.audio.transcribe_words", _transcript)
     app = api.create_app(_cfg(), workdir=tmp_path, answerer="mock", encoder=encode)
     client = TestClient(app, headers={"X-Session": SID})
     files = [("files", ("deck.pdf", _deck(tmp_path / "deck.pdf").read_bytes(), "application/pdf")),
@@ -312,9 +310,9 @@ def test_sample_loads_recording_and_deck_by_default_and_the_paper_on_request(tmp
 
 
 def test_each_recording_deck_pair_gets_its_own_gate(tmp_path, monkeypatch, pdf_path, wav_path, stub_encoder):
-    """Two recordings and one deck: the pipeline links them as one sequence, but each
-    connector's z must come from that recording's own alignment, not be copied."""
-    monkeypatch.setattr("linkrag.ingest.audio.transcribe_segments", _transcript)
+    """Two recordings and one deck: the pipeline aligns and gates each recording against the deck
+    on its own, and each connector's z is that pair's gate."""
+    monkeypatch.setattr("linkrag.ingest.audio.transcribe_words", _transcript)
     app = api.create_app(_cfg(), workdir=tmp_path, answerer="mock", encoder=stub_encoder(SLIDES + SPEECH))
     client = TestClient(app, headers={"X-Session": SID})
     client.post("/upload", files=[("files", ("deck.pdf", _deck(tmp_path / "deck.pdf").read_bytes(), "application/pdf")),
@@ -323,7 +321,7 @@ def test_each_recording_deck_pair_gets_its_own_gate(tmp_path, monkeypatch, pdf_p
                                   ("files", ("part2.wav", wav_path.read_bytes(), "audio/wav"))])
     with client.stream("POST", "/build") as r:
         events = _stream(r)
-    assert events[-1] == {"status": "ready"} and any("2 recordings x 1 decks" in e.get("warning", "") for e in events)
+    assert events[-1] == {"status": "ready"} and not any("one sequence" in e.get("warning", "") for e in events)
     pairs = {(p["a"], p["b"]): p for p in client.get("/pairs").json()["pairs"]}
     assert pairs[("deck.pdf", "part1.wav")]["kind"] == pairs[("deck.pdf", "part2.wav")]["kind"] == "audio_slide"
     assert pairs[("deck.pdf", "part1.wav")]["z"] is not None and pairs[("deck.pdf", "part2.wav")]["z"] is not None
@@ -339,7 +337,7 @@ def test_a_linked_pair_below_the_unsure_band_asks_for_confirmation(lecture, stub
     z = next(p for p in client.get("/pairs").json()["pairs"] if p["kind"] == "audio_slide")["z"]
     cfg = _cfg()
     cfg["ui"] = {"unsure_below_z": z + 1.0}
-    monkeypatch.setattr("linkrag.ingest.audio.transcribe_segments", _transcript)
+    monkeypatch.setattr("linkrag.ingest.audio.transcribe_words", _transcript)
     app = api.create_app(cfg, workdir=tmp_path / "band", answerer="mock",
                          encoder=stub_encoder([*SLIDES, *SPEECH, BODY, CAPTION, CROSS_REF, TABLE_REF]))
     other = TestClient(app, headers={"X-Session": SID})

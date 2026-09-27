@@ -14,12 +14,14 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import run_regression  # noqa: E402
+from linkrag.retrieve import iterative  # noqa: E402
 
 CFG = {
     "retrieve": {
         "top_k": 8, "candidates": 50, "rrf_k": 60,
         "linkrag": {"k_seed": 5, "k_final": 8, "hops": 1,
                     "link_types": ["audio_slide"], "min_link_score": 0.0, "decay": 0.5},
+        "iterative": {"rounds": 2, "k_per_round": 8},
     }
 }
 
@@ -44,8 +46,8 @@ def spies(monkeypatch):
         calls["linkrag"] += 1
         return [_Result("s1", "seed"), _Result("e1", "expanded")]
 
-    monkeypatch.setattr(run_regression, "retrieve_scored", fake_scored)
-    monkeypatch.setattr(run_regression, "retrieve_linkrag", fake_linkrag)
+    monkeypatch.setattr(iterative, "retrieve_scored", fake_scored)
+    monkeypatch.setattr(iterative, "retrieve_linkrag", fake_linkrag)
     monkeypatch.setattr(run_regression, "expansion_report", lambda results, g: (1, 2))
     return calls
 
@@ -73,7 +75,7 @@ def test_linkrag_mode_passes_the_configured_knobs(monkeypatch) -> None:
         seen.update(kw)
         return []
 
-    monkeypatch.setattr(run_regression, "retrieve_linkrag", fake_linkrag)
+    monkeypatch.setattr(iterative, "retrieve_linkrag", fake_linkrag)
     monkeypatch.setattr(run_regression, "expansion_report", lambda r, g: (0, 0))
     run_regression.retrieve_for_mode("linkrag", "q", index=None, encoder=None,
                                      graph=object(), cfg=CFG)

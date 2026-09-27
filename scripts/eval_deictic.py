@@ -231,10 +231,14 @@ def main(argv: list[str] | None = None) -> int:
         best = max(tiers, key=lambda t: tiers[t][0] / max(tiers[t][1], 1))
         worst = min(tiers, key=lambda t: tiers[t][0] / max(tiers[t][1], 1))
         w("")
-        w(f"**The tiering is doing work here.** Tier {best} scores "
-          f"{100*tiers[best][0]/tiers[best][1]:.0f}% against tier {worst}'s "
-          f"{100*tiers[worst][0]/tiers[worst][1]:.0f}%, on referent-level ground truth "
-          f"rather than the slide-agreement proxy used earlier.")
+        prec = lambda t: 100 * tiers[t][0] / tiers[t][1]
+        if round(prec(best)) == round(prec(worst)):
+            w(f"**The tiers do not separate here.** Every tier scores {prec(best):.0f}% on referent-level "
+              f"ground truth, so this evaluation cannot credit the tiering with a precision gain.")
+        else:
+            w(f"**The tiering is doing work here.** Tier {best} scores {prec(best):.0f}% against tier "
+              f"{worst}'s {prec(worst):.0f}%, on referent-level ground truth rather than the "
+              f"slide-agreement proxy used earlier.")
     else:
         w("")
         w("Only one tier appears in the scorable windows, so this evaluation says "

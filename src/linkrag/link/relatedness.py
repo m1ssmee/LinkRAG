@@ -108,14 +108,12 @@ def gate_links(links: Sequence[Link], units: Sequence[EvidenceUnit], judge: Comp
 def apply_verdicts(links: Sequence[Link], verdicts: Sequence[LinkVerdict]) -> list[Link]:
     """Write each verdict into its link's metadata (links are returned, not filtered)."""
     key = {(v.src_id, v.dst_id, v.link_type): v for v in verdicts}
-    out = []
     for l in links:
         v = key.get((l.src_id, l.dst_id, l.link_type))
         if v is not None:
             l.metadata = {**(l.metadata or {}),
                           "relatedness": {"passed": v.passed, "votes": v.votes, "subject": v.subject}}
-        out.append(l)
-    return out
+    return list(links)
 
 
 def pass_rates(verdicts: Sequence[LinkVerdict]) -> dict[str, tuple[int, int]]:

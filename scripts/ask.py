@@ -10,7 +10,7 @@ import argparse
 from pathlib import Path
 
 from linkrag.core import load_config, set_max_cost, setup_logging, stage_timer
-from linkrag.eval import format_modality_distribution
+from linkrag.eval.metrics import format_modality_distribution
 from linkrag.costs import record_run
 from linkrag.generate.answer import answer, answer_json, cited_ids, http_completer, judge_completer
 from linkrag.generate.citations import citations_for
@@ -20,8 +20,7 @@ from linkrag.index import Index, default_encoder
 from linkrag.link.align import load_links
 from linkrag.manifest import MANIFEST_NAME, load_manifest
 from linkrag.link.graph import build_graph
-from linkrag.retrieve.baseline import retrieve_scored
-from linkrag.retrieve.linkrag import RetrievedUnit, retrieve_linkrag
+from linkrag.retrieve.iterative import retrieve_pool
 from linkrag.retrieve.rerank import METHODS, rerank
 
 
@@ -72,23 +71,8 @@ def main(argv: list[str] | None = None) -> int:
             parser.error(f"no links at {links_path} -- run scripts/build_links.py first")
         graph = build_graph(list(index.units),
                             load_links(links_path, expect_manifest=manifest_hash))
-        results = retrieve_linkrag(
-            args.question, index, graph, encoder=encoder, mode="linkrag",
-            k_seed=lcfg["k_seed"], k_final=pool,
-            hops=lcfg["hops"], link_types=lcfg["link_types"],
-            min_link_score=lcfg["min_link_score"], decay=lcfg["decay"],
-            candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"],
-            normalise_seeds=lcfg.get("normalise_seeds", False),
-            expansion=cfg["retrieve"].get("expansion", "additive"),
-        )
-    else:
-        results = [
-            RetrievedUnit(unit=u, score=s, origin="seed")
-            for u, s in retrieve_scored(
-                args.question, index, encoder=encoder, top_k=pool,
-                candidates=cfg["retrieve"]["candidates"],
-                rrf_k=cfg["retrieve"]["rrf_k"])
-        ]
+    results, _ = retrieve_pool(args.mode, args.question, index, graph, encoder=encoder, cfg=cfg,
+                               complete=None, pool=pool)
     results = rerank(results, k, method=method, index=index, graph=graph,
                      alpha=rcfg["alpha"], beta=rcfg["beta"], gamma=rcfg["gamma"],
                      mmr_lambda=rcfg["mmr_lambda"], question=args.question,

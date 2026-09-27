@@ -1,0 +1,12 @@
+# Allowlist: the build context is only what the Dockerfile copies. Everything else (the
+# virtualenv, git history, data, results, local secrets such as .env) stays out.
+*
+!requirements.txt
+!requirements-ui.txt
+!configs/
+!scripts/build_links.py
+!src/
+**/__pycache__
+**/*.pyc
+src/linkrag/ui/web/node_modules
+src/linkrag/ui/web/dist

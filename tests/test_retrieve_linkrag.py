@@ -217,8 +217,7 @@ def test_iterative_makes_one_llm_call_per_extra_round(corpus) -> None:
                                 rounds=2, k_per_round=4, k_final=8)
     assert result.llm_calls == 1 and len(calls) == 1
     assert len(result.queries) == 2
-    assert "GOLD" in result.ids, "the follow-up query should reach the missed unit"
-    assert result.latency_s > 0
+    assert "GOLD" in [r.id for r in result.units], "the follow-up query should reach the missed unit"
 
 
 def test_iterative_without_a_completer_runs_one_round(corpus) -> None:

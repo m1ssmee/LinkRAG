@@ -13,11 +13,11 @@ from linkrag.costs import CacheMiss, cached_completer, record_run
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, default_encoder
 from linkrag.link.graph import build_graph
-from linkrag.retrieve.baseline import retrieve_scored
-from linkrag.retrieve.linkrag import RetrievedUnit, retrieve_linkrag
+from linkrag.retrieve.iterative import retrieve_pool
 from linkrag.retrieve.rerank import rerank
 
 from lectqa.common import LEVELS, MCQ_SYSTEM, OPEN_SYSTEM, PROCESSED, RAW, THEIRS, evidence_block, gold_interval, load_qa, mcq_choice, strict_seconds, temporal_links, video_ids
+from lectqa.localisation import lectqa_link
 from lectqa.mcq import longest_option
 
 
@@ -31,7 +31,7 @@ def run(ids: list[str], cfg: dict, dcfg: dict, modes: list[str], out: Path, repe
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
     k = dcfg["top_k"]
-    rcfg, lcfg = cfg["retrieve"]["rerank"], cfg["retrieve"]["linkrag"]
+    rcfg = cfg["retrieve"]["rerank"]
     pool = max(int(rcfg.get("pool", k)), k)
     rows: list[dict] = []
     t_start = time.perf_counter()
@@ -46,18 +46,10 @@ def run(ids: list[str], cfg: dict, dcfg: dict, modes: list[str], out: Path, repe
         for q in qa.get(vid, []):
             for mode in modes:
                 for rep in range(repeats):
-                    if mode == "baseline":
-                        res = [RetrievedUnit(unit=u, score=s, origin="seed")
-                               for u, s in retrieve_scored(q["question"], index, encoder=encoder, top_k=k,
-                                                           candidates=cfg["retrieve"]["candidates"],
-                                                           rrf_k=cfg["retrieve"]["rrf_k"])]
-                    else:
-                        cand = retrieve_linkrag(q["question"], index, graph, encoder=encoder, mode="linkrag",
-                                                k_seed=lcfg["k_seed"], k_final=pool, hops=1,
-                                                link_types=["audio_slide"], min_link_score=0.0, decay=lcfg["decay"],
-                                                candidates=cfg["retrieve"]["candidates"], rrf_k=cfg["retrieve"]["rrf_k"],
-                                                normalise_seeds=True, expansion="additive")
-                        res = rerank(cand, k, method="complementarity", index=index, graph=graph,
+                    res, _ = retrieve_pool(mode, q["question"], index, graph, encoder=encoder, cfg=cfg, complete=None,
+                                           pool=k if mode == "baseline" else pool, link=lectqa_link(("audio_slide",)))
+                    if mode != "baseline":
+                        res = rerank(res, k, method="complementarity", index=index, graph=graph,
                                      alpha=rcfg["alpha"], beta=rcfg["beta"], gamma=rcfg["gamma"],
                                      question=q["question"], device=cfg["device"])
                     ev = evidence_block(res)

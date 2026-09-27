@@ -82,6 +82,10 @@ def main(argv: list[str] | None = None) -> int:
                       link_mode=args.link_mode)
     result, links, deictic_links, gate = run.alignment, run.links, run.deictic, run.gate
     unrelated_pairs = run.unrelated_pairs
+    for (rec, deck), g in (run.gates.items() if result is None else []):   # several (recording, deck) pairs
+        if g is not None:
+            print(f"audio_slide gate {Path(rec).name} x {Path(deck).name}: z = {g['z']:.1f} "
+                  f"({'related' if g['related'] else 'UNRELATED: no links for this pair'})")
     if gate is not None:
         print(f"audio_slide relatedness gate: score {gate['score']:.3f} vs shuffled "
               f"{gate['null_mean']:.3f} ± {gate['null_std']:.3f} -> z = {gate['z']:.1f} "
@@ -97,14 +101,15 @@ def main(argv: list[str] | None = None) -> int:
     save_links(links, links_path, manifest_hash=manifest_hash,
                meta={"unrelated_pairs": unrelated_pairs} if unrelated_pairs else None)
 
-    npz = Path(args.npz or links_path.with_suffix(".npz"))
-    np.savez(npz, similarity=result.similarity, path=np.asarray(result.path),
-             manifest_hash=np.asarray(manifest_hash or ""),
-             audio_ids=np.asarray([u.id for u in audio]),
-             slide_ids=np.asarray([u.id for u in slides]),
-             audio_start=np.asarray([u.location.start_s for u in audio], dtype="float64"),
-             audio_end=np.asarray([u.location.end_s for u in audio], dtype="float64"),
-             slide_pages=np.asarray([u.location.page for u in slides]))
+    npz = None if result is None else Path(args.npz or links_path.with_suffix(".npz"))  # several pairs: no one matrix
+    if npz is not None:
+        np.savez(npz, similarity=result.similarity, path=np.asarray(result.path),
+                 manifest_hash=np.asarray(manifest_hash or ""),
+                 audio_ids=np.asarray([u.id for u in audio]),
+                 slide_ids=np.asarray([u.id for u in slides]),
+                 audio_start=np.asarray([u.location.start_s for u in audio], dtype="float64"),
+                 audio_end=np.asarray([u.location.end_s for u in audio], dtype="float64"),
+                 slide_pages=np.asarray([u.location.page for u in slides]))
 
     graph = build_graph(list(index.units), links)
     graphml = export_graphml(graph, links_path.with_suffix(".graphml"))
@@ -139,9 +144,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if graph.graph.get("dropped_links"):
         print(f"  WARNING {graph.graph['dropped_links']} link(s) referenced unknown units")
-    print(f"  slides covered   : {result.slides_used()}/{len(slides)}")
-    print(f"  back-jumps       : {result.back_jumps()}")
-    print(f"  mean align score : {np.mean(result.scores()):.4f}")
+    if result is not None:
+        print(f"  slides covered   : {result.slides_used()}/{len(slides)}")
+        print(f"  back-jumps       : {result.back_jumps()}")
+        print(f"  mean align score : {np.mean(result.scores()):.4f}")
     print(f"  wrote {links_path}, {npz}, {graphml}")
     return 0
 

@@ -82,6 +82,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Sequence
@@ -104,14 +105,6 @@ class Alignment:
     method: str
     total_score: float
 
-    @property
-    def n(self) -> int:
-        return self.similarity.shape[0]
-
-    @property
-    def m(self) -> int:
-        return self.similarity.shape[1]
-
     def scores(self) -> list[float]:
         return [float(self.similarity[i, j]) for i, j in enumerate(self.path)]
 
@@ -125,10 +118,7 @@ class Alignment:
 def _idf(docs_tokens: Sequence[Sequence[str]]) -> dict[str, float]:
     """Smoothed inverse document frequency over the slide deck."""
     n = len(docs_tokens)
-    seen: dict[str, int] = {}
-    for tokens in docs_tokens:
-        for token in set(tokens):
-            seen[token] = seen.get(token, 0) + 1
+    seen = Counter(t for tokens in docs_tokens for t in set(tokens))
     return {t: math.log(1.0 + n / (1.0 + df)) for t, df in seen.items()}
 
 
@@ -238,6 +228,14 @@ def align_naive(similarity: np.ndarray) -> list[int]:
     """argmax per segment, independently. No sequence structure -- the P2-style
     ablation. Nothing stops it assigning slide 20 then slide 3 then slide 20."""
     return [int(j) for j in similarity.argmax(axis=1)]
+
+
+def monotonic_decoder(a: dict[str, Any]) -> Callable[[np.ndarray], list[int]]:
+    """`align_monotonic` with the penalties of config `link.align` (the section as a dict)."""
+    return lambda S: align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
+                                     back_penalty=a["back_penalty"], max_back=a["max_back"],
+                                     start_prior_mu=a.get("start_prior_mu", 0.0),
+                                     flatness_scaling=a.get("flatness_scaling", 0.0))
 
 
 def align_monotonic(
@@ -359,7 +357,7 @@ def path_objective(similarity: np.ndarray, path: Sequence[int], *, jump_penalty:
 
 def relatedness_gate(similarity: np.ndarray, decode: Callable[[np.ndarray], list[int]], *,
                      jump_penalty: float = 0.05, skip_penalty: float = 0.02, back_penalty: float = 0.15,
-                     shuffles: int = 5, z: float = 2.0, seed: int = 20260923,
+                     z: float, shuffles: int = 5, seed: int = 20260923,
                      null_std_floor: float = 0.0) -> dict[str, Any]:
     """Is this audio track about this deck at all?
 

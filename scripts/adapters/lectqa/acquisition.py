@@ -7,7 +7,6 @@ import sys
 from pathlib import Path
 
 
-
 from lectqa.common import PROCESSED, RAW, load_qa, video_ids, video_links
 
 

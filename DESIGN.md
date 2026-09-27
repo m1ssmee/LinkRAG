@@ -8,16 +8,18 @@
    evidence for a question, synthesise a cited answer.
 3. Standard multimodal RAG indexes each modality **independently** and does plain
    top-k. Evidence arrives as a bag of unrelated chunks.
-4. LinkRAG's novelty is an **Evidence Linking Layer**: at indexing time we build
-   explicit, typed, scored links *across* modalities **and across files**.
+4. LinkRAG's design centres on an **Evidence Linking Layer**: at indexing time we build
+   explicit, typed, scored links *across* modalities **and across files**. It is a system
+   component; what the reported evidence supports is stated under *Contributions*.
 5. Link types: audio segment ↔ slide, figure ↔ explaining paragraph, deictic
    speech ("as you see here") ↔ the visual element it points at, figure ↔ own slide.
 6. Retrieval then **follows** those links out from the top-k seeds instead of
    stopping at them.
 7. The final evidence set is reranked for **complementarity** — the set is scored
    for coverage, not each unit for similarity.
-8. So an answer can be grounded in "what the lecturer said" *and* "the figure they
-   were pointing at" *and* "the paragraph that defines the term" — jointly.
+8. The design aim: an answer grounded in "what the lecturer said" *and* "the figure they
+   were pointing at" *and* "the paragraph that defines the term" — jointly. No reported
+   benchmark measures this aim yet (*Contributions*).
 9. Everything is CPU-first so it runs on a laptop; GPU is an optional speedup.
 10. Every stage runs in `baseline` or `linkrag` mode, so every claim is an ablation.
 
@@ -43,8 +45,9 @@ What the targets already have, stated plainly so it is not re-claimed as ours:
 - T1 already does **timestamp-constrained retrieval** and a cross-encoder rerank,
   and reports an ablation. What it cannot do: link to a slide deck or paper that
   is *not the video*, follow a relation from one retrieved unit to another, or
-  select for modality coverage. Its own Table 7 shows the temporal filter is worth
-  12 F1 points — that is the size of the structure signal we generalise.
+  select for modality coverage. Its own Table 7 reports the temporal filter as worth
+  12 F1 points. On our replica it is the opposite: eq. 22 costs 3.46 F1 [2.12, 4.91]
+  (`results/external/lectqa_attribution.md`).
 
 ### Components and related work (not targets)
 
@@ -92,8 +95,12 @@ explicit instruction.
 
 1. **(i) LectQA-Vid, full set.** Run on all videos that can be fetched (the first runs used
    28/100), with n and the skipped videos stated. 🔶 **2026-09-23:** 95/100 obtained and
-   transcribed (dead: 1, 10, 12, 38, 75), `results/external/lectqa_coverage.md`. The answer
-   metrics are still on the first 28 (stored answers); the rest need new LLM calls.
+   transcribed (dead: 1, 10, 12, 38, 75), `results/external/lectqa_coverage.md`. Open-ended
+   answers now run on a 300-question stratified subset of 93 of those videos (finding 13,
+   `lectqa_open_modes.md`, `lectqa_attribution.md`) and the MCQs on all 1,414 of the 95
+   (`lectqa_mcq_shuffled.md`); the single run on the other 1,118 open-ended questions was not
+   made (cost cap). *Updated 2026-09-26: this item said the answer metrics were "still on the
+   first 28".*
 2. **(ii) LectQA-Vid protocol-matched metrics.** Their F1, semantic similarity and MCQ
    accuracy, with the per-difficulty tables (Simple / Hard / Very Hard / Overall).
    ✅ **Implemented 2026-09-23** (`linkrag.eval.lectqa_metrics`, eqs. 29–36);
@@ -122,7 +129,7 @@ explicit instruction.
    quotable span) + modality-only full-context answering decide gold and type
    labels; the only human step is the sampled audit sheet. pilot01 (judge
    gpt-4.1-mini, 2026-09-21): **25 of 25** proposed questions kept, **69** gold
-   locators, **4 cross-modal**. The first run (2026-09-20, gpt-5.4 judging its own
+   locators (one per kept unit, so the unit and locator counts coincide), **4 cross-modal**. The first run (2026-09-20, gpt-5.4 judging its own
    answers) kept 24 / 71 / 5 and is superseded; see known issue (g). See
    `reports/gold_verified_pilot01.md`, including the run history. Rules learned:
    reference answers list only the asked facts; a unit stating *one* required
@@ -246,6 +253,9 @@ explicit instruction.
    concentrated pools) was built and evaluated: it fires on 79 % of cells and changes
    nothing measurable on either benchmark — α decides which unit is taken first, not
    which eight are taken. Default off; gating β and γ is the next thing to test.
+   *Note 2026-09-26: the hit@k and IoU above scored every question, including 119 of 840 with no
+   usable gold interval, so they are understated (correction `4225b5c`, dated note in
+   `lectqa_v2.md`); finding 12 re-measured on the usable intervals (hit@1 45.6 % without slides).*
 9. **Sentence-aware segmentation is free on localisation, not on answers.** On
    LectQA-Vid, sentence cutting removes 82.8 % of mid-sentence boundaries
    (82.8 % → 0.0 %) and moves hit@1 by 0.5 pp and IoU by 0.010 — inside noise, at
@@ -253,6 +263,9 @@ explicit instruction.
    quality and BM25 matching, not about finding the right 15 seconds. Keep
    `ingest.audio_segmentation: sentence` (it costs nothing), but do not claim it as a
    retrieval gain.
+   *Note 2026-09-26: the same understatement applies to this table (`4225b5c`); the
+   sentence-vs-fixed columns are scored on the same questions, so the comparison is paired; the
+   absolute values are understated and were not re-measured.*
 10. *Superseded 2026-09-23 by the dataset policy (no extended dataset).* **Extended-dataset selection criterion** (priority vi): **low redundancy**
    (measure it with `scripts/dataset/redundancy.py` before ingesting; a candidate
    with transcript→deck above pilot01's number is rejected), **diagram-heavy decks**
@@ -367,9 +380,12 @@ explicit instruction.
      the answerer's context. Retrieval can only lose information here, and no retrieval
      method can show a benefit over reading everything. LinkRAG's cross-file linking is also
      inactive on one video (the v2 caption). What LectQA-Vid can support is the audit, the
-     replication (our retrieval beats a T1 replica by 5.5 F1 without reading timestamps), and
+     replication (our iterative pipeline beats a T1 replica by 5.5 F1 without reading
+     timestamps: a whole-pipeline difference, split by the attribution ablation into eq. 22
+     −3.46, the rest of the pipeline +3.73 and the re-query +1.74; `lectqa_attribution.md`), and
      the full-context ceiling. A retrieval claim needs material that does not fit in the
-     context.
+     context. *Corrected 2026-09-26: this sentence said "our retrieval beats a T1 replica by 5.5
+     F1", which credited retrieval with a difference between two whole pipelines.*
 
 14. **MaViLS: the video frames carry the alignment. A visual channel lifts our text-only
    F1 from about 0.49 to 0.76 and comes within 0.035 of their all-features result, but still
@@ -426,7 +442,8 @@ explicit instruction.
      - *Frames.* We read frame text from 320 px representative frames, one per dHash
        segment, after a 3× upscale. MaViLS reads full-resolution frames at each sentence
        timestamp. Sentence-time frames (task item 2) were skipped because the videos are no
-       longer available.
+       longer available. *Superseded 2026-09-24 (commit `0a049ee`): the videos were recovered and
+       sentence-time frames were used in finding 16.*
      - *Their numbers.* The 0.80 is their published per-lecture figures, decoded by their
        DP; ours use our DP.
      - *Tuning.* Three quantities were tuned on the tune half: the text score (BM25), the
@@ -515,7 +532,7 @@ the previous behaviour, and each was applied once, before re-measuring.
 | **Colab backend for Phase 8** | backend `colab` (`LINKRAG_LLM_BACKEND` / `LINKRAG_JUDGE_BACKEND`), URL from `LINKRAG_COLAB_BASE_URL` | Reported Phase 8 numbers come from an open model served from Colab (Ollama/vLLM) on the same code path. `notebooks/colab_serve.ipynb` serves it; as judge only after `scripts/eval/judge_agreement.py --judge colab` has measured it. Setup in `scripts/README.md`. |
 | **Dataset intake** | `scripts/dataset/candidate.py`, `dataset.intake` | A candidate lecture is measured before it is ingested for real; deck→transcript ≥ 0.65 rejects. Procedure in `scripts/dataset/README.md`. |
 | **Relatedness gate (links)** | `link.relatedness.enabled`, `load_links(gated=...)` | Structural links are judged for shared content before they enter the graph; the per-type pass rate is the signal-strength number. Found the deictic file/page bug. |
-| **Relatedness gate (file pairs)** | `align.relatedness_z` (2.0) | Before any cross-file link is emitted, the penalised DP objective must beat 5 shuffled-slide-order alignments by z std devs; cross-document semantic figure_text uses a word-shuffle null. Negative control (pilot01 audio × unrelated deck): 0 cross-file links; false-rejection on 20 related MaViLS pairs: 15 % at 30 s windows, 40 % at sentence level (`reports/relatedness_gate.md`). Unrelated pairs fall back to plain hybrid retrieval. |
+| **Relatedness gate (file pairs)** | `align.relatedness_z` (1.27; 2.0 when this row was written, set to 1.27 from `mavils_gate_v2.md`, finding 7) | Before any cross-file link is emitted, the penalised DP objective must beat 5 shuffled-slide-order alignments by z std devs; cross-document semantic figure_text uses a word-shuffle null. Negative control (pilot01 audio × unrelated deck): 0 cross-file links; false-rejection on 20 related MaViLS pairs: 15 % at 30 s windows, 40 % at sentence level (`reports/relatedness_gate.md`). Unrelated pairs fall back to plain hybrid retrieval. |
 | **Sampled redundancy (2026-09-23)** | `redundancy.py --sample N`, `dataset.intake.redundancy_sample` (0 = census), `sample_seed` | Redundancy is an estimate for a gate. N sentences per direction, stratified by reading position, fixed recorded seed; each fraction gets a Wilson 95 % CI. **Rule:** KEEP if the CI's upper bound of deck→transcript < 0.65, REJECT if its lower bound > 0.65, otherwise BORDERLINE (exit 3) and the census decides. On pilot01's stored LLM verdicts all four full-run fractions lie inside the sampled CIs at N = 150 and at N = 50; a real N = 150 run (cache replay, $0) reproduced the simulated counts exactly. N = 150 saves only 8 % of judge calls on pilot01 (15 % on pilot01-w1) because a deck has ~52 sentences; N = 50 saves 54–58 % and still decides both (deck→transcript CI lower bound 83.8 % / 76.2 %). Evidence is two lectures, replayed — direction only. |
 
 ## Cost policy (binding from 2026-09-23)
@@ -544,16 +561,62 @@ tier, and nothing bills without an explicit budget.
   and answerer. Moving the batch answerer from gpt-5.4 to gpt-5.4-mini makes new runs a
   new condition against the stored gpt-5.4 rows; say which answerer produced each row.
 
-## Our three novel components
+## Contributions (aligned to the reported evidence, 2026-09-26)
 
-1. **Evidence Linking Layer** (`src/linkrag/link/`) — typed, scored links at
-   index time, across modalities *and* across files. T1 links only by timestamp
-   inside one video; T2 aligns but does not retrieve.
-2. **Link-following retrieval** (`src/linkrag/retrieve/`) — top-k gives seeds;
-   traverse links to pull in the evidence a seed *depends on*, at zero LLM calls.
-3. **Complementarity-aware reranking** (`src/linkrag/retrieve/rerank.py`) — score
-   the evidence *set*: reward an uncovered modality or a linked unit, penalise a
-   restatement within a modality.
+What the reported tables support; each item names its table, and nothing here rests on pilot01.
+*Replaced 2026-09-26: this section was "Our three novel components" (Evidence Linking Layer,
+link-following retrieval, complementarity-aware reranking). Those are listed below as system
+components, because no reported table shows a benefit from them.*
+
+1. **Replication of T1 and a corrected comparison on LectQA-Vid**
+   (`results/external/lectqa_open_modes.md`, `lectqa_attribution.md`). T1's pipeline (§4.2–4.4)
+   replicated with the values their Table 3 gives (M, L and the merge gap are ours); one answerer
+   (gpt-5.4-mini-2026-03-17) for every mode; a 300-question stratified subset, 93 videos,
+   3 repeats, T1's metrics. Overall token F1: replica 31.23 ± 0.06, replica without eq. 22
+   34.69 ± 0.04, our RRF retrieval 34.96 ± 0.31, RRF with one re-query 36.70 ± 0.16, full
+   transcript 38.74 ± 0.23. The attribution ablation splits the replica-to-re-query gap: T1's
+   eq. 22 filter, which reads the gold interval at test time, costs the replica 3.46 F1
+   [2.12, 4.91] and leaves 34 questions with no context; RRF over the replica is +3.73
+   [+2.03, +5.50]; the re-query adds +1.74 [+0.76, +2.75]. The full transcript beats every
+   retrieval mode (+2.04 [+1.14, +2.99] over the re-query), so LectQA-Vid does not measure
+   the value of retrieval.
+2. **Benchmark audit of LectQA-Vid** (`lectqa_audit.md`, `lectqa_mcq_shuffled.md`). The correct
+   MCQ option is A in 1,484 of 1,489 published MCQs and the unique longest option in 1,409; a
+   no-video longest-option picker scores 94.4 % (T1 reports 53.43). Only 1,598 of the 2,832 QA
+   pairs of the 95 obtained videos have a usable gold interval. Every transcript fits in 2,048
+   tokens (140–1,544, median 780).
+3. **Multi-feature slide alignment at parity with MaViLS** (`mavils_final_round.md`,
+   `reports/mavils_final.md`). Image, frame-OCR and speech-to-slide text scores, from the frame
+   at each sentence's timestamp: 0.853 against their all-features 0.80 on the 9 test lectures
+   with video (6 wins, 3 losses; paired +0.055, 95 % CI [−0.050, +0.161]), i.e. parity. On their
+   own similarity matrix our decoder scores 0.520 against their decoder's 0.513 (all 20
+   lectures, text only). Bounded by n = 9 and a test half examined in three rounds (finding 16).
+4. **Claim-level verification** (`lectqa_faithfulness.md`). Every claim of an answer is checked
+   against the text of the units it cites, with a quotable span required. On LectQA-Vid the
+   three context modes have unsupported-claim rates of 3.7 / 3.1 / 4.3 % (647–796 claims per
+   mode; one judge run, direction only), so the full transcript's F1 gain is not paid for in
+   unsupported claims.
+
+### System components with development-only evidence
+
+The system is built around three components. They are implemented, ablatable (*The two-mode
+rule*) and tested, but no reported table shows a benefit from them:
+
+- **Evidence Linking Layer** (`src/linkrag/link/`): typed, scored links at index time, across
+  modalities and across files. Its `audio_slide` alignment is the component measured in
+  contribution 3.
+- **Link-following retrieval** (`src/linkrag/retrieve/`): top-k seeds expanded along links.
+- **Complementarity-aware reranking** (`src/linkrag/retrieve/rerank.py`): the evidence set scored
+  for modality coverage and link structure.
+
+On LectQA-Vid localisation the `linkrag` mode equals `baseline` by construction, since one video
+has no deck or paper to link to (finding 8, `lectqa_v2.md`); frame-derived slides and their links
+gave no gain (hit@1 43.2 % with them vs 45.6 % without, finding 12, `lectqa_frameslides.md`); and
+complementarity reranking lowered hit@3 (68.1 → 55.4 %, finding 8, scored before unusable
+timestamps were excluded). Their only positive evidence is on pilot01, a development lecture that
+is never reported (n = 25, 4 cross-modal; findings 1–5). Measuring them needs a benchmark whose
+evidence spans files and does not fit in the answerer's context; the dataset policy (results only
+on the two target papers' datasets) did not permit building one.
 
 ## Coding conventions
 
@@ -585,7 +648,7 @@ tier, and nothing bills without an explicit budget.
 - `eval` reports both and the delta *is* the contribution. If a component can't be
   ablated this way, it isn't finished.
 
-## Pipeline status (at tag `v0-pilot`)
+## Pipeline status (at tag `v0-pilot`, updated 2026-09-26)
 
 | Stage | baseline | linkrag |
 |---|---|---|
@@ -595,11 +658,12 @@ tier, and nothing bills without an explicit budget.
 | `retrieve` | **done** — RRF of dense + BM25, plain top-k; `iterative` (MI-RAG approximation) | **done** — seed + 1-hop expansion, `normalise_seeds`, `linkrag_iter` |
 | `rerank` | **done** — `none`, `mmr` | **done** — `complementarity`, optional cross-encoder |
 | `generate` | **done** — cited answers, OpenAI-compatible endpoint, temperature 0 + seed sent | same, modality tags |
-| `eval` | partial — regression runner, `compare_retrieval` (mode × rerank, repeats, per-type and per-question tables), alignment and deictic evaluators against ear labels, automated gold verification + sampled audit, separate judge (`eval.judge`), **modality redundancy metric** (`scripts/dataset/redundancy.py`) | **claim-level entailment not started** (priority v) |
-| `ui` | **not started** | **not started** |
+| `eval` | partial — regression runner, `compare_retrieval` (mode × rerank, repeats, per-type and per-question tables), alignment and deictic evaluators against ear labels, automated gold verification + sampled audit, separate judge (`eval.judge`), **modality redundancy metric** (`scripts/dataset/redundancy.py`) | **done** (Phase 6) — claim-level entailment with a quotable span (`generate/verify.py`), measured on LectQA-Vid (`lectqa_faithfulness.md`) |
+| `ui` | **in progress on branch `ui`, not merged** — "Lectern": a FastAPI backend over this pipeline (ingest, index, `link_corpus`, both retrieval modes, claim verification), a web frontend (upload, build progress, answer, baseline-vs-LinkRAG compare, abstention, "why this evidence" graph), and a Dockerfile for a CPU Hugging Face Space that has not been built. Nothing the UI shows is reportable | same page: the compare view runs both modes |
 
-Datasets: pilot01 only (`docs/pilot01_history.md`). **No target benchmark has
-been run yet** — that is priorities (iii) and (iv).
+Datasets: pilot01 for development (`docs/pilot01_history.md`); both targets have been run:
+LectQA-Vid (findings 8, 9, 12, 13) and MaViLS (findings 6, 7, 14–16). *Updated 2026-09-26: this
+said "No target benchmark has been run yet", true at `v0-pilot`.*
 
 `scripts/ask.py --mode linkrag` deliberately errors out rather than silently
 falling back to baseline; a silent fallback would quietly fake the ablation.
@@ -688,7 +752,7 @@ the bugs they surfaced: `docs/pilot01_history.md`.
 ## Standing instruments (report these every phase)
 
 1. **Modality distribution of the retrieved set, per question.** `format_modality_
-   distribution` in `linkrag.eval`; printed by `scripts/ask.py` and by the regression
+   distribution` in `linkrag.eval.metrics`; printed by `scripts/ask.py` and by the regression
    runner. A retrieval gain that only reshuffles within one modality is not the
    cross-modal gain this project claims — so the composition is reported, not just a score.
 2. **The pilot01 regression set.** `tests/regression/pilot01_questions.jsonl` holds
@@ -749,7 +813,8 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   share a page. The separate-judge change (commit 187fc27) regenerated the gold, but
   *Priority order* (i) and *Standing instruments* were not updated. That is the drift.
   Both are now corrected. Unit counts (report) and locator counts (regression file) are
-  different quantities; name which one a number is.
+  different quantities; name which one a number is. In the current gold they coincide: 69 units
+  kept, stored as 69 locators (checked 2026-09-26).
 - **(h) LectQA-Vid gold timestamps are partly unusable.** The published annotations mix
   conventions (HH:MM:SS, SS:cc as in `00:12:70` = 12.70 s, SSS:cc, M:SSS:cc), and their
   meaning differs between videos. Some stamps also end past the fetched video. Only

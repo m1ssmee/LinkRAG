@@ -13,12 +13,11 @@ Roles are inferred from the index: audio units are the transcript, units flagged
 from __future__ import annotations
 
 import argparse
-from collections import defaultdict
 from pathlib import Path
 
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
-from linkrag.eval.redundancy import DEFAULT_PAIRS, redundancy, role_of, write_report
+from linkrag.eval.redundancy import DEFAULT_PAIRS, files_by_role, redundancy, write_report
 from linkrag.eval.verify_gold import dump_json, entailment_opts, refuse_nli_decisions, verifier_label
 from linkrag.generate.answer import judge_completer
 from linkrag.index import Index, default_encoder
@@ -73,11 +72,7 @@ def main(argv: list[str] | None = None) -> int:
     judge = cached_completer(judge_completer(cfg, ent["backend"]), Path(args.cache) / mhash / str(jcfg.get("model")))
     pairs = [tuple(p.split("->")) for p in args.pairs.split(",")]
 
-    files: dict[str, list[str]] = defaultdict(list)
-    for u in units:
-        name = Path(u.source_file).name
-        if name not in files[role_of(u)]:
-            files[role_of(u)].append(name)
+    files = files_by_role(units)
     print(f"corpus {mhash} · {len(units)} units · roles: "
           + ", ".join(f"{r}={n}" for r, n in files.items()))
     print(f"judge {jcfg.get('model')} · k={args.k} · runs={args.runs} · pairs {args.pairs}\n")

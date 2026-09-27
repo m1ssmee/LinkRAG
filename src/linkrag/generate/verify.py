@@ -70,7 +70,7 @@ def verify_answer(ans: Answer, units: Sequence[EvidenceUnit], judge: Completer, 
                 ans.claims = list(ex.map(lambda c: verify_claim(c, by_id, judge, runs=runs, backend=backend,
                                                                 device=device, answer_key=answer_key), ans.claims))
         counts = {v: sum(c.verdict == v for c in ans.claims) for v in ("supported", "weak", "unsupported")}
-        t.update({k: v for k, v in counts.items()})
+        t.update(counts)
 
     shown = ans.answer
     if strict:

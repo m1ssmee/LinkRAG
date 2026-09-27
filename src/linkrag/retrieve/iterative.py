@@ -16,7 +16,6 @@ the follow-up query, and that call is on the critical path. Link-following spend
 from __future__ import annotations
 
 import re
-import time
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -39,11 +38,6 @@ class IterativeResult:
     units: list[RetrievedUnit]
     queries: list[str] = field(default_factory=list)
     llm_calls: int = 0
-    latency_s: float = 0.0
-
-    @property
-    def ids(self) -> list[str]:
-        return [r.id for r in self.units]
 
 
 def _clean_query(text: str) -> str:
@@ -71,7 +65,6 @@ def retrieve_iterative(
     Falls back to a single round when no completer is supplied, so the harness can be
     exercised without spending API calls; the round count in the result then says 1.
     """
-    started = time.perf_counter()
     result = IterativeResult(units=[], queries=[question])
     chosen: dict[str, RetrievedUnit] = {}
 
@@ -107,7 +100,6 @@ def retrieve_iterative(
 
     limit = k_final or k_per_round
     result.units = sorted(chosen.values(), key=lambda r: (-r.score, r.id))[:limit]
-    result.latency_s = time.perf_counter() - started
     return result
 
 

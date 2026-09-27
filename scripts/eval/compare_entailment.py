@@ -26,18 +26,15 @@ from collections import Counter
 from itertools import combinations
 from pathlib import Path
 
+from sklearn.metrics import cohen_kappa_score
+
 from linkrag.eval.redundancy import DEFAULT_PAIRS
 
 
 def kappa(a: list[bool], b: list[bool]) -> float:
-    n = len(a)
-    if not n:
+    if not a:
         return float("nan")
-    po = sum(x == y for x, y in zip(a, b)) / n
-    pa, pb = sum(a) / n, sum(b) / n
-    pe = pa * pb + (1 - pa) * (1 - pb)
-    return (po - pe) / (1 - pe) if pe < 1 else 1.0
-
+    return 1.0 if len(set(a) | set(b)) < 2 else float(cohen_kappa_score(a, b))   # sklearn gives nan there
 
 def confusion(a: list[bool], b: list[bool]) -> str:
     c = Counter(zip(a, b))

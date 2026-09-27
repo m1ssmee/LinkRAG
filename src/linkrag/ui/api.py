@@ -635,12 +635,8 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         without them there is nothing to align, and answers come from plain retrieval.
         `frozen`: stored links, used as they are -- the run is then only for the gates' z."""
         audio, slides, texts, figures = split_units(index, None, None)
-        missing = ("speech and slides" if not audio or not slides else
-                   # Note: link_corpus raises without a figure (figure_text_scores needs one);
-                   # a guard belongs in link_figures_to_text, which is outside the UI
-                   "at least one figure" if not figures else None)
-        if missing:
-            job.emit(stage="link", warning=f"links need {missing}: answering from plain retrieval")
+        if not audio or not slides:
+            job.emit(stage="link", warning="links need speech and slides: answering from plain retrieval")
             return frozen or [], frozen or [], {}
         with hold(link_lock, job):
             return link_runs(job, index, frozen, audio, slides, texts, figures)
@@ -652,24 +648,17 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         with stage(job, "pairs"):
             z = cfg["link"]["align"].get("relatedness_z")
             gates: dict[tuple[str, str], dict] = {}
-            recordings, decks = sorted({fname(u) for u in audio}), sorted({fname(u) for u in slides})
-            if len(recordings) * len(decks) > 1:
-                job.emit(stage="pairs", warning=f"{len(recordings)} recordings x {len(decks)} decks are linked "
-                                                "as one sequence, as scripts/build_links.py does; each pair's "
-                                                "z is from its own alignment")
-            if run.gate is not None:
-                for a in recordings:
-                    for d in decks:     # one recording and one deck: the run's own gate
-                        g = run.gate if len(recordings) * len(decks) == 1 else link_corpus(
-                            [u for u in audio if fname(u) == a], [u for u in slides if fname(u) == d],
-                            texts, figures, encoder=memo, cfg=cfg).gate
-                        gates[pair_key(a, d)] = {"kind": "audio_slide", "z": g["z"], "related": g["related"],
-                                                 "threshold_z": z}
+            for (rec, deck), g in run.gates.items():     # the pipeline aligns and gates each pair itself
+                if g is not None:
+                    gates[pair_key(Path(rec).name, Path(deck).name)] = {
+                        "kind": "audio_slide", "z": g["z"], "related": g["related"], "threshold_z": z}
             if z is not None:           # the directions link_figures_to_text gates, with its arguments
+                shuffles = int(cfg["link"]["align"].get("null_shuffles", 5))
                 for fd in sorted({fname(f) for f in figures}):
                     for td in sorted({fname(t) for t in texts} - {fd}):
                         g = document_pair_gate([f for f in figures if fname(f) == fd],
-                                               [t for t in texts if fname(t) == td], encoder=memo, z=z)
+                                               [t for t in texts if fname(t) == td], encoder=memo, z=z,
+                                               shuffles=shuffles)
                         pair = gates.setdefault(pair_key(fd, td), {"kind": "figure_text", "z": -math.inf,
                                                                    "related": False, "threshold_z": z})
                         pair["z"], pair["related"] = max(pair["z"], g["z"]), pair["related"] or g["related"]

@@ -9,6 +9,7 @@ linkrag:  same extraction; the linker later consumes the bboxes and captions
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -195,8 +196,7 @@ def find_caption(image_bbox: tuple[float, float, float, float], blocks: list[_Bl
     Note: deliberately naive per spec -- no "Figure N" pattern, no block above.
     Caption quality is the linker's problem, not the baseline's.
     """
-    _, _, ix1, iy1 = image_bbox
-    ix0 = image_bbox[0]
+    ix0, _, ix1, iy1 = image_bbox
     best: tuple[float, str] | None = None
     for block in blocks:
         bx0, by0, bx1, _ = block.bbox
@@ -211,7 +211,7 @@ def find_caption(image_bbox: tuple[float, float, float, float], blocks: list[_Bl
 
 
 def caption_regions(
-    page: pymupdf.Page, blocks: list[_Block]
+    blocks: list[_Block]
 ) -> list[tuple[tuple[float, float, float, float], str]]:
     """Figure regions inferred from their captions, for documents whose figures are
     vector drawings.
@@ -253,26 +253,22 @@ def caption_regions(
 
 def _save_image(doc: pymupdf.Document, xref: int, out: Path) -> bool:
     pix = pymupdf.Pixmap(doc, xref)
-    try:
-        # PNG holds grayscale or RGB only. CMYK / separation / Lab / stencil masks
-        # (colorspace None) all have to be converted first -- a MaViLS deck with an
-        # indexed+alpha image crashed the whole lecture ingest here (2026-09-21).
-        cs = pix.colorspace
-        if cs is None or cs.n not in (1, 3):
-            try:
-                pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
-            except Exception:
-                return False
-        out.parent.mkdir(parents=True, exist_ok=True)
+    # PNG holds grayscale or RGB only. CMYK / separation / Lab / stencil masks
+    # (colorspace None) all have to be converted first -- a MaViLS deck with an
+    # indexed+alpha image crashed the whole lecture ingest here (2026-09-21).
+    cs = pix.colorspace
+    if cs is None or cs.n not in (1, 3):
         try:
-            pix.save(out)
-        except Exception as exc:  # one odd image must not sink the document
-            log.warning("skipping image xref %s in %s: %s", xref, doc.name, exc)
+            pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
+        except Exception:
             return False
-        return True
-    finally:
-        pix = None
-
+    out.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        pix.save(out)
+    except Exception as exc:  # one odd image must not sink the document
+        log.warning("skipping image xref %s in %s: %s", xref, doc.name, exc)
+        return False
+    return True
 
 def ingest_pdf(
     path: str | Path,
@@ -337,13 +333,12 @@ def ingest_pdf(
                 if is_deck and cluster_deck_figures:
                     boxes, stats = cluster_figure_regions(page)
                     cluster_log.append((page_no, stats))
-                    for box in boxes:
-                        deck_candidates.append((page_no, box, slide_title(blocks)))
+                    deck_candidates.extend((page_no, box, slide_title(blocks)) for box in boxes)
                     continue  # deck figures are emitted after template filtering
 
                 # Caption-anchored figures: the only way to reach vector plots.
                 if figures_from_captions:
-                    for c, (bbox, caption) in enumerate(caption_regions(page, blocks)):
+                    for c, (bbox, caption) in enumerate(caption_regions(blocks)):
                         out = figures_dir / f"{path.stem}_p{page_no}_c{c}.png"
                         out.parent.mkdir(parents=True, exist_ok=True)
                         try:
@@ -389,7 +384,7 @@ def ingest_pdf(
                     if vlm_cfg:
                         from linkrag.ingest.vlm_caption import describe_if_enabled
 
-                        described = describe_if_enabled(out, {"ingest": {"vlm_captions": vlm_cfg}})
+                        described = describe_if_enabled(out, vlm_cfg)
                         if described:
                             caption = f"{caption} {described}".strip()
                             source = f"{source}+vlm" if source != "none" else "vlm"
@@ -407,10 +402,7 @@ def ingest_pdf(
             # Template chrome (title banners, footers) clusters identically on many
             # pages. Emitting it would add one junk figure per slide, so drop any box
             # whose rounded geometry repeats across TEMPLATE_MIN_PAGES pages.
-            repeats: dict[tuple[int, ...], int] = {}
-            for _pno, box, _title in deck_candidates:
-                repeats[tuple(round(v) for v in box)] = \
-                    repeats.get(tuple(round(v) for v in box), 0) + 1
+            repeats = Counter(tuple(round(v) for v in box) for _pno, box, _title in deck_candidates)
             per_page: dict[int, int] = {}
             for page_no, box, title in deck_candidates:
                 if repeats[tuple(round(v) for v in box)] >= TEMPLATE_MIN_PAGES:

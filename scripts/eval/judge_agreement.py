@@ -23,6 +23,7 @@ import argparse
 import os
 import sys
 from contextlib import contextmanager
+from unittest.mock import patch
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -38,18 +39,9 @@ def judge_env(backend: str):
     """verify_gold resolves its judge from LINKRAG_JUDGE_BACKEND, and the answerer here is the
     stored gpt-5.4, so LINKRAG_LLM_BACKEND is cleared. Both are restored on exit: the caller's
     environment (a test run, a shell session) must not keep the candidate judge."""
-    saved = {k: os.environ.get(k) for k in ("LINKRAG_JUDGE_BACKEND", "LINKRAG_LLM_BACKEND")}
-    os.environ["LINKRAG_JUDGE_BACKEND"] = backend
-    os.environ.pop("LINKRAG_LLM_BACKEND", None)
-    try:
+    with patch.dict(os.environ, {"LINKRAG_JUDGE_BACKEND": backend}):   # restores the whole environment
+        os.environ.pop("LINKRAG_LLM_BACKEND", None)
         yield
-    finally:
-        for k, v in saved.items():
-            if v is None:
-                os.environ.pop(k, None)
-            else:
-                os.environ[k] = v
-
 
 def judge_block(config: str, backend: str) -> dict:
     """The judge config this run would use, resolved exactly as verify_gold will."""

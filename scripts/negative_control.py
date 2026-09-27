@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 
 from linkrag.core import load_config, setup_logging
-from linkrag.link.align import align_monotonic, load_links, relatedness_gate
+from linkrag.link.align import load_links, monotonic_decoder, relatedness_gate
 
 CONTROL = Path("data/raw/control")
 OUT = Path("reports/relatedness_gate.md")
@@ -48,11 +48,7 @@ def control(cfg: dict, args) -> list[str]:
     meta = load_links.last_meta
     deck = {p.name for p in pdfs}
     by_type = Counter(l.link_type for l in links)
-    cross = Counter()
-    for l in links:
-        a, b = l.src_id.split(":")[0], l.dst_id.split(":")[0]
-        if a != b:
-            cross[l.link_type] += 1
+    cross = Counter(l.link_type for l in links if l.src_id.split(":")[0] != l.dst_id.split(":")[0])
     L = ["## Negative control — pilot01 audio × unrelated deck", "",
          f"Audio: `{audio.name}` (frozen transcript, 51 segments). Deck: {', '.join(f'`{n}`' for n in deck)}. "
          f"Gate: `align.relatedness_z` = {cfg['link']['align'].get('relatedness_z')}.", "",
@@ -72,10 +68,8 @@ def mavils_false_rejections(cfg: dict, args) -> list[str]:
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     a = cfg["link"]["align"]
-    z = float(a.get("relatedness_z") or 2.0)
-    dp = lambda S: align_monotonic(S, jump_penalty=a["jump_penalty"], skip_penalty=a["skip_penalty"],
-                                   back_penalty=a["back_penalty"], max_back=a["max_back"],
-                                   start_prior_mu=a.get("start_prior_mu", 0.0))
+    z = float(a["relatedness_z"])      # config link.align.relatedness_z, the one place it is set
+    dp = monotonic_decoder(a)
     rows = []
     tag = "sentence" if not args.window else f"w{int(args.window)}"
     for stem in sorted(m.LECTURES):

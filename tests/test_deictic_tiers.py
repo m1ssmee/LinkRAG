@@ -20,22 +20,7 @@ from linkrag.link.deictic import (
 )
 from linkrag.link.same_slide import link_same_slide
 
-
-def _audio(aid, sentence, start=0.0, deck=False):
-    ws = [[start + i * 0.5, start + (i + 1) * 0.5, w] for i, w in enumerate(sentence.split())]
-    return EvidenceUnit(id=aid, modality="audio", content=sentence, source_file="talk.mp3",
-                        location=Location(start_s=ws[0][0], end_s=ws[-1][1]),
-                        metadata={"words": ws, "slide_deck": deck})
-
-
-def _fig(fid, page, caption="", deck=True):
-    return EvidenceUnit(id=fid, modality="figure", content=caption, source_file="deck.pdf",
-                        location=Location(page=page), metadata={"slide_deck": deck})
-
-
-def _txt(tid, page, content="slide text", deck=True):
-    return EvidenceUnit(id=tid, modality="text", content=content, source_file="deck.pdf",
-                        location=Location(page=page), metadata={"slide_deck": deck})
+from conftest import _audio, _fig, _txt
 
 
 # ------------------------------------------------------------------ tiering

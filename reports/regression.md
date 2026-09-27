@@ -1,6 +1,9 @@
-# Regression — pilot01 Q1–Q4
+# Regression — pilot01 regression set
 
-The same four questions, re-run every phase. Gold evidence is matched by
+*Retitled 2026-09-26: the file began as "pilot01 Q1–Q4"; since 2026-09-21 the set is the 25
+machine-verified questions of `tests/regression/pilot01_questions.jsonl`. Earlier entries below are on Q1–Q4.*
+
+The same questions, re-run every phase. Gold evidence is matched by
 file+page or file+time-overlap, not by unit id. `modality` is the retrieved
 set's composition — a gain that only reshuffles within one modality is not
 the cross-modal gain LinkRAG claims.

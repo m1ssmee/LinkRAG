@@ -8,6 +8,8 @@ linkrag:  the same two stores, plus a link table so retrieval can traverse
 
 from __future__ import annotations
 
+import re
+
 import json
 from dataclasses import asdict, dataclass, field
 from functools import lru_cache
@@ -43,6 +45,7 @@ def default_encoder(
             dtype="float32",
         )
 
+    encode.model, encode.device, encode.normalize = model, device, normalize   # identifies the embedding
     return encode
 
 
@@ -59,10 +62,32 @@ def embeddable_text(unit: EvidenceUnit) -> str:
     return f"{unit.modality} from {Path(unit.source_file).name} at {where}"
 
 
+
+def memoised(encoder: Encoder) -> Encoder:
+    """Single-text calls memoised on the exact string, for a process that encodes the same question
+    under several modes. A copy is returned (some callers normalise in place). Batch calls pass through:
+    batch composition changes the floats (~1e-7), a repeat of one text does not."""
+    seen: dict[str, np.ndarray] = {}
+
+    def encode(texts: Sequence[str]) -> np.ndarray:
+        if len(texts) != 1:
+            return encoder(texts)
+        if texts[0] not in seen:
+            seen[texts[0]] = np.asarray(encoder(texts))
+        return seen[texts[0]].copy()
+
+    for attr in ("model", "device", "normalize"):
+        if hasattr(encoder, attr):
+            setattr(encode, attr, getattr(encoder, attr))
+    return encode
+
+_TOKEN = re.compile(r"[^\W_]+")        # runs of str.isalnum() characters (checked over the whole BMP)
+
+
 def tokenize(text: str) -> list[str]:
     # Note: lowercase split is the standard BM25 baseline. Add a stemmer only
     # if the eval shows sparse recall is the bottleneck.
-    return [t for t in "".join(c if c.isalnum() else " " for c in text.lower()).split() if t]
+    return _TOKEN.findall(text.lower())
 
 
 @dataclass
@@ -98,7 +123,6 @@ class Index:
         if k == 0:
             return []
         scores = self.vectors @ np.asarray(query_vec, dtype="float32").ravel()
-        # argpartition is O(n) to find the top k, then sort just those k.
         # argpartition is O(n) but unordered *and* unstable, so ties inside the
         # partition depend on partition internals. Sort the whole array stably when
         # ties are plausible; the corpus is small enough that O(n log n) is free.
