@@ -659,7 +659,7 @@ on the two target papers' datasets) did not permit building one.
 | `rerank` | **done** — `none`, `mmr` | **done** — `complementarity`, optional cross-encoder |
 | `generate` | **done** — cited answers, OpenAI-compatible endpoint, temperature 0 + seed sent | same, modality tags |
 | `eval` | partial — regression runner, `compare_retrieval` (mode × rerank, repeats, per-type and per-question tables), alignment and deictic evaluators against ear labels, automated gold verification + sampled audit, separate judge (`eval.judge`), **modality redundancy metric** (`scripts/dataset/redundancy.py`) | **done** (Phase 6) — claim-level entailment with a quotable span (`generate/verify.py`), measured on LectQA-Vid (`lectqa_faithfulness.md`) |
-| `ui` | **not started** | **not started** |
+| `ui` | **in progress on branch `ui`, not merged** — "Lectern": a FastAPI backend over this pipeline (ingest, index, `link_corpus`, both retrieval modes, claim verification), a web frontend (upload, build progress, answer, baseline-vs-LinkRAG compare, abstention, "why this evidence" graph), and a Dockerfile for a CPU Hugging Face Space that has not been built. Nothing the UI shows is reportable | same page: the compare view runs both modes |
 
 Datasets: pilot01 for development (`docs/pilot01_history.md`); both targets have been run:
 LectQA-Vid (findings 8, 9, 12, 13) and MaViLS (findings 6, 7, 14–16). *Updated 2026-09-26: this
