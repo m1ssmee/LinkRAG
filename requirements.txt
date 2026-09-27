@@ -34,6 +34,7 @@ matplotlib==3.11.1             # alignment heatmap + link-graph renders
 # dev
 pytest==9.1.1
 openpyxl==3.1.5          # MaViLS ground truth is xlsx
+pandas==3.0.5            # MaViLS adapter reads that ground truth with pandas.read_excel; was transitive only
 yt-dlp==2026.8.19        # LectQA-Vid videos are YouTube links; audio-only progressive download
 nltk==3.10.3             # T1's BLEU-4 and METEOR (their eqs. 31-33); needs WordNet data (make setup)
 tiktoken==0.14.0         # exact o200k token counts (LectQA context-fit audit)
