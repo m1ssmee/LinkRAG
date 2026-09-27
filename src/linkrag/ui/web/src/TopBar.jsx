@@ -1,6 +1,6 @@
 import { Logo } from './ui.jsx'
 
-function Switch({ checked, onChange, label }) {
+export function Switch({ checked, onChange, label }) {
   return (
     <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
       className="flex items-center gap-2 rounded-md text-[13px] leading-5 text-ink">

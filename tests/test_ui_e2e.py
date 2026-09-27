@@ -101,14 +101,16 @@ def test_the_states_in_a_real_browser(server):
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.goto(server)
 
-        # 1: the drop zone and the sample, nothing else
+        # 1: the drop zone and the sample (recording + deck; the paper is optional), nothing else
         sample = page.get_by_role("button", name="Try the sample lecture")
         sample.wait_for()
         assert page.get_by_text("Drop lecture files here").is_visible()
+        assert page.get_by_role("switch", name="add the paper").get_attribute("aria-checked") == "false"
         page.screenshot(path=SHOTS / "state1_empty.png")
 
         sample.click()
         page.get_by_role("heading", name="Materials").wait_for(timeout=900_000)
+        assert page.locator("aside").first.get_by_text("osdi18-hsieh.pdf").count() == 0      # no paper by default
         # the connectors show the gate's z once the sample's gates land (computed in the background)
         page.wait_for_function("() => !document.querySelector('aside').innerText.includes('checking')",
                                timeout=1_800_000)
@@ -128,6 +130,17 @@ def test_the_states_in_a_real_browser(server):
         claims.nth(1).hover()
         page.wait_for_timeout(300)
         page.screenshot(path=SHOTS / "state3_answer.png")
+
+        # linked to this evidence: uncited neighbours of the cited units -- context, not citations
+        toggle = page.get_by_role("button", name="Linked to this evidence")
+        rows = page.locator("#linked-rows li")
+        assert toggle.get_attribute("aria-expanded") == "true" and 1 <= rows.count() <= 4
+        assert all("via " in rows.nth(i).inner_text() for i in range(rows.count()))
+        assert page.locator("#linked-rows button").count() == 0                        # no chips, no numbers
+        toggle.click()
+        assert rows.count() == 0 and toggle.get_attribute("aria-expanded") == "false"
+        toggle.click()
+        assert rows.count() >= 1
 
         # 6: why this evidence -- the sub-graph as a modal sheet, closed with Escape
         page.get_by_role("button", name="Why this evidence?").click()
@@ -158,6 +171,14 @@ def test_the_states_in_a_real_browser(server):
         assert page.locator("[data-claim]").count() == 0
         _settle(page)
         page.screenshot(path=SHOTS / "state5_abstention.png")
+
+        # the sample with its paper: from the empty state, with the toggle on
+        page.on("dialog", lambda d: d.accept())
+        page.get_by_role("button", name="Lectern: start over").click()
+        page.get_by_role("switch", name="add the paper").click()
+        page.get_by_role("button", name="Try the sample lecture").click()
+        page.get_by_role("heading", name="Materials").wait_for(timeout=300_000)
+        assert page.locator("aside").first.get_by_text("osdi18-hsieh.pdf").count() == 1
         browser.close()
 
     assert errors == []

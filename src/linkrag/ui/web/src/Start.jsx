@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ACCEPT } from './Materials.jsx'
 import { clock } from './lib.js'
+import { Switch } from './TopBar.jsx'
 import { Dot } from './ui.jsx'
 
 const KINDS = [
@@ -10,8 +11,9 @@ const KINDS = [
 ]
 
 /** State 1: a drop zone naming the three kinds of material, and the sample. Nothing else. */
-export function Empty({ t, sampleAvailable, onFiles, onSample, error }) {
+export function Empty({ t, sampleAvailable, sampleNotes, onFiles, onSample, error }) {
   const [over, setOver] = useState(false)
+  const [paper, setPaper] = useState(false)
   const input = useRef(null)
   const choose = () => input.current.click()
   return (
@@ -41,11 +43,15 @@ export function Empty({ t, sampleAvailable, onFiles, onSample, error }) {
           onChange={(e) => { onFiles([...e.target.files]); e.target.value = '' }} />
         {error && <p role="alert" className="mt-3 text-[14px] leading-[22px] text-bad">{error}</p>}
         {sampleAvailable && (
-          <div className="mt-5 text-center">
-            <button type="button" onClick={onSample}
+          <div className="mt-5 flex items-center justify-center gap-5">
+            <button type="button" onClick={() => onSample(paper)}
               className="h-8 rounded-lg border border-line px-3 text-[13px] leading-none text-ink hover:bg-fill">
               {t.trySample}
             </button>
+            {/* the sample is its recording and deck; its notes (pilot01's paper) are optional */}
+            {sampleNotes.length > 0 && (
+              <span title={sampleNotes.join(', ')}><Switch checked={paper} onChange={setPaper} label={t.addPaper} /></span>
+            )}
           </div>
         )}
       </div>

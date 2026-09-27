@@ -18,7 +18,7 @@ from linkrag.generate.verify import ABSTENTION
 from linkrag.index import build_index
 from linkrag.ingest.audio import Segment, Word
 from linkrag.link.align import save_links
-from linkrag.manifest import build_manifest, write_manifest
+from linkrag.manifest import build_manifest, manifest_hash, write_manifest
 from linkrag.ui import api
 
 from conftest import BODY, CAPTION, CROSS_REF, TABLE_REF
@@ -247,39 +247,67 @@ def _frozen_sample(root: Path, stub_encoder) -> Path:
                            metadata={"slide_deck": True}) for i, s in enumerate(SLIDES)]
     figure = EvidenceUnit("deck:p2:g0", "figure", "clustering diagram", "data/raw/deck.pdf",
                           Location(page=2, bbox=(40.0, 120.0, 360.0, 380.0)), metadata={"slide_deck": True})
-    units = audio + slides + [figure]
+    paper = EvidenceUnit("paper:p1:t0", "text", "The paper evaluates the system on fourteen streams.",
+                         "data/raw/paper.pdf", Location(page=1))          # the notes: pilot01's paper
+    units = audio + slides + [figure, paper]
     build_index(units, encoder=stub_encoder(SLIDES + SPEECH), embedding_model="BAAI/bge-m3").save(processed / "index")
     manifest = write_manifest(build_manifest([], units), processed / "manifest.json")
     links = [Link(a.id, s.id, "audio_slide", 0.8) for a, s in zip(audio, slides)]
+    # the relatedness judge failed talk:a1 -> deck:p2:t0; load_links(gated=True) drops it
+    links[1].metadata = {"relatedness": {"passed": False, "votes": ["no", "no", "yes"], "subject": ""}}
     save_links(links, processed / "links.jsonl", manifest_hash=json.loads(manifest.read_text())["hash"])
     return processed
 
 
-def test_sample_is_frozen_read_only_and_shared_per_session(tmp_path, stub_encoder):
+def test_sample_loads_recording_and_deck_by_default_and_the_paper_on_request(tmp_path, stub_encoder, monkeypatch):
     processed = _frozen_sample(tmp_path / "pilot", stub_encoder)
     before = sorted((p.relative_to(processed), p.stat().st_mtime) for p in processed.rglob("*"))
-    app = api.create_app(_cfg(), workdir=tmp_path / "work", sample=processed, sample_title="Pilot",
-                         answerer="mock", encoder=stub_encoder(SLIDES + SPEECH))
-    client = TestClient(app, headers={"X-Session": SID})
+    make = lambda: api.create_app(_cfg(), workdir=tmp_path / "work", sample=processed, sample_title="Pilot",
+                                  answerer="mock", encoder=stub_encoder(SLIDES + SPEECH))
+    client = TestClient(make(), headers={"X-Session": SID})
+    assert client.get("/state").json()["sample_notes"] == ["paper.pdf"]
+
+    # default: recording + deck, linked again by the pipeline for those two files, gates ready at once
     with client.stream("POST", "/sample") as r:
         assert _stream(r)[-1] == {"status": "ready"}
     state = client.get("/state").json()["corpus"]
     assert state["sample"] and state["title"] == "Pilot"
-    assert client.get("/stats").json()["by_type"] == {"audio_slide": 3}
-    for _ in range(100):            # the gates arrive in the background; the links are there at once
-        pairs = client.get("/pairs").json()
-        if not pairs["pending"]:
+    assert [f["name"] for f in state["files"]] == ["talk.wav", "deck.pdf"]
+    pairs = client.get("/pairs").json()
+    assert not pairs["pending"] and pairs["pairs"][0]["kind"] == "audio_slide" and pairs["pairs"][0]["z"] is not None
+    folder, = (tmp_path / "work").glob("sample_lecture_*")
+    remade = [json.loads(l) for l in (folder / "links.jsonl").read_text().splitlines()[1:]]
+    failed = [r for r in remade if (r["src_id"], r["dst_id"]) == ("talk:a1", "deck:p2:t0")]
+    assert failed and failed[0]["metadata"]["relatedness"]["passed"] is False    # the stored verdict carried over
+    edges = client.get("/graph", params=[("units", "talk:a1"), ("units", "deck:p2:t0")]).json()["edges"]
+    assert not [e for e in edges if e["link_type"] == "audio_slide"]            # and was applied
+
+    # with the paper: the frozen corpus as stored (3 audio_slide links, 1 gated out); gates in the background
+    other = TestClient(client.app, headers={"X-Session": "another-session-02"})
+    with other.stream("POST", "/sample?paper=true") as r:
+        assert _stream(r)[-1] == {"status": "ready"}
+    assert [f["name"] for f in other.get("/state").json()["corpus"]["files"]] == ["talk.wav", "deck.pdf", "paper.pdf"]
+    assert other.get("/stats").json()["by_type"] == {"audio_slide": 2}
+    for _ in range(100):
+        full = other.get("/pairs").json()
+        if not full["pending"]:
             break
         time.sleep(0.05)
-    assert not pairs["pending"] and pairs["pairs"][0]["kind"] == "audio_slide" and pairs["pairs"][0]["z"] is not None
-    assert list((tmp_path / "work").glob("sample_gates_*.json"))            # cached for the next start
-    client.put("/pairs", json={"a": "talk.wav", "b": "deck.pdf", "setting": "unrelated"})
-    other = TestClient(app, headers={"X-Session": "another-session-02"})
-    with other.stream("POST", "/sample") as r:
-        _stream(r)
-    assert other.get("/stats").json()["total"] == 3            # one session's setting is not another's
+    assert not full["pending"] and list((tmp_path / "work").glob("sample_gates_*.json"))
+
+    # one session's setting is not another's; the sample is read-only; answers work
+    total = client.get("/stats").json()["total"]
+    other.put("/pairs", json={"a": "talk.wav", "b": "deck.pdf", "setting": "unrelated"})
+    assert client.get("/stats").json()["total"] == total
     assert client.post("/upload", files=[("files", ("x.pdf", b"%PDF", "application/pdf"))]).status_code == 409
     assert client.post("/ask", json={"question": QUESTION}).json()["answer_claims"]
+
+    # a restart reads the rebuilt sample from its cache: nothing is linked again
+    monkeypatch.setattr(api, "link_corpus", lambda *a, **k: pytest.fail("the cached sample was linked again"))
+    again = TestClient(make(), headers={"X-Session": SID})
+    with again.stream("POST", "/sample") as r:
+        assert _stream(r)[-1] == {"status": "ready"}
+    assert again.get("/stats").json()["total"] == total
     assert sorted((p.relative_to(processed), p.stat().st_mtime) for p in processed.rglob("*")) == before
 
 
@@ -324,3 +352,58 @@ def test_a_linked_pair_below_the_unsure_band_asks_for_confirmation(lecture, stub
     assert speech["gate"] == "related" and speech["state"] == "unsure"
     confirmed = other.put("/pairs", json={"a": speech["a"], "b": speech["b"], "setting": "related"}).json()["pairs"]
     assert next(p for p in confirmed if p["kind"] == "audio_slide")["state"] == "linked"
+
+
+def test_linked_context_takes_neighbours_in_turn_and_stops_at_the_cap():
+    """u0 and u1 are cited. u0 has four uncited neighbours, u1 two (one along an incoming link);
+    the cited u1 is never listed as context for u0. Rows alternate between the cited units,
+    strongest link first, and stop at LINKED_ROWS."""
+    from linkrag.core import EvidenceUnit, Link, Location
+    from linkrag.link.graph import build_graph
+    units = [EvidenceUnit(f"u{i}", "text", "x", "deck.pdf", Location(page=i + 1), metadata={"slide_deck": True})
+             for i in range(8)]
+    links = [Link("u0", "u1", "same_slide", 1.0), Link("u1", "u6", "figure_text", 0.9), Link("u7", "u1", "deictic", 0.5),
+             *(Link("u0", f"u{i}", "figure_text", 1.0 - i / 10) for i in (2, 3, 4, 5))]
+    rows = api.linked_context(build_graph(units, links), {u.id: u for u in units},
+                              [{"citations": [1]}, {"citations": [2]}], {"u0": 1, "u1": 2})
+    assert [(r["unit_id"], r["from_n"], r["link_type"]) for r in rows] == [
+        ("u2", 1, "figure_text"), ("u6", 2, "figure_text"), ("u3", 1, "figure_text"), ("u7", 2, "deictic")]
+    assert len(rows) == api.LINKED_ROWS and {"modality", "file", "location"} <= set(rows[0])
+
+
+def test_ask_returns_linked_context_beside_the_answer_not_in_it(lecture):
+    client, _, _ = lecture
+    client.put("/pairs", json={"a": "talk.wav", "b": "deck.pdf", "setting": "related"})
+    body = client.post("/ask", json={"question": QUESTION, "compare_baseline": True}).json()
+    cited = {n for c in body["answer_claims"] for n in c["citations"]}
+    id_of = {e["n"]: e["unit_id"] for e in body["evidence"]}
+    rows = body["linked_context"]
+    assert 0 < len(rows) <= api.LINKED_ROWS
+    for row in rows:
+        assert row["unit_id"] not in {id_of[n] for n in cited} and row["from_n"] in cited
+        edges = client.get("/graph", params=[("units", row["unit_id"]), ("units", id_of[row["from_n"]])]).json()["edges"]
+        assert row["link_type"] in {e["link_type"] for e in edges}               # a real 1-hop link
+    assert body["baseline"]["linked_context"] == []                                # the baseline follows no links
+    assert client.post("/ask", json={"question": "What is the recipe for sourdough bread?"}).json()["linked_context"] == []
+
+
+def test_the_rebuilt_sample_is_cached_per_parent_corpus(tmp_path, stub_encoder):
+    """Two frozen corpora over the same files that differ only in `derived` (their frozen
+    transcript) must not share the rebuilt sample: the cut would otherwise lose what tells them
+    apart (manifest.build_manifest)."""
+    folders = []
+    for name, transcript in (("a", "one.frozen.json"), ("b", "two.frozen.json")):
+        processed = _frozen_sample(tmp_path / name, stub_encoder)
+        manifest = json.loads((processed / "manifest.json").read_text())
+        manifest["derived"] = [{"name": transcript, "sha256": transcript, "role": "frozen_transcript"}]
+        manifest.pop("hash")
+        manifest["hash"] = manifest_hash(manifest)
+        (processed / "manifest.json").write_text(json.dumps(manifest))
+        links = (processed / "links.jsonl").read_text().splitlines()
+        (processed / "links.jsonl").write_text("\n".join([json.dumps({"_meta": {"manifest_hash": manifest["hash"]}}), *links[1:]]) + "\n")
+        app = api.create_app(_cfg(), workdir=tmp_path / "work", sample=processed, answerer="mock",
+                             encoder=stub_encoder(SLIDES + SPEECH))
+        with TestClient(app, headers={"X-Session": SID}).stream("POST", "/sample") as r:
+            assert _stream(r)[-1] == {"status": "ready"}
+        folders = sorted(p.name for p in (tmp_path / "work").glob("sample_lecture_*"))
+    assert len(folders) == 2

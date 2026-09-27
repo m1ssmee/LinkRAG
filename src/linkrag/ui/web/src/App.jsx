@@ -231,10 +231,19 @@ export default function App() {
     onPause: () => setPlaying(false),
     onEnded: () => setPlaying(false),
   }
+  // Focus returns to "Why this evidence?" once the sheet is gone and the page is no longer
+  // inert: after the commit, not in the next frame (which can come first).
+  const returnFocus = useRef(false)
   const closeWhy = useCallback(() => {
+    returnFocus.current = true
     setWhy(false)
-    requestAnimationFrame(() => document.getElementById('why-evidence')?.focus())
   }, [])
+  useEffect(() => {
+    if (!why && returnFocus.current) {
+      returnFocus.current = false
+      document.getElementById('why-evidence')?.focus()
+    }
+  }, [why])
 
   async function home() {
     if (state?.corpus && !window.confirm(t.startOver)) return
@@ -274,7 +283,8 @@ export default function App() {
               <Composer t={t} busy={qa?.loading} onAsk={(q) => ask(q)} />
             </div>
           </main>
-          <Evidence t={t} items={items} highlight={highlight} unretrieved={unretrieved} focusN={focusN}
+          <Evidence t={t} items={items} linked={qa?.data?.linked_context ?? []} highlight={highlight}
+            unretrieved={unretrieved} focusN={focusN}
             time={time} playing={playing} onPlay={playSegment} />
         </div>
         <Player t={t} timeline={timeline} audioRef={audioRef} time={time} playing={playing} ranges={ranges}
@@ -282,8 +292,9 @@ export default function App() {
       </>
     )
   } else if (state) {
-    body = <Empty t={t} sampleAvailable={state.sample_available} error={uploadError} onFiles={addFiles}
-      onSample={() => runJob('/sample', { sample: true, order: ['index'] })} />
+    body = <Empty t={t} sampleAvailable={state.sample_available} sampleNotes={state.sample_notes ?? []}
+      error={uploadError} onFiles={addFiles}
+      onSample={(paper) => runJob(`/sample?paper=${paper}`, { sample: true, order: ['index'] })} />
   }
 
   const sheet = why && ready && qa?.data

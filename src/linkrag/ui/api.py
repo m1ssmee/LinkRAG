@@ -20,6 +20,13 @@ link between the two files is dropped). For a frozen corpus the links are the st
 the gates are computed by the current code and config, for display (cached under the workdir,
 keyed by both).
 
+The sample lecture loads as its recording and slide deck; its notes (pilot01's paper) are an
+option. Without them the two files are linked again by the pipeline (`sample_lecture`), from the
+frozen units and vectors: no re-transcription, no re-embedding.
+
+Each answer also carries `linked_context`: the cited units' 1-hop neighbours in the link graph
+that are not cited, as context beside the answer, never as citations (`linked_context`).
+
 An answer is `linkrag` mode with the configured reranker (complementarity over a pool of 20).
 "Compare with baseline" adds `baseline` mode beside it -- plain top-k, no links, no reranker --
 with the same config, answerer and judge. The two differ in links *and* reranking: the full
@@ -83,12 +90,12 @@ from linkrag.generate.citations import clip_audio
 from linkrag.generate.verify import ABSTENTION, verify_answer
 from linkrag.index import Encoder, Index, build_index, default_encoder, embeddable_text, tokenize
 from linkrag.ingest import SUFFIXES, ingest_files
-from linkrag.link.align import load_links
+from linkrag.link.align import load_links, save_links
 from linkrag.link.figure_text import document_pair_gate
-from linkrag.link.graph import build_graph
+from linkrag.link.graph import build_graph, neighbors
 from linkrag.link.pipeline import link_corpus
 from linkrag.link.same_slide import is_slide_deck
-from linkrag.manifest import MANIFEST_NAME, load_manifest
+from linkrag.manifest import MANIFEST_NAME, load_manifest, manifest_hash, write_manifest
 from linkrag.retrieve.iterative import retrieve_pool
 from linkrag.retrieve.linkrag import RetrievedUnit
 from linkrag.retrieve.rerank import rerank
@@ -121,6 +128,7 @@ UNSURE_BELOW_Z = 3.51
 MAX_SESSIONS = 32
 MAX_SESSION_BYTES = 500 << 20  # uploads per session; /tmp is the only writable disk on a Space
 EXCERPT_CHARS = 360
+LINKED_ROWS = 4                # the rail's "Linked to this evidence" rows (as requested); config ui.linked_rows
 PEAK_BINS = 1200               # waveform resolution; the player resamples to the bars that fit
 PAGE_PX = 720                  # page renders: twice the 360 px evidence rail
 # A figure in the notes is cropped to its own region (padded, at least FIGURE_MIN_PT wide) so it
@@ -190,6 +198,41 @@ def memo_encoder(encoder: Encoder, index: Index | None = None) -> Encoder:
             memo.update(zip(missing, np.asarray(encoder(missing), dtype="float32")))
         return np.stack([memo[t] for t in texts])
     return encode
+
+
+def linked_context(graph, by_id: dict[str, EvidenceUnit], claims: list[dict], n_of: dict[str, int],
+                   limit: int = LINKED_ROWS) -> list[dict]:
+    """Context for the cited evidence: each cited unit's 1-hop neighbours in the link graph
+    (`link.graph.neighbors`, strongest link first) that are not cited themselves, taken in turn
+    from each cited unit so every citation is represented, at most `limit`. Shown beside the
+    answer, never part of it: no evidence number, no verdict, nothing is regenerated. A
+    neighbour that is also on the rail as uncited evidence is listed too (the rule is "not
+    cited", not "not shown")."""
+    id_of = {n: uid for uid, n in n_of.items()}
+    cited = sorted({n for claim in claims for n in claim["citations"]})
+    cited_ids = {id_of[n] for n in cited}
+    queues = [(n, [(v, t) for v, t, _s in neighbors(graph, id_of[n]) if v not in cited_ids and v in by_id])
+              for n in cited]
+    rows: list[dict] = []
+    seen: set[str] = set()
+    for depth in range(max((len(q) for _n, q in queues), default=0)):
+        for n, queue_ in queues:
+            if depth < len(queue_) and queue_[depth][0] not in seen:
+                unit_id, link_type = queue_[depth]
+                seen.add(unit_id)
+                rows.append({**unit_view(by_id[unit_id]), "link_type": link_type, "from_n": n})
+                if len(rows) == limit:
+                    return rows
+    return rows
+
+
+def dump_gates(gates: dict[tuple[str, str], dict], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps([{"pair": list(p), "gate": g} for p, g in gates.items()]))
+
+
+def read_gates(path: Path) -> dict[tuple[str, str], dict]:
+    return {tuple(row["pair"]): row["gate"] for row in json.loads(path.read_text())}
 
 
 # ----------------------------------------------------------------- the offline answerer
@@ -548,16 +591,23 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
     # link_figures_to_text.unrelated_pairs), so two runs at once could swap them
     link_lock = threading.Lock()
     live_lock = threading.Lock()        # billed questions one at a time, so --max-cost holds
-    sample_base: dict[str, Any] = {}
+    sample_bases: dict[bool, dict[str, Any]] = {}     # the sample with / without its notes
     rcfg = cfg["retrieve"]["rerank"]
     k = int(cfg["retrieve"]["linkrag"]["k_final"])
     unsure_below_z = float((cfg.get("ui") or {}).get("unsure_below_z", UNSURE_BELOW_Z))
+    linked_rows = int((cfg.get("ui") or {}).get("linked_rows", LINKED_ROWS))
     if log.getEffectiveLevel() > logging.INFO:
         log.setLevel(logging.INFO)          # stage timings are the build's progress lines
 
     app = FastAPI(title="Lectern", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.encoder = encoder
-    app.state.preload = lambda: sample and ensure_sample(SimpleNamespace(emit=lambda **_e: None))
+    app.state.preload = lambda: sample and [ensure_sample(SimpleNamespace(emit=lambda **_e: None), paper)
+                                            for paper in (False, True)]
+
+    @lru_cache(maxsize=1)
+    def sample_notes() -> list[str]:
+        """The sample's notes files (for pilot01, the paper): optional when it is loaded."""
+        return sorted({fname(u) for u in Index.load(sample / "index").units if kind(u) == "notes"})
 
     def session(request: Request) -> Session:
         """Sessions are keyed by an id the page sends (X-Session header, or ?s= on media URLs),
@@ -662,57 +712,105 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
                           unsure_below_z=unsure_below_z)
         s.stale = False
 
-    def sample_gates(index: Index, frozen: list[Link], gates: dict, ready: threading.Event, key: str) -> None:
-        """The sample's file-pair gates, in the background: the document-pair gate re-embeds
+    def cache_key(corpus_hash: str | None, embedding_model: str) -> str | None:
+        """What a cached derivation of the sample stands for: the corpus, the embedder, the link
+        config and the gate code. An unstamped corpus is not identified by anything: no key."""
+        if not corpus_hash:
+            return None
+        code = b"".join(Path(m.__file__).read_bytes() for m in (align_module, figure_text_module,
+                                                                  pipeline_module, sys.modules[__name__]))
+        return hashlib.sha256(json.dumps([corpus_hash, embedding_model, cfg["link"]], sort_keys=True,
+                                         default=str).encode() + code).hexdigest()[:16]
+
+    def sample_gates(index: Index, frozen: list[Link], gates: dict, ready: threading.Event, key: str | None) -> None:
+        """The full sample's file-pair gates, in the background: the document-pair gate re-embeds
         shuffled text (minutes of CPU), and the sample is usable without them. Cached under
-        the workdir by corpus, link config and gate code, so a restart does not pay again."""
+        the workdir by `cache_key`, so a restart does not pay again."""
         cache = workdir / f"sample_gates_{key}.json" if key else None
         try:
             if cache is not None and cache.exists():
-                found = {tuple(row["pair"]): row["gate"] for row in json.loads(cache.read_text())}
+                found = read_gates(cache)
             else:
                 found = link_pipeline(SimpleNamespace(emit=lambda **_e: None), index, frozen=frozen)[2]
                 if cache is not None:
-                    cache.parent.mkdir(parents=True, exist_ok=True)
-                    cache.write_text(json.dumps([{"pair": list(p), "gate": g} for p, g in found.items()]))
+                    dump_gates(found, cache)
             gates.update(found)
         except Exception:
             log.exception("sample gates failed; pairs show links without a gate")
         finally:
             ready.set()
 
-    def ensure_sample(job) -> None:
-        """Load the frozen sample once per process; main() calls this at start-up, so the
-        gates are usually ready before anyone asks for the sample."""
+    def sample_lecture(job, index: Index, manifest: dict[str, Any]) -> dict[str, Any]:
+        """The sample without its notes: the recording and the deck, linked by the pipeline for
+        those files alone. Units and vectors are the frozen index's own (no re-transcription, no
+        re-embedding). Linking two files instead of three can move scores (figure_text's IDF and
+        per-figure cap depend on the texts present) and could change which links exist; on
+        pilot01 the links are the frozen ones without the paper, and only scores move. Stored
+        relatedness verdicts (the LLM judge on pilot01) carry over to every link judged before,
+        keyed by (src, dst, type), so parallel links share one; load_links(gated=True) drops the
+        failures, as it does for the frozen links, and a link never judged is kept. Built once,
+        into the standard corpus layout under the workdir, and read from there after."""
+        units = [u for u in index.units if kind(u) != "notes"]
+        names = {fname(u) for u in units}
+        # the parent's `derived` (its frozen transcript) stays: two corpora over the same files with
+        # different transcripts must not share a hash (manifest.build_manifest)
+        sub = {"files": [f for f in manifest.get("files", []) if f["name"] in names],
+               "derived": manifest.get("derived", []), "total_units": len(units),
+               "units_by_modality": dict(sorted(Counter(u.modality for u in units).items()))}
+        sub["hash"] = manifest_hash(sub)
+        # keyed by the parent corpus itself, so nothing about it can be lost in the cut
+        key = cache_key(manifest.get("hash") and f"{manifest['hash']}/lecture", index.embedding_model)
+        folder = workdir / f"sample_lecture_{key or 'unstamped'}"
+        if key is None or not (folder / "gates.json").exists():
+            lecture = build_index(units, encoder=memo_encoder(encoder, index), embedding_model=index.embedding_model,
+                                  normalize=index.normalize)
+            auto, ungated, gates = link_pipeline(job, lecture)
+            judged = {(l.src_id, l.dst_id, l.link_type): l.metadata["relatedness"]
+                      for l in load_links(sample / "links.jsonl", gated=False) if (l.metadata or {}).get("relatedness")}
+            for link in (*auto, *ungated):
+                verdict = judged.get((link.src_id, link.dst_id, link.link_type))
+                if verdict:
+                    link.metadata = {**(link.metadata or {}), "relatedness": verdict}
+            lecture.save(folder / "index")
+            write_manifest(sub, folder / MANIFEST_NAME)
+            save_links(auto, folder / "links.jsonl", manifest_hash=sub["hash"])
+            save_links(ungated, folder / "ungated.jsonl", manifest_hash=sub["hash"])
+            dump_gates(gates, folder / "gates.json")      # last: it marks the folder complete
+        return {"index": Index.load(folder / "index"),
+                "auto": load_links(folder / "links.jsonl", expect_manifest=sub["hash"]),
+                "ungated": load_links(folder / "ungated.jsonl", expect_manifest=sub["hash"]),
+                "gates": read_gates(folder / "gates.json")}
+
+    def ensure_sample(job, paper: bool) -> dict[str, Any]:
+        """The sample, loaded once per process and variant; main() loads both at start-up.
+        With its notes (`paper`): the frozen corpus as stored, gates in the background.
+        Without: the recording and the deck (`sample_lecture`)."""
         with sample_lock:
-            if not sample_base:
+            if paper not in sample_bases:
                 with stage(job, "index"):
                     index = Index.load(sample / "index")
                     if index.embedding_model != cfg["models"]["embedding"]:
                         raise ValueError(f"the sample was embedded with {index.embedding_model}; "
                                          f"questions would be embedded with {cfg['models']['embedding']}")
                     manifest = load_manifest(sample / MANIFEST_NAME) or {}
+                    # frozen as stored: gated=True drops per-link relatedness failures, as scripts/ask.py does
                     frozen = load_links(sample / "links.jsonl", expect_manifest=manifest.get("hash"))
                     encoder([""])           # load the embedder now, not on the first question
-                gates, ready = {}, threading.Event()
-                # the cache stands for this corpus, embedder, link config and gate code; an
-                # unstamped corpus is not identified by anything, so it is never cached
-                code = b"".join(Path(m.__file__).read_bytes() for m in (align_module, figure_text_module,
-                                                                          pipeline_module, sys.modules[__name__]))
-                key = manifest.get("hash") and hashlib.sha256(
-                    json.dumps([manifest["hash"], index.embedding_model, cfg["link"]], sort_keys=True,
-                               default=str).encode() + code).hexdigest()[:16]
-                threading.Thread(target=sample_gates, args=(index, frozen, gates, ready, key),
-                                 name="lectern-sample-gates", daemon=True).start()
-                # frozen as stored (the gated=True load drops per-link relatedness failures,
-                # as scripts/ask.py does); the stored paths are relative to the project root
-                sample_base.update(title=sample_title, root=sample.parent.parent, index=index,
-                                   auto=frozen, ungated=frozen, gates=gates, gates_ready=ready, sample=True,
-                                   unsure_below_z=unsure_below_z)
+                if paper:
+                    gates, ready = {}, threading.Event()
+                    threading.Thread(target=sample_gates,
+                                     args=(index, frozen, gates, ready, cache_key(manifest.get("hash"), index.embedding_model)),
+                                     name="lectern-sample-gates", daemon=True).start()
+                    part = {"index": index, "auto": frozen, "ungated": frozen, "gates": gates, "gates_ready": ready}
+                else:
+                    part = sample_lecture(job, index, manifest)
+                # the stored source paths are relative to the project root
+                sample_bases[paper] = {"title": sample_title, "root": sample.parent.parent, "sample": True,
+                                       "unsure_below_z": unsure_below_z, **part}
+            return sample_bases[paper]
 
-    def load_sample(job, s: Session) -> None:
-        ensure_sample(job)
-        s.corpus = Corpus(**sample_base)
+    def load_sample(job, s: Session, paper: bool) -> None:
+        s.corpus = Corpus(**ensure_sample(job, paper))
         s.uploads.clear()
         s.stale = False
 
@@ -777,7 +875,8 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
     def state(request: Request):
         s = session(request)
         c = s.corpus
-        return {"sample_available": sample is not None, "building": s.busy,
+        return {"sample_available": sample is not None, "sample_notes": sample_notes() if sample else [],
+                "building": s.busy,
                 "corpus": None if c is None else {"title": c.title, "sample": c.sample, "files": c.files(),
                                                    "links": len(c.links), "stale": s.stale},
                 "pending": list(s.uploads) if (c is None or s.stale) else [],
@@ -821,13 +920,13 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         return stream_job(s, lambda job: build(job, s))
 
     @app.post("/sample")
-    def sample_endpoint(request: Request):
+    def sample_endpoint(request: Request, paper: bool = False):
         s = session(request)
         if sample is None:
             raise HTTPException(404, "no sample lecture on this server")
         if s.busy:
             raise HTTPException(409, "a build is running")
-        return stream_job(s, lambda job: load_sample(job, s))
+        return stream_job(s, lambda job: load_sample(job, s, paper))
 
     @app.post("/reset")
     def reset(request: Request):
@@ -886,13 +985,15 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
             order += [r.unit.id for r in base[0] if r.unit.id not in set(order)]
         n_of = {uid: i + 1 for i, uid in enumerate(order)}
         # a lecture without links answers from plain retrieval: say so rather than label it linkrag
-        out = {"question": body.question, **pack(c, *lectern, n_of), "links": graph.number_of_edges(),
+        packed = pack(c, *lectern, n_of)
+        out = {"question": body.question, **packed, "links": graph.number_of_edges(),
+               "linked_context": linked_context(graph, c.by_id, packed["answer_claims"], n_of, linked_rows),
                "cost_usd": round(s.cost, 6), "cost_known": s.cost_known,
                "verification_note": MOCK_NOTE if models.kind == "mock" else HINDI_NOTE if body.lang == "hi" else None}
         if base is not None:
             seen = {r.unit.id for r in base[0]}
             # in Lectern's evidence, not retrieved by the baseline (no gold: not "needed")
-            out["baseline"] = {**pack(c, *base, n_of),
+            out["baseline"] = {**pack(c, *base, n_of), "linked_context": [],     # the baseline follows no links
                                "missed_evidence": [uid for uid in order[:len(lectern[0])] if uid not in seen]}
         return out
 
