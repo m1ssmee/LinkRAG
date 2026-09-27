@@ -30,7 +30,8 @@ LABEL = {"baseline": "T1 replica (eq. 22 on)", "replica_no_eq22": "T1 replica, e
          "rrf": "ours: RRF, no re-query", "iterative": "ours: RRF + one re-query (iterative)",
          "full_context": "full transcript"}
 ORDER = ("baseline", "replica_no_eq22", "rrf", "iterative", "full_context")
-PAIRS = (("baseline", "replica_no_eq22"), ("iterative", "rrf"), ("rrf", "baseline"))
+PAIRS = (("baseline", "replica_no_eq22"), ("iterative", "rrf"), ("rrf", "baseline"),
+         ("rrf", "replica_no_eq22"), ("iterative", "replica_no_eq22"))
 
 
 def attribution(ids: list[str], cfg: dict, stored: Path, out: Path, *, max_cost: float, dry_run: bool,
@@ -140,7 +141,9 @@ def attribution_report(rows: list[dict], gold: dict[int, bool], cfg: dict, llm: 
           "|---|---|" + "---:|" * (len(LEVELS) + 1)]
     what = {("baseline", "replica_no_eq22"): "the eq. 22 oracle filter",
             ("iterative", "rrf"): "the re-query (same index, same top-4)",
-            ("rrf", "baseline"): "the rest of the pipeline: embedder, index, chunking, reranker, eq. 22"}
+            ("rrf", "baseline"): "the rest of the pipeline: embedder, index, chunking, reranker, eq. 22",
+            ("rrf", "replica_no_eq22"): "the two retrieval pipelines, neither reading gold timestamps",
+            ("iterative", "replica_no_eq22"): "ours (with re-query) vs T1's pipeline without its oracle filter"}
     for a, b in PAIRS:
         cells = [paired_cell([100 * (st.mean(m[a]) - st.mean(m[b])) for (_, lv), m in f1.items()
                               if level == "overall" or lv == level]) for level in (*LEVELS, "overall")]

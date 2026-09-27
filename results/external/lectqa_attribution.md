@@ -48,6 +48,8 @@ Each question's F1 averaged over its repeats; mean paired difference, 10,000-res
 | T1 replica (eq. 22 on) − T1 replica, eq. 22 off | the eq. 22 oracle filter | -2.05 [-4.31, -0.03] | -7.15 [-10.48, -4.17] | -1.19 [-2.54, -0.00] | -3.46 [-4.91, -2.12] |
 | ours: RRF + one re-query (iterative) − ours: RRF, no re-query | the re-query (same index, same top-4) | +3.66 [+1.69, +5.92] | +1.60 [-0.02, +3.41] | -0.04 [-1.29, +1.15] | +1.74 [+0.76, +2.75] |
 | ours: RRF, no re-query − T1 replica (eq. 22 on) | the rest of the pipeline: embedder, index, chunking, reranker, eq. 22 | +1.30 [-2.33, +4.90] | +6.60 [+3.51, +9.92] | +3.29 [+1.49, +5.14] | +3.73 [+2.03, +5.50] |
+| ours: RRF, no re-query − T1 replica, eq. 22 off | the two retrieval pipelines, neither reading gold timestamps | -0.75 [-3.96, +2.40] | -0.55 [-2.75, +1.52] | +2.10 [+0.48, +3.72] | +0.27 [-1.13, +1.63] |
+| ours: RRF + one re-query (iterative) − T1 replica, eq. 22 off | ours (with re-query) vs T1's pipeline without its oracle filter | +2.91 [+0.48, +5.58] | +1.05 [-0.83, +2.95] | +2.06 [+0.70, +3.49] | +2.00 [+0.88, +3.21] |
 
 ## Eq. 22 at test time
 
