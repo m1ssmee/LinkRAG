@@ -358,3 +358,12 @@ def test_deictic_candidates_require_the_deck_file_not_just_the_page_number() -> 
     links = resolve_deictic([audio], [deck_fig, paper_fig], encoder=enc,
                             slide_of_audio={"a1": ("deck.pdf", 5)}, mode="linkrag", threshold=0.0)
     assert {l.dst_id for l in links} == {"deck:p5:g0"}
+
+
+def test_link_figures_to_text_with_no_figures_or_no_text_links_nothing(stub_encoder) -> None:
+    """It used to raise (figure_text_scores needs a figure), so link_corpus failed on a corpus
+    without one; the UI had to refuse to link such uploads."""
+    enc = stub_encoder(["slide text", "a figure"])
+    assert link_figures_to_text([], [_txt("t1", 1, "slide text")], encoder=enc) == []
+    assert link_figures_to_text([_fig("f1", 1, "a figure")], [], encoder=enc) == []
+    assert link_figures_to_text.unrelated_pairs == []

@@ -288,6 +288,9 @@ def link_figures_to_text(
     `link_figures_to_text.unrelated_pairs` for the links-file metadata.
     """
     weights = weights or {}
+    if not figures or not texts:        # nothing to link; figure_text_scores needs both
+        link_figures_to_text.unrelated_pairs = []  # type: ignore[attr-defined]
+        return []
     with stage_timer("link.figure", mode=mode, figures=len(figures), texts=len(texts)) as t:
         scores, reasons = figure_text_scores(
             figures, texts, encoder=encoder,
