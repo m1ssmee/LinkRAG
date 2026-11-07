@@ -13,21 +13,7 @@ export function Switch({ checked, onChange, label }) {
   )
 }
 
-function Segmented({ value, options, onChange, label }) {
-  return (
-    <div role="radiogroup" aria-label={label} className="flex h-7 items-center rounded-lg border border-line p-0.5">
-      {options.map((o) => (
-        <button key={o.value} type="button" role="radio" aria-checked={value === o.value} lang={o.lang}
-          onClick={() => onChange(o.value)}
-          className={`h-full rounded-md px-2 text-[12px] leading-none ${value === o.value ? 'bg-fill font-medium text-ink' : 'text-muted'}`}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-/** 56 px: logo, divider, lecture title; compare switch, language, session cost. */
+/** 56 px: logo, divider, lecture title; compare switch, session cost. */
 export default function TopBar({ t, title, onHome, controls }) {
   return (
     <header className="flex h-14 shrink-0 items-center border-b border-hair px-5">
@@ -43,8 +29,6 @@ export default function TopBar({ t, title, onHome, controls }) {
       {controls && (
         <div className="ml-auto flex shrink-0 items-center gap-5 pl-6">
           <Switch checked={controls.compare} onChange={controls.setCompare} label={t.compare} />
-          <Segmented label={t.language} value={controls.lang} onChange={controls.setLang}
-            options={[{ value: 'en', label: 'EN', lang: 'en' }, { value: 'hi', label: 'हिंदी', lang: 'hi' }]} />
           <span className="font-mono text-[13px] leading-5 text-muted" title={controls.costTitle}>
             <span className="sr-only">{t.cost}: </span>
             {controls.cost}

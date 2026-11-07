@@ -325,8 +325,6 @@ def test_each_recording_deck_pair_gets_its_own_gate(tmp_path, monkeypatch, pdf_p
     pairs = {(p["a"], p["b"]): p for p in client.get("/pairs").json()["pairs"]}
     assert pairs[("deck.pdf", "part1.wav")]["kind"] == pairs[("deck.pdf", "part2.wav")]["kind"] == "audio_slide"
     assert pairs[("deck.pdf", "part1.wav")]["z"] is not None and pairs[("deck.pdf", "part2.wav")]["z"] is not None
-    hindi = client.post("/ask", json={"question": QUESTION, "lang": "hi"}).json()
-    assert hindi["verification_note"] == api.MOCK_NOTE          # the mock outranks the Hindi caveat
 
 
 def test_a_linked_pair_below_the_unsure_band_asks_for_confirmation(lecture, stub_encoder, tmp_path, monkeypatch,

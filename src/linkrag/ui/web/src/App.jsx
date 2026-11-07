@@ -49,9 +49,8 @@ function applyEvent(job, e) {
 }
 
 export default function App() {
-  const [lang, setLang] = useStored('lectern-lang', 'en')
   const [compare, setCompare] = useStored('lectern-compare', false)
-  const t = STRINGS[lang]
+  const t = STRINGS.en
   const [state, setState] = useState(null)
   const [job, setJob] = useState(null)
   const [uploadError, setUploadError] = useState(null)
@@ -66,10 +65,6 @@ export default function App() {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef(null)
   const stopAt = useRef(null)
-
-  useEffect(() => {
-    document.documentElement.lang = lang
-  }, [lang])
 
   const refresh = useCallback(async () => {
     const next = await getJSON('/state')
@@ -148,7 +143,7 @@ export default function App() {
     setFocusN(null)
     setWhy(false)
     try {
-      const data = await sendJSON('/ask', 'POST', { question, compare_baseline: withBaseline, lang })
+      const data = await sendJSON('/ask', 'POST', { question, compare_baseline: withBaseline })
       setQa({ question, data })
       setState((s) => ({ ...s, cost_usd: data.cost_usd, cost_known: data.cost_known }))
     } catch (err) {
@@ -256,8 +251,6 @@ export default function App() {
   const controls = ready && {
     compare,
     setCompare: toggleCompare,
-    lang,
-    setLang,
     cost: `${state.cost_known ? `$${state.cost_usd.toFixed(4)}` : t.priceUnknown}${answerer.mock ? ` · ${t.mock}` : ''}`,
     costTitle: `${answerer.model} · ${answerer.judge} · cap $${state.max_cost_usd}`,
   }

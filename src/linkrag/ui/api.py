@@ -137,10 +137,6 @@ PAGE_PX = 720                  # page renders: twice the 360 px evidence rail
 FIGURE_PAD_PT, FIGURE_MIN_PT = 18.0, 240.0
 HIGHLIGHT = {"slides": (0xB4, 0x53, 0x09), "notes": (0x40, 0x40, 0x40)}
 IMAGE_SUFFIXES = {s for s, kind in SUFFIXES.items() if kind == "image"}
-HINDI = ("\n- Write the answer and every claim in Hindi, in Devanagari script. Copy the unit ids "
-         "exactly as given.")
-HINDI_NOTE = ("Hindi claims are checked against English evidence; that judge setup has not been "
-              "measured, so these verdicts are unvalidated.")
 MOCK_NOTE = "Mock answerer and judge: claims are copied from the evidence, so every verdict holds by construction."
 SESSION_ID = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
 
@@ -509,7 +505,6 @@ def _first_call_alone(encoder: Encoder) -> Encoder:
 class AskBody(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     compare_baseline: bool = False
-    lang: Literal["en", "hi"] = "en"
 
 
 class PairBody(BaseModel):
@@ -955,11 +950,10 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         c = corpus_of(s)
         graph = c.graph                 # one snapshot, even if a pair is toggled meanwhile
         answer, judge = models.pair()
-        speak = (lambda system, user: answer(system + HINDI, user)) if body.lang == "hi" else answer
         try:
             with live_lock if models.kind == "llm" else contextlib.nullcontext():
-                lectern = answer_one(c, graph, body.question, "linkrag", rcfg["method"], speak, judge)
-                base = (answer_one(c, graph, body.question, "baseline", "none", speak, judge)
+                lectern = answer_one(c, graph, body.question, "linkrag", rcfg["method"], answer, judge)
+                base = (answer_one(c, graph, body.question, "baseline", "none", answer, judge)
                         if body.compare_baseline else None)
         except BillingRefused as exc:
             raise HTTPException(402, str(exc))
@@ -978,7 +972,7 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         out = {"question": body.question, **packed, "links": graph.number_of_edges(),
                "linked_context": linked_context(graph, c.by_id, packed["answer_claims"], n_of, linked_rows),
                "cost_usd": round(s.cost, 6), "cost_known": s.cost_known,
-               "verification_note": MOCK_NOTE if models.kind == "mock" else HINDI_NOTE if body.lang == "hi" else None}
+               "verification_note": MOCK_NOTE if models.kind == "mock" else None}
         if base is not None:
             seen = {r.unit.id for r in base[0]}
             # in Lectern's evidence, not retrieved by the baseline (no gold: not "needed")
