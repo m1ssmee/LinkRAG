@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LinkRAG vs the target papers</title>
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+
+<h1>The target papers' claims, and what we found</h1>
+<div class="sub">LinkRAG · comparison with T1 and T2 · 12 November 2026</div>
+<p class="meta">Each row states a claim from the published paper, what our measurement on the same benchmark shows, and a
+verdict. Intervals are 95 % bootstrap intervals over videos (T1) or lectures (T2); an interval containing 0 is no
+measurable difference. Details and sources: the detailed results report.</p>
+
+<table>
+<caption>At a glance</caption>
+<tr><th>Target</th><th>Their headline</th><th>Our result</th><th>Verdict</th></tr>
+<tr><td><b>T1</b> Intra-Video Temporal-Aware RAG (Shafiq et al., <i>CMC</i> 2026), LectQA-Vid</td>
+<td>Open-ended F1 23.52; temporal filter worth 12 F1</td>
+<td>Controlled re-implementation: ours +2.00 F1 [+0.96, +3.11] over their pipeline; the benchmark cannot measure retrieval</td>
+<td><span class="v mixed">Comparison, not a win over their numbers</span></td></tr>
+<tr><td><b>T2</b> MaViLS (Anderer et al., Interspeech 2024)</td>
+<td>All-features F1 0.82 (0.80 on our 9 test lectures)</td>
+<td>0.853, paired +0.055 [−0.050, +0.161]</td>
+<td><span class="v good">Parity</span></td></tr>
+</table>
+
+<h2>T1: Intra-Video Temporal-Aware RAG on LectQA-Vid</h2>
+<table class="split">
+<tr><th style="width:27%">Their claim</th><th style="width:50%">What we found</th><th style="width:23%">Verdict</th></tr>
+<tr><td>Open-ended answers reach F1 23.52 and similarity 74.42 (Table 4).</td>
+<td>Their answering model is unnamed, so the number cannot be re-run. Repeating the question as the answer scores
+22.87 F1 on our 300-question subset, and 23.52 sits at that floor. With one named answerer, our rebuild of their
+pipeline scores 31.23.</td>
+<td><span class="v bad">Not reproducible; at the floor</span></td></tr>
+<tr><td>Multiple-choice accuracy 53.43 (Table 5).</td>
+<td>The correct option is A in 99.7 % of the published MCQs and the unique longest option in 94.6 %. With options
+shuffled, our answerer scores 95.33; picking the longest option without the video scores 94.4.</td>
+<td><span class="v bad">MCQ half measures neither the video nor retrieval</span></td></tr>
+<tr><td>Timestamp-aware retrieval beats multimodal RAG without timestamps, F1 23.52 against 14.80 (Table 6).</td>
+<td>In our rebuild, switching the temporal filter off raises F1 from 31.23 to 34.69. Where the filter keeps some
+evidence it makes no measurable difference (−0.53 [−1.30, +0.20]).</td>
+<td><span class="v bad">Not reproduced</span></td></tr>
+<tr><td>Removing the temporal filter drops F1 to 11.40, the largest effect in their ablation (Table 7).</td>
+<td>The filter left 34 of 160 questions with no context, which accounts for 2.93 of the 3.46-point loss with it on.
+In all 34 a matching chunk existed and was cut before the filter ran. The paper does not say where the filter's
+interval comes from at question time, or what happens when nothing survives; our rebuild uses the annotated interval.</td>
+<td><span class="v bad">Opposite direction in our rebuild</span></td></tr>
+<tr><td>Retrieval with temporal constraints is the way to answer questions about a lecture video.</td>
+<td>The whole transcript beats every retrieval mode: +2.04 F1 [+1.08, +3.06] over our best. Every transcript is
+under about 1,550 tokens, and all 95 videos together are 72,926, so retrieval can only lose information here.</td>
+<td><span class="v bad">The benchmark cannot show retrieval's value</span></td></tr>
+<tr><td>LectQA-Vid: 100 videos, 3,000 time-stamped QA pairs, an 80/10/10 split and a 1,000-pair evaluation subset.</td>
+<td>95 videos are still available. The intervals of 1,598 of the 2,832 questions on them pass format and range
+checks. The split and the evaluation subset are not published.</td>
+<td><span class="v mixed">Partly usable</span></td></tr>
+</table>
+
+<div class="box">
+<p><b>Our claim on T1.</b> With the same answerer for every method, our retrieval with one re-query scores
+<b>+2.00 token-F1 [+0.96, +3.11]</b> above a controlled re-implementation of T1's pipeline with its temporal filter off.
+The re-query, a technique from MI-RAG, carries +1.74 of it; without the re-query the two retrieval pipelines are level
+(+0.27 [−0.90, +1.48]). By difficulty: simple +2.91, hard +1.05 (interval contains 0), very hard +2.06.</p>
+</div>
+
+<h2>T2: MaViLS</h2>
+<table class="split">
+<tr><th style="width:27%">Their claim</th><th style="width:50%">What we found</th><th style="width:23%">Verdict</th></tr>
+<tr><td>The audio transcript alone aligns at F1 0.53 (Table 1).</td>
+<td>Their similarity with their decoder, re-run by us: 0.513 over all 20 lectures. Our decoder on the same matrix:
+0.520.</td>
+<td><span class="v good">Reproduced within 0.02</span></td></tr>
+<tr><td>Combining OCR, image and transcript features with a jump-penalised DP reaches 0.82 (Table 2).</td>
+<td>On the same 9 test lectures (0.80 there), our image, frame-OCR and speech-text fusion reaches 0.853: +0.055
+[−0.050, +0.161], 5 wins, 1 tie, 3 losses. Holding out each of 19 lectures in turn: +0.050 [+0.002, +0.103], 9 wins,
+2 ties, 8 losses, with three lectures carrying the difference.</td>
+<td><span class="v good">Parity</span></td></tr>
+<tr><td>The dynamic program with a slide-jump penalty is the core of the method.</td>
+<td>On our features, their DP and ours are level (−0.004 [−0.015, +0.007] over 19 lectures). Either adds about 0.06
+over taking each sentence's best slide.</td>
+<td><span class="v mixed">Matters, but no decoder wins</span></td></tr>
+<tr><td>The features complement each other: OCR alone 0.76, image alone 0.64 (Table 1).</td>
+<td>Frame OCR alone 0.818, image alone 0.730, speech text alone 0.483 on test. Dropping the speech text costs 0.011,
+which is not measurable.</td>
+<td><span class="v good">Confirmed: the frames carry it</span></td></tr>
+<tr><td>Hard lectures: Solar resource 0.53, Sensory systems 0.53, Phonetics 0.65.</td>
+<td>We score 0.27 to 0.34 higher on these three. We lose on camera-heavy lectures: Short range −0.22, Reinforcement
+−0.08.</td>
+<td><span class="v mixed">Different strengths</span></td></tr>
+</table>
+
+<div class="box">
+<p><b>Our claim on T2.</b> Combining speech-to-slide text, frame OCR and image features, taken from the frame at each
+sentence's timestamp, our alignment reaches a mean F1 of <b>0.853</b> on the 9 held-out lectures with video, against
+<b>0.80</b> for MaViLS's published all-features result on the same lectures. The paired difference is within
+lecture-to-lecture variation, so we report <b>parity</b>, not an improvement.</p>
+</div>
+
+<h2>What we do not claim</h2>
+<ul>
+<li>No win over T1's published numbers: our answerer differs from theirs, and their evaluation subset is unpublished.</li>
+<li>No win over MaViLS: the interval contains 0 on the registered split.</li>
+<li>No benefit from LinkRAG's evidence links or complementarity reranker: neither improved retrieval on either
+benchmark, and cross-file links cannot be tested on them.</li>
+<li>No MCQ accuracy on LectQA-Vid, for the reasons above.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+@page { size: A4; margin: 18mm 17mm 18mm 17mm; }
+:root { --ink: #1b1d21; --muted: #5b6270; --rule: #c9ced6; --soft: #f3f5f8; --accent: #1f4e79;
+        --good: #e6f2ea; --mixed: #fbf3df; --bad: #f8e7e6; }
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: #fff;
+       font: 9.6pt/1.45 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+h1 { font-size: 19pt; line-height: 1.2; margin: 0 0 2mm; color: var(--accent); }
+h2 { font-size: 13pt; margin: 7mm 0 2mm; padding-bottom: 1mm; border-bottom: 1.2px solid var(--accent);
+     color: var(--accent); break-after: avoid; }
+h3 { font-size: 10.6pt; margin: 4.5mm 0 1.5mm; break-after: avoid; }
+p { margin: 0 0 2mm; }
+ul, ol { margin: 0 0 2.5mm; padding-left: 5mm; }
+li { margin: 0 0 1mm; }
+.sub { color: var(--muted); font-size: 10pt; margin-bottom: 4mm; }
+.meta { color: var(--muted); font-size: 8.4pt; margin: 0 0 4mm; }
+.box { background: var(--soft); border-left: 3px solid var(--accent); padding: 3mm 4mm; margin: 3mm 0 4mm;
+       break-inside: avoid; }
+.box p:last-child, .box ul:last-child { margin-bottom: 0; }
+.note { color: var(--muted); font-size: 8.4pt; margin-top: -1mm; }
+table { width: 100%; border-collapse: collapse; margin: 1.5mm 0 3.5mm; font-size: 8.4pt; break-inside: avoid; }
+caption { caption-side: top; text-align: left; font-weight: 600; font-size: 8.8pt; padding-bottom: 1.2mm; }
+th, td { padding: 1.1mm 1.6mm; border-bottom: 0.6px solid var(--rule); vertical-align: top; text-align: left; }
+th { background: var(--soft); font-weight: 600; border-bottom: 1px solid var(--muted); }
+td.n, th.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tr.ref td { color: var(--muted); font-style: italic; }
+tr.key td { font-weight: 600; }
+.v { display: inline-block; padding: 0.3mm 1.6mm; border-radius: 1mm; font-weight: 600; font-size: 8pt; white-space: nowrap; }
+.v.good { background: var(--good); } .v.mixed { background: var(--mixed); } .v.bad { background: var(--bad); }
+code { font: 8.2pt Menlo, Consolas, monospace; background: var(--soft); padding: 0 0.8mm; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+table.split { break-inside: auto; }
+tr { break-inside: avoid; }

@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LinkRAG results, detailed</title>
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+
+<h1>LinkRAG: results on the two target benchmarks</h1>
+<div class="sub">Detailed report · 12 November 2026</div>
+<p class="meta">Every number below is read from a stored result file in the repository (commit <code>29db7a9</code>); the file is
+named next to each table. The re-checks of 12 November used stored answers only and cost $0.</p>
+
+<div class="box">
+<p><b>In one paragraph.</b> LinkRAG was measured against two published systems on their own benchmarks. On
+<b>LectQA-Vid</b> (target T1), a controlled re-implementation of T1's pipeline is beaten by our retrieval with one
+re-query by <b>+2.00 token-F1 [+0.96, +3.11]</b>; most of that (+1.74) is the re-query, a technique taken from MI-RAG.
+The benchmark itself cannot measure retrieval: the whole transcript beats every retrieval mode, repeating the question
+as the answer already scores 22.87 F1 against T1's published 23.52, and the multiple-choice half is answerable from
+option length alone. On <b>MaViLS</b> (target T2), our slide alignment reaches <b>0.853 against their 0.80</b> on the
+same 9 test lectures, a paired difference of +0.055 [−0.050, +0.161]: <b>parity</b>, carried by the video frames.
+LinkRAG's own components, the evidence links and the complementarity reranker, show <b>no measured benefit</b> on
+either benchmark.</p>
+</div>
+
+<h2>1. Caveats</h2>
+<ul>
+<li><b>T1 is a re-implementation, not their code.</b> T1's code, its 80/10/10 split and its 1,000-pair evaluation
+subset are unpublished. Where the paper is silent (the re-rank pool, context size, merge gap, cross-encoder, OCR in
+place of their frame captions) the choices are ours. T1's answering model is unnamed, so our absolute numbers are not
+comparable with their Table 4; only differences between our own rows are.</li>
+<li><b>T1 coverage.</b> 95 of 100 videos could still be downloaded. Open-ended answers run on a stratified subset of
+300 questions (100 per difficulty, recorded seed) from 93 videos, 3 repeats each. The 1,414 multiple-choice questions
+ran once.</li>
+<li><b>T1 gold timestamps.</b> The intervals of 1,598 of 2,832 questions pass our format and range checks. None has
+been checked by hand; a 75-row sheet for a second person is prepared.</li>
+<li><b>T2 coverage and exposure.</b> 9 test lectures: the dataset release has no video for a tenth (Climate
+policies). Every weight and threshold was set on the 10-lecture tune half, but the test half has now been looked at
+four times. Their numbers are their published per-lecture figures, not re-run.</li>
+<li><b>Statistics.</b> All intervals are 95 % bootstrap intervals, 10,000 resamples, recorded seeds. Paired intervals
+resample the unit that was sampled: whole videos on LectQA-Vid, whole lectures on MaViLS. An interval that contains 0
+is reported as <i>no measurable difference</i>.</li>
+<li><b>Faithfulness</b> used one judge run per claim, so it is direction only.</li>
+<li><b>The pooled-corpus run (§3.8) is exploratory.</b> It is outside the agreed plan and has not been agreed with
+the mentor.</li>
+</ul>
+
+<h2>2. Setup</h2>
+<table>
+<caption>Targets</caption>
+<tr><th></th><th>Paper</th><th>Benchmark</th><th>Headline number</th></tr>
+<tr><td><b>T1</b></td><td>Intra-Video Temporal-Aware RAG. Shafiq et al., <i>CMC</i> 88(2):96, 2026.
+doi:10.32604/cmc.2026.081534</td><td>LectQA-Vid: 100 CS lecture videos (2–5 min), 3,000 QA (half MCQ, half
+open-ended)</td><td>Open-ended F1 23.52, similarity 74.42 (Table 4); MCQ accuracy 53.43 (Table 5)</td></tr>
+<tr><td><b>T2</b></td><td>MaViLS. Anderer, Reich, Wölfel, <i>Interspeech</i> 2024, pp. 1375–1379.
+doi:10.21437/Interspeech.2024-978</td><td>MaViLS: 20 lectures, &gt;22 h, every spoken sentence labelled with its
+slide</td><td>Per-sentence F1 0.82, all features (Table 2); audio transcript only 0.53 (Table 1)</td></tr>
+</table>
+
+<table>
+<caption>Models and settings</caption>
+<tr><th>Role</th><th>Model</th></tr>
+<tr><td>Answerer, every T1 mode</td><td><code>gpt-5.4-mini-2026-03-17</code>, temperature 0, one JSON answer prompt with claims</td></tr>
+<tr><td>Faithfulness judge</td><td><code>gpt-4.1-mini-2025-04-14</code></td></tr>
+<tr><td>Our retrieval</td><td>RRF of <code>BAAI/bge-m3</code> dense search and BM25, top-4 units to the answerer</td></tr>
+<tr><td>T1 replica</td><td><code>BAAI/bge-base-en-v1.5</code>, top-10 above cosine 0.6, eq. 22 temporal filter ± 3 s, merge, <code>ms-marco-MiniLM-L-6-v2</code> cross-encoder, top-4</td></tr>
+<tr><td>T1's similarity metric</td><td><code>all-MiniLM-L6-v2</code> cosine, as their paper defines it</td></tr>
+<tr><td>T2 features</td><td>SwiftFormer-xs image score, tesseract frame OCR with BM25, distiluse speech-to-slide text; our DP decoder</td></tr>
+</table>
+<p class="note">Spend: the open-ended runs, audit and faithfulness cost $4.24; the attribution run $1.13. Everything
+added on 12 November was computed from stored rows at $0.</p>
+
+<h2>3. T1: LectQA-Vid</h2>
+
+<h3>3.1 What the benchmark contains</h3>
+<table>
+<caption>LLM-free audit (<code>lectqa_audit.md</code>, <code>lectqa_recheck.md</code>)</caption>
+<tr><th>Property</th><th>Finding</th></tr>
+<tr><td>Videos</td><td>95 of 100 downloadable (dead: 1, 10, 12, 38, 75); 2,832 QA pairs on them</td></tr>
+<tr><td>Gold intervals</td><td>1,598 pass the format and range checks; 878 have an ambiguous format, 355 end past the video, 1 ends before it starts</td></tr>
+<tr><td>MCQ answer position</td><td>The correct option is A in 1,484 of 1,489 published MCQs (99.7 %)</td></tr>
+<tr><td>MCQ answer length</td><td>The correct option is the unique longest in 1,409 (94.6 %; every <i>very hard</i> MCQ)</td></tr>
+<tr><td>Transcript length</td><td>About 140 to 1,544 tokens per video, median 780. All 95 together: 72,926 tokens</td></tr>
+<tr><td>Video type</td><td>19 slide talks, 29 mixed, 47 animated explainers</td></tr>
+</table>
+<p>Every transcript, and even the whole 95-video corpus, fits in one model context. Retrieval can therefore only lose
+information on this benchmark.</p>
+
+<h3>3.2 Multiple choice</h3>
+<table>
+<caption>MCQ accuracy, options shuffled under a recorded seed, 1,414 questions, one run (<code>lectqa_mcq_shuffled.md</code>)</caption>
+<tr><th>Answerer</th><th class="n">Simple</th><th class="n">Hard</th><th class="n">Very hard</th><th class="n">Overall</th></tr>
+<tr><td>Ours, full transcript</td><td class="n">90.11</td><td class="n">96.38</td><td class="n">99.57</td><td class="n">95.33</td></tr>
+<tr><td>Pick the longest option, no video</td><td class="n">88.2</td><td class="n">95.1</td><td class="n">100.0</td><td class="n">94.4</td></tr>
+<tr class="ref"><td>T1, Table 5</td><td class="n">57.29</td><td class="n">52.34</td><td class="n">50.67</td><td class="n">53.43</td></tr>
+</table>
+<p>Accuracy follows the longest-option share by difficulty. The MCQ half measures neither retrieval nor the video, so no
+MCQ accuracy is reported as a result.</p>
+
+<h3>3.3 Open-ended answers</h3>
+<table>
+<caption>Token F1 (%), mean ± std over 3 repeats; 300 questions, 93 videos (<code>lectqa_attribution.md</code>, <code>lectqa_recheck.md</code>)</caption>
+<tr><th>Mode</th><th class="n">Simple</th><th class="n">Hard</th><th class="n">Very hard</th><th class="n">Overall</th><th class="n">Similarity</th></tr>
+<tr><td>T1 replica, eq. 22 on</td><td class="n">41.34 ± 0.08</td><td class="n">28.06 ± 0.30</td><td class="n">24.28 ± 0.20</td><td class="n">31.23 ± 0.06</td><td class="n">57.32</td></tr>
+<tr><td>T1 replica, eq. 22 off</td><td class="n">43.39 ± 0.16</td><td class="n">35.21 ± 0.14</td><td class="n">25.48 ± 0.09</td><td class="n">34.69 ± 0.04</td><td class="n">63.03</td></tr>
+<tr><td>Ours: RRF, no re-query</td><td class="n">42.64 ± 0.37</td><td class="n">34.66 ± 0.14</td><td class="n">27.58 ± 0.51</td><td class="n">34.96 ± 0.31</td><td class="n">63.92</td></tr>
+<tr class="key"><td>Ours: RRF + one re-query</td><td class="n">46.30 ± 0.27</td><td class="n">36.26 ± 0.44</td><td class="n">27.53 ± 0.13</td><td class="n">36.70 ± 0.16</td><td class="n">65.79</td></tr>
+<tr><td>Full transcript, no retrieval</td><td class="n">48.88 ± 0.40</td><td class="n">38.39 ± 0.41</td><td class="n">28.94 ± 0.16</td><td class="n">38.74 ± 0.23</td><td class="n">66.88</td></tr>
+<tr class="ref"><td>Question echoed as the answer</td><td class="n">23.70</td><td class="n">22.62</td><td class="n">22.28</td><td class="n">22.87</td><td class="n">58.99</td></tr>
+<tr class="ref"><td>T1, Table 4 (unnamed answerer)</td><td class="n">29.47</td><td class="n">24.38</td><td class="n">16.72</td><td class="n">23.52</td><td class="n">74.42</td></tr>
+</table>
+<p>The echo row is a floor, not a system: it scores the question text against the reference answer. The usable F1 range
+on this benchmark runs from about 23 (echo) to about 39 (full transcript). T1's published overall F1 sits at the
+floor; on <i>very hard</i> it is below it.</p>
+
+<h3>3.4 Where the 5.47-point gap comes from</h3>
+<table>
+<caption>Replica to re-query, one change at a time; intervals resample whole videos (<code>lectqa_recheck.md</code>)</caption>
+<tr><th>Step</th><th class="n">F1 after</th><th class="n">Change</th><th>Reading</th></tr>
+<tr><td>T1 replica, eq. 22 on</td><td class="n">31.23</td><td class="n"></td><td></td></tr>
+<tr><td>Unfiltered answer on the 34 empty windows</td><td class="n">34.16</td><td class="n">+2.93 [+1.45, +4.56]</td><td>measurable</td></tr>
+<tr><td>Eq. 22 off everywhere</td><td class="n">34.69</td><td class="n">+0.53 [−0.20, +1.30]</td><td>no measurable difference</td></tr>
+<tr><td>Our RRF index in place of T1's pipeline</td><td class="n">34.96</td><td class="n">+0.27 [−0.90, +1.48]</td><td>no measurable difference</td></tr>
+<tr class="key"><td>One re-query (MI-RAG's technique)</td><td class="n">36.70</td><td class="n">+1.74 [+0.77, +2.75]</td><td>measurable</td></tr>
+</table>
+
+<table>
+<caption>Paired differences, token F1 points: by question (as stored) and by video</caption>
+<tr><th>Difference</th><th>Level</th><th class="n">By question</th><th class="n">By video</th></tr>
+<tr class="key"><td rowspan="4">Ours with re-query − replica, eq. 22 off</td><td>overall</td><td class="n">+2.00 [+0.88, +3.21]</td><td class="n">+2.00 [+0.96, +3.11]</td></tr>
+<tr><td>simple</td><td class="n">+2.91 [+0.48, +5.58]</td><td class="n">+2.91 [+0.51, +5.36]</td></tr>
+<tr><td>hard</td><td class="n">+1.05 [−0.83, +2.95]</td><td class="n">+1.05 [−0.46, +2.72]</td></tr>
+<tr><td>very hard</td><td class="n">+2.06 [+0.70, +3.49]</td><td class="n">+2.06 [+0.67, +3.51]</td></tr>
+<tr><td>Ours, no re-query − replica, eq. 22 off</td><td>overall</td><td class="n">+0.27 [−1.13, +1.63]</td><td class="n">+0.27 [−0.90, +1.48]</td></tr>
+<tr><td>Re-query − no re-query</td><td>overall</td><td class="n">+1.74 [+0.76, +2.75]</td><td class="n">+1.74 [+0.77, +2.75]</td></tr>
+<tr><td>Replica, eq. 22 on − off</td><td>overall</td><td class="n">−3.46 [−4.91, −2.12]</td><td class="n">−3.46 [−5.30, −1.71]</td></tr>
+<tr><td>Full transcript − ours with re-query</td><td>overall</td><td class="n">+2.04 [+1.14, +2.99]</td><td class="n">+2.04 [+1.08, +3.06]</td></tr>
+</table>
+<p>Resampling by video does not change any conclusion. The comparison against T1 is +2.00 overall; on <i>hard</i>
+questions its interval contains 0. Without the re-query the two retrieval pipelines are level.</p>
+
+<h3>3.5 T1's temporal filter (eq. 22)</h3>
+<p>T1 applies eq. 22 to its top-K candidates and keeps only those inside the question's time interval ± 3 s. The paper
+does not say where that interval comes from at question time, nor what happens when nothing survives. Our replica gives
+the filter the annotated interval and answers an empty result with a fixed "no evidence" reply; both are our choices.
+The filter applied to 160 of the 300 questions and left 34 of them with no context.</p>
+<table>
+<caption>Why the 34 windows were empty</caption>
+<tr><th>What happened to the chunks inside the window</th><th class="n">Questions</th></tr>
+<tr><td>A window chunk was in the top 10 but at or below cosine 0.6</td><td class="n">18</td></tr>
+<tr><td>Every window chunk ranked below the top 10</td><td class="n">16</td></tr>
+</table>
+<table>
+<caption>Do the 34 stamps point at the answer? Two proxies</caption>
+<tr><th>Questions</th><th class="n">Speech exists in window</th><th class="n">Our top-4 overlaps it</th><th class="n">Full-transcript answer cites inside it</th><th class="n">Our F1</th><th class="n">Full-transcript F1</th></tr>
+<tr><td>Eq. 22 kept something (126)</td><td class="n">100 %</td><td class="n">87 %</td><td class="n">77 %</td><td class="n">35.23</td><td class="n">37.48</td></tr>
+<tr><td>Eq. 22 left nothing (34)</td><td class="n">100 %</td><td class="n">32 %</td><td class="n">28 %</td><td class="n">28.60</td><td class="n">33.34</td></tr>
+</table>
+<p>The stamps of the empty-window questions probably point at the wrong part of the video. This is a proxy; the
+hand-check sheet (<code>lectqa_timestamp_check.csv</code>: these 34, 16 other passing stamps, 25 ambiguous ones) is
+for confirming it.</p>
+
+<h3>3.6 Faithfulness</h3>
+<p>Every claim in an answer was checked against the text of the units it cites, with a quotable span required
+(<code>lectqa_faithfulness.md</code>, 647–796 claims per mode). Unsupported claims: T1 replica 3.7 %, ours with
+re-query 3.1 %, full transcript 4.3 %. The largest gap is inside the standard error of a difference, so no mode is
+distinguishable. The full transcript's F1 gain is not paid for in unsupported claims.</p>
+
+<h3>3.7 Localisation (retrieval only)</h3>
+<table>
+<caption>Does a top-k unit overlap the gold interval? 1,598 questions, 95 videos, $0 (<code>lectqa_frameslides.md</code>, <code>lectqa_recheck.md</code>)</caption>
+<tr><th>Method</th><th class="n">hit@1</th><th class="n">hit@3</th><th class="n">hit@8</th><th class="n">Mean best IoU</th></tr>
+<tr class="key"><td>Plain top-k (RRF)</td><td class="n">45.6 %</td><td class="n">68.7 %</td><td class="n">85.1 %</td><td class="n">0.405</td></tr>
+<tr><td>Links + complementarity reranker</td><td class="n">45.8 %</td><td class="n">63.7 %</td><td class="n">82.4 %</td><td class="n">0.383</td></tr>
+<tr><td>Plain top-k, with frame-derived slides</td><td class="n">43.2 %</td><td class="n">67.0 %</td><td class="n">84.3 %</td><td class="n">0.397</td></tr>
+</table>
+<p>Links with the reranker lower hit@3 by 5.01 points [−7.60, −2.24] by video; at hit@8 the difference
+(−2.69 [−5.51, +0.53]) is not measurable. Frame-derived slides do not help: speech and OCR'd animation frames share too
+little text for the slide alignment to find the slide on screen (22.5 % of segments). An earlier run on 28 videos
+showed the re-query raising hit@1 from 44.8 % to 52.0 %; that run scored every question, including those without a
+usable interval, so its absolute values are understated.</p>
+
+<h3>3.8 Exploratory: one corpus, video not given</h3>
+<p>All 95 videos were pooled into one index and each question was asked without its video, so retrieval has to find
+the right video first (<code>lectqa_pooled.md</code>, $0).</p>
+<table>
+<caption>Pooled corpus, frames; video@k over 2,832 questions, interval@k over 1,598</caption>
+<tr><th>Method</th><th class="n">video@1</th><th class="n">video@8</th><th class="n">interval@3</th><th class="n">interval@8</th></tr>
+<tr class="key"><td>Plain top-8</td><td class="n">63.5 %</td><td class="n">83.8 %</td><td class="n">41.2 %</td><td class="n">52.8 %</td></tr>
+<tr><td>Reranker, no links</td><td class="n">63.5 %</td><td class="n">81.6 %</td><td class="n">35.4 %</td><td class="n">47.3 %</td></tr>
+<tr><td>Links + reranker</td><td class="n">63.5 %</td><td class="n">79.3 %</td><td class="n">35.2 %</td><td class="n">45.9 %</td></tr>
+<tr><td>Links only</td><td class="n">63.5 %</td><td class="n">83.2 %</td><td class="n">40.6 %</td><td class="n">52.4 %</td></tr>
+</table>
+<table>
+<caption>Paired differences at interval@8, percentage points, by video</caption>
+<tr><th>Difference</th><th class="n">interval@8</th></tr>
+<tr><td>Links + reranker − plain top-8 (the full system)</td><td class="n">−6.88 [−10.12, −4.03]</td></tr>
+<tr><td>Reranker, no links − plain top-8</td><td class="n">−5.44 [−8.06, −3.40]</td></tr>
+<tr><td>Links + reranker − reranker, no links (what the links add)</td><td class="n">−1.44 [−2.79, +0.00]</td></tr>
+<tr><td>Links only − plain top-8</td><td class="n">−0.38 [−1.13, +0.54]</td></tr>
+</table>
+<p>Not knowing the video costs 32.35 points of interval@8 (85.1 % to 52.8 %), so this setting does separate retrieval
+methods. Plain top-8 is still the best; the links make no measurable difference and the reranker costs recall. The
+interval metric cannot reward evidence from another modality, and 2,102 of the 2,832 questions refer to "the video" or
+"the speaker", so the setting is a stress test rather than a benchmark.</p>
+
+<h2>4. T2: MaViLS</h2>
+
+<h3>4.1 Protocol</h3>
+<p>Their scorer, verbatim from their repository: one prediction per transcript sentence, scikit-learn micro F1 over
+sentences whose label is not −1, with −1 kept in the label set; the paper's averages are unweighted means over
+lectures. The 20 lectures were split once (seed 20260922) into a 10-lecture tune half, the only place any parameter
+was set, and a 10-lecture test half. One test lecture has no video in their release, so every test mean is over 9
+lectures and paired with their published figure for the same lecture.</p>
+
+<h3>4.2 How the result was built</h3>
+<table>
+<caption>Mean F1 on the 9 test lectures with video, as features were added (<code>mavils_visual.md</code>, <code>mavils_frame_ocr.md</code>, <code>mavils_final_round.md</code>)</caption>
+<tr><th>Step</th><th class="n">Mean F1</th><th class="n">Wins / ties / losses vs their 0.80</th></tr>
+<tr><td>Our speech-to-slide text only</td><td class="n">0.426</td><td class="n">0 / 0 / 9</td></tr>
+<tr><td>Their speech-to-slide similarity, our decoder</td><td class="n">0.489</td><td class="n"></td></tr>
+<tr><td>Both text similarities fused</td><td class="n">0.493</td><td class="n">0 / 0 / 9</td></tr>
+<tr><td>+ image (SwiftFormer)</td><td class="n">0.765</td><td class="n">3 / 0 / 6</td></tr>
+<tr><td>+ frame OCR (one frame per visual segment)</td><td class="n">0.810</td><td class="n">4 / 1 / 4</td></tr>
+<tr><td>+ the frame at each sentence's timestamp</td><td class="n">0.850</td><td class="n">5 / 1 / 3</td></tr>
+<tr class="key"><td>+ slide-visibility gate (final)</td><td class="n">0.853</td><td class="n">5 / 1 / 3</td></tr>
+<tr class="ref"><td>MaViLS, all features, same 9 lectures</td><td class="n">0.80</td><td class="n"></td></tr>
+<tr class="ref"><td>MaViLS, audio transcript only, same 9 lectures</td><td class="n">0.47</td><td class="n"></td></tr>
+</table>
+
+<h3>4.3 Final system, per lecture</h3>
+<table>
+<caption>Test half, reported once; weights image 0.25 / frame OCR 0.50 / speech text 0.25, gate on (<code>mavils_final_round.md</code>, <code>mavils_recheck.md</code>)</caption>
+<tr><th>Lecture</th><th class="n">Ours</th><th class="n">MaViLS</th><th class="n">Difference</th></tr>
+<tr><td>Phonetics</td><td class="n">0.99</td><td class="n">0.65</td><td class="n">+0.34</td></tr>
+<tr><td>Solar resource</td><td class="n">0.81</td><td class="n">0.53</td><td class="n">+0.28</td></tr>
+<tr><td>Climate &amp; Cities</td><td class="n">0.98</td><td class="n">0.86</td><td class="n">+0.12</td></tr>
+<tr><td>Numerics</td><td class="n">0.89</td><td class="n">0.81</td><td class="n">+0.08</td></tr>
+<tr><td>Computation theory</td><td class="n">0.87</td><td class="n">0.84</td><td class="n">+0.03</td></tr>
+<tr><td>Deep learning</td><td class="n">0.99</td><td class="n">0.99</td><td class="n">tie</td></tr>
+<tr><td>ML for health</td><td class="n">0.91</td><td class="n">0.95</td><td class="n">−0.04</td></tr>
+<tr><td>Reinforcement</td><td class="n">0.67</td><td class="n">0.75</td><td class="n">−0.08</td></tr>
+<tr><td>Short range</td><td class="n">0.58</td><td class="n">0.80</td><td class="n">−0.22</td></tr>
+<tr class="key"><td>Mean</td><td class="n">0.853</td><td class="n">0.80</td><td class="n">+0.055 [−0.050, +0.161]</td></tr>
+</table>
+<p>5 wins, 1 tie and 3 losses; a Wilcoxon signed-rank test gives p = 0.43. The interval contains 0, so the result is
+parity with MaViLS, not an improvement.</p>
+
+<h3>4.4 Does parity hold on more lectures?</h3>
+<p>As an exploratory check, every lecture with video was held out in turn and the fusion weights and gate were chosen
+on the other 18, exactly as they were chosen on the tune half. This is not the registered protocol.</p>
+<table>
+<caption>Leave one lecture out (<code>mavils_recheck.md</code>)</caption>
+<tr><th>Lectures</th><th class="n">Ours</th><th class="n">MaViLS</th><th class="n">Paired difference</th></tr>
+<tr><td>All 19 with video</td><td class="n">0.866</td><td class="n">0.816</td><td class="n">+0.050 [+0.002, +0.103]</td></tr>
+<tr><td>Test half, 9</td><td class="n">0.868</td><td class="n">0.798</td><td class="n">+0.070 [−0.014, +0.160]</td></tr>
+<tr><td>Tune half, 10</td><td class="n">0.865</td><td class="n">0.833</td><td class="n">+0.032 [−0.014, +0.095]</td></tr>
+</table>
+<p>Over 19 lectures the record is 9 wins, 2 ties and 8 losses (Wilcoxon p = 0.20). Three lectures where MaViLS scores
+low carry the mean difference (Phonetics +0.30, Solar resource +0.29, Sensory systems +0.27); without them it is
++0.006. Parity remains the right description.</p>
+
+<h3>4.5 What carries the result</h3>
+<div class="two">
+<table>
+<caption>Channels through our decoder</caption>
+<tr><th>Channels</th><th class="n">Test</th><th class="n">Tune</th></tr>
+<tr><td>Image only</td><td class="n">0.730</td><td class="n">0.685</td></tr>
+<tr><td>Frame OCR only</td><td class="n">0.818</td><td class="n">0.833</td></tr>
+<tr><td>Speech-to-slide text only (distiluse)</td><td class="n">0.483</td><td class="n">0.522</td></tr>
+<tr><td>Without image</td><td class="n">0.825</td><td class="n">0.854</td></tr>
+<tr><td>Without frame OCR</td><td class="n">0.792</td><td class="n">0.788</td></tr>
+<tr><td>Without speech text</td><td class="n">0.842</td><td class="n">0.848</td></tr>
+<tr class="key"><td>All three</td><td class="n">0.853</td><td class="n">0.878</td></tr>
+</table>
+<table>
+<caption>Decoders on our final matrix</caption>
+<tr><th>Decoder</th><th class="n">Test</th><th class="n">Tune</th></tr>
+<tr><td>Row-wise argmax, no DP</td><td class="n">0.789</td><td class="n">0.790</td></tr>
+<tr><td>MaViLS's DP, their code</td><td class="n">0.849</td><td class="n">0.874</td></tr>
+<tr class="key"><td>Our DP</td><td class="n">0.853</td><td class="n">0.878</td></tr>
+<tr class="ref"><td>Position only, no content (all 20 lectures)</td><td class="n" colspan="2">0.21</td></tr>
+</table>
+</div>
+<ul>
+<li><b>The video frames carry the result.</b> Frame OCR alone reaches 0.818. Leaving the speech text out costs 0.011
+[−0.034, +0.005] on test, which is not measurable. This is a frame-to-slide matching result; it says little about
+aligning speech to slides without the video.</li>
+<li><b>The decoder is not the source.</b> On our matrix, MaViLS's DP and ours differ by −0.004 [−0.015, +0.007] over
+19 lectures. Both add about 0.06 over no decoder at all. On MaViLS's own text-only similarity matrix our decoder scored
+0.520 against their decoder's 0.513 (all 20 lectures), level again.</li>
+<li><b>There is no cheap floor.</b> Mapping sentence position linearly onto the deck scores about 0.21.</li>
+</ul>
+
+<h3>4.6 Where it fails</h3>
+<table>
+<caption>Errors of the final system, tune half only (the test half was not inspected)</caption>
+<tr><th>Lecture</th><th class="n">F1</th><th class="n">Errors / labelled</th><th class="n">Within 2 slides</th><th class="n">On frames showing no slide</th><th class="n">Such frames overall</th></tr>
+<tr><td>Cognitive robotics</td><td class="n">0.66</td><td class="n">254 / 735</td><td class="n">98 %</td><td class="n">82 %</td><td class="n">52 %</td></tr>
+<tr><td>Psychology</td><td class="n">0.70</td><td class="n">300 / 893</td><td class="n">73 %</td><td class="n">47 %</td><td class="n">25 %</td></tr>
+<tr><td>Sensory systems</td><td class="n">0.83</td><td class="n">88 / 421</td><td class="n">88 %</td><td class="n">67 %</td><td class="n">31 %</td></tr>
+<tr><td>Productdesign</td><td class="n">0.85</td><td class="n">38 / 247</td><td class="n">100 %</td><td class="n">74 %</td><td class="n">38 %</td></tr>
+</table>
+<p>The weak lectures are camera-heavy. Errors concentrate on speaker shots, where only the speech text and the decoder
+decide, and most land within two slides of the right one. The same pattern explains the test-half losses (Short range,
+Reinforcement).</p>
+
+<h2>5. LinkRAG's own components</h2>
+<ul>
+<li><b>Evidence links.</b> No link variant measurably improved localisation on LectQA-Vid: temporal links, links over
+frame-derived slides, or links with the reranker. Cross-file links, the case the layer was designed for, cannot be
+tested on either benchmark, because neither has evidence that spans files.</li>
+<li><b>Complementarity reranker.</b> On normalised scores it lowers hit@3 by about 5 points on LectQA-Vid. A defect was
+found on 12 November: in baseline and iterative mode it received raw fusion scores of about 0.03 next to bonus and
+penalty weights of 0.3 and 0.4, so relevance barely counted. The rows measured that way, including an earlier
+"−13 points of hit@3", are retired as not valid estimates. Fixing the scale is a design change that has not been
+made.</li>
+<li><b>Slide alignment</b>, the one linking component with a reported number, is the T2 result above.</li>
+</ul>
+
+<h2>6. Contributions as they stand</h2>
+<ol>
+<li><b>Controlled re-implementation of T1 and a corrected comparison.</b> One answerer for every mode; ours with one
+re-query +2.00 F1 [+0.96, +3.11] over T1's pipeline with its filter off, +1.74 of it from the re-query; the full
+transcript beats every retrieval mode.</li>
+<li><b>Benchmark audit of LectQA-Vid.</b> MCQs answerable from option position and length; a question-echo floor of
+22.87 F1 against T1's 23.52; 1,598 of 2,832 intervals pass format and range checks; every transcript fits in one
+context.</li>
+<li><b>Multi-feature slide alignment at parity with MaViLS:</b> 0.853 against 0.80 on the same 9 test lectures,
++0.055 [−0.050, +0.161]; the frames carry it.</li>
+<li><b>Claim-level verification:</b> every claim checked against its cited evidence; unsupported-claim rates of
+3.1–4.3 %, direction only.</li>
+</ol>
+
+<h2>7. Open items</h2>
+<ul>
+<li><b>Hand-check of the gold timestamps</b> by a second person, using the prepared 75-row sheet.</li>
+<li><b>Closed-book control</b> (proposed, about $1.20, not approved): the same 300 questions answered with no context
+and with the full transcript under one prompt that allows the model's own knowledge, to measure how much LectQA-Vid
+can be answered without the video.</li>
+<li><b>Reranker score scale:</b> a config-switched fix, then one real run, if the component is to be reported again.</li>
+</ul>
+
+<h2>8. Reproducing the numbers</h2>
+<table>
+<caption>All commands replay stored answers or caches; <code>--max-cost 0</code> means no paid call is possible</caption>
+<tr><th>Result</th><th>Command</th><th>Output</th></tr>
+<tr><td>Open-ended modes</td><td><code>python scripts/adapters/lectqa_vid.py open --report-only --max-cost 0</code></td><td><code>lectqa_open_modes.md</code></td></tr>
+<tr><td>Attribution</td><td><code>python scripts/adapters/lectqa_vid.py attribution --report-only --max-cost 0</code></td><td><code>lectqa_attribution.md</code></td></tr>
+<tr><td>T1 re-checks</td><td><code>python scripts/adapters/lectqa_vid.py recheck --max-cost 0</code></td><td><code>lectqa_recheck.md</code></td></tr>
+<tr><td>Pooled corpus</td><td><code>python scripts/adapters/lectqa_vid.py pooled --max-cost 0</code></td><td><code>lectqa_pooled.md</code></td></tr>
+<tr><td>Audit</td><td><code>python scripts/adapters/lectqa_vid.py audit --max-cost 0</code></td><td><code>lectqa_audit.md</code></td></tr>
+<tr><td>MaViLS final round</td><td><code>python scripts/adapters/mavils.py final-round</code></td><td><code>mavils_final_round.md</code></td></tr>
+<tr><td>MaViLS re-checks</td><td><code>python scripts/adapters/mavils.py recheck</code></td><td><code>mavils_recheck.md</code></td></tr>
+</table>
+<p class="note">Result files live in <code>results/external/</code>. <code>DESIGN.md</code> findings 8–16 hold the full
+reasoning, with dated notes wherever a number was corrected.</p>
+
+<h2>Appendix: what changed since the September results</h2>
+<table>
+<tr><th>Earlier statement</th><th>Now</th><th>Why</th></tr>
+<tr><td>Ours beats T1 by +2.00 F1 (headline, in bold)</td><td>Controlled re-implementation: +2.00 [+0.96, +3.11], mostly the re-query</td><td>The re-query is MI-RAG's technique; the comparison is against our rebuild of T1</td></tr>
+<tr><td>Eq. 22 costs T1's pipeline 3.46 F1</td><td>2.93 of the 3.46 is our fixed reply on 34 empty windows; the filter itself makes no measurable difference</td><td>Re-scored the stored answers with an unfiltered fallback</td></tr>
+<tr><td>Eq. 22 is an "oracle"</td><td>T1 does not say where its interval comes from; our replica uses the annotation</td><td>The paper is silent on this</td></tr>
+<tr><td>The reranker costs 13 points of hit@3</td><td>Retired; with links on valid scores, −5.0 points</td><td>The 13 points measured a score-scale defect</td></tr>
+<tr><td>1,598 timestamps are "usable"</td><td>They pass the format and range checks; none is hand-checked</td><td>Passing is not the same as pointing at the answer</td></tr>
+<tr><td>MaViLS: 6 wins, 3 losses</td><td>5 wins, 1 tie, 3 losses</td><td>Deep learning is 0.99 against 0.99</td></tr>
+<tr><td>Intervals resampled by question</td><td>Resampled by video or lecture; no conclusion changed</td><td>Questions on one video are not independent</td></tr>
+</table>
+
+</body>
+</html>

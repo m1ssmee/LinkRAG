@@ -921,6 +921,9 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   carry the claims corrected on 2026-11-12 (the +2.00 headline, "3.46 for eq. 22", the
   68.1 → 55.4 % reranker row, "usable" timestamps, "6 wins, 3 losses"). Their build path
   and the study guide's `figures/` are not in the repository.
+  The two reports of 2026-11-12 (`reports/LinkRAG_results_detailed.pdf`,
+  `reports/LinkRAG_claims_vs_target_papers.pdf`) are current: their sources are in `reports/pdf/`
+  and `python scripts/render_pdf.py <html> <pdf>` builds them.
 
 ## Environment decisions worth not re-litigating
 
