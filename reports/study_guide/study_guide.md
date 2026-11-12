@@ -149,7 +149,7 @@ T1 (Shafiq, Ejaz, Shah, Kamal, Sohail, Aslam; *CMC* 88(2), article 96, 2026) ans
 
 ![T1's pipeline as we rebuilt it. In our rebuild the temporal filter is given the question's annotated time interval.](figures/t1.png)
 
-The crucial detail is step 5. The paper does not say where the filter's time interval comes from when a real user asks a question. The only intervals it describes are the dataset's annotations of *where the answer is*, so our rebuild gives the filter those. That is like being told which page of the book the answer is on, and a real user would not have it. The paper also does not say what happens when the filter leaves nothing; our rebuild then gives a fixed "no evidence" reply. Both are our choices, and the comparison we report switches the filter off. *Corrected 2026-11-12: this said "We call it an oracle filter", as if the paper stated that it reads the annotation.*
+The crucial detail is step 5. The paper does not say where the filter's time interval comes from when a real user asks a question. The only intervals it describes are the dataset's annotations of *where the answer is*, so our rebuild gives the filter those. That is like being told which page of the book the answer is on, and a real user would not have it. The paper also does not say what happens when the filter leaves nothing; our rebuild then gives a fixed "no evidence" reply. Both are our choices, and the comparison we report switches the filter off.
 
 ## 3.3 Their dataset: LectQA-Vid
 
@@ -392,7 +392,7 @@ The dataset gives YouTube links, not videos. We could still download 95 of the 1
 ## 7.2 The replication and the corrected protocol
 
 We rebuilt T1's pipeline from the paper (section 3.2) — the **replica**. Then we ran three ways of giving the *same* answering model its context:
-- **replica**: T1's pipeline, with its time filter where the question's time stamp is usable;
+- **replica**: T1's pipeline, with its time filter where the question's time stamp passes the format and range checks;
 - **ours (iterative)**: our hybrid search plus one re-query, never reading time stamps;
 - **full context**: no retrieval at all, just the whole transcript.
 
@@ -454,10 +454,10 @@ The paired differences are what matter. **Paired** means we compare the two mode
 ![The attribution as a picture: each bar is a 95 % interval. Blue is the headline comparison.](figures/attribution.png)
 
 **What it tells us, in plain words.**
-1. **T1's time filter reads the gold time stamps** at question time (on 160 of the 300 questions, where the stamp is usable). With it on the replica is 3.46 F1 lower, and 2.93 of that comes from 34 questions it leaves with no context at all, where our rebuild gives a fixed "no evidence" reply. On those 34, the replica scores 1.73 F1 with the filter and 27.63 without it. Elsewhere the filter makes no measurable difference (−0.53, interval includes zero). *Corrected 2026-11-12: this said the filter "costs the replica 3.46 F1".*
+1. **In our rebuild, T1's time filter is given the annotated time stamps** at question time (on 160 of the 300 questions, where the stamp passes the format and range checks). With it on the replica is 3.46 F1 lower, and 2.93 of that comes from 34 questions it leaves with no context at all, where our rebuild gives a fixed "no evidence" reply. On those 34, the replica scores 1.73 F1 with the filter and 27.63 without it. Elsewhere the filter makes no measurable difference (−0.53, interval includes zero).
 2. **Without the filter, the two search pipelines are level overall** (+0.27, interval includes zero). On very hard questions ours is ahead: +2.10 [+0.48, +3.72].
 3. **The re-query adds +1.74.**
-4. So the comparison to quote is +2.00 [+0.88, +3.21] ([+0.96, +3.11] when whole videos are resampled): ours with the re-query against T1's pipeline with its time filter off. It is a controlled re-implementation, not a result over T1's published numbers, and the re-query is MI-RAG's technique. *Corrected 2026-11-12: this called +2.00 "the fair headline", in bold.* By difficulty: simple +2.91 [+0.48, +5.58], hard +1.05 [−0.83, +2.95] (interval includes zero), very hard +2.06 [+0.70, +3.49].
+4. So the comparison to quote is +2.00 [+0.88, +3.21] ([+0.96, +3.11] when whole videos are resampled): ours with the re-query against T1's pipeline with its time filter off. It is a controlled re-implementation, not a result over T1's published numbers, and the re-query is MI-RAG's technique. By difficulty: simple +2.91 [+0.48, +5.58], hard +1.05 [−0.83, +2.95] (interval includes zero), very hard +2.06 [+0.70, +3.49].
 
 ## 7.5 The full transcript wins, so this benchmark cannot measure retrieval
 
@@ -543,8 +543,6 @@ Then we added their other two features, one round at a time, always choosing set
 | + frame OCR (one frame per visual segment) | 0.810 | 4 / 4, and 1 tie |
 | + frames taken at each sentence's time | 0.850 | 5 / 3, and 1 tie |
 | + slide-visibility gate (final) | **0.853** | **5 / 3, and 1 tie** |
-
-*Corrected 2026-11-12: the last row said 6 / 3. One lecture (Deep learning, 0.99 against 0.99) is a tie at the two decimals MaViLS publishes; the two rows above it said 5 / 4 and 6 / 3 for the same reason.*
 | *MaViLS all features, same 9 lectures* | *0.80* | |
 
 ![Mean F1 as each feature is added, against MaViLS' published results on the same lectures.](figures/mavils.png)
@@ -634,14 +632,14 @@ Before and after every change that could affect numbers, we re-render every resu
 
 In order of how much they threaten a claim.
 
-1. **The novel components are not shown to help on a reported benchmark.** No link variant measurably improved localisation on LectQA-Vid (links plus the reranker lowered hit@3: 63.7 % against 68.7 % for plain top-k), and cross-file links cannot be tested on LectQA-Vid or MaViLS, because neither has evidence that spans files. *Replaced 2026-11-12: this said the components "have only development evidence (pilot01: 25 questions, 4 cross-modal)".* *Corrected 2026-11-12: this quoted 68.1 → 55.4 %, measured with the reranker running on raw scores; that row is not a valid estimate.*
+1. **The novel components are not shown to help on a reported benchmark.** No link variant measurably improved localisation on LectQA-Vid (links plus the reranker lowered hit@3: 63.7 % against 68.7 % for plain top-k), and cross-file links cannot be tested on LectQA-Vid or MaViLS, because neither has evidence that spans files.
 2. **LectQA-Vid cannot measure retrieval value**: the whole transcript beats every retrieval method, because every transcript fits in the model's input.
 3. **The MaViLS test half was examined in three rounds**, and the next round was chosen after seeing the last.
 4. **Only 9 MaViLS test lectures**, with a confidence interval that includes zero — hence parity.
 5. **T1's answering model is unnamed and their split unpublished**, and our baseline is a rebuild from the paper, checked against its equations, not its outputs.
 6. **The open-ended results use a 300-question subset**, not all 1,418 questions (cost cap).
 7. **MCQ accuracy on LectQA-Vid is not a valid measure**, because of position and length bias.
-8. **Only 1,598 of 2,832 LectQA-Vid time stamps pass the format and range checks**, and passing does not show a stamp points at the answer. *Corrected 2026-11-12: this said they "are usable".*
+8. **Only 1,598 of 2,832 LectQA-Vid time stamps pass the format and range checks**, and passing does not show a stamp points at the answer.
 9. **Judge and answerer come from the same vendor** (both OpenAI models); the faithfulness check used one judge run, so it is direction only; development gold is machine-verified, and the human audit sheet has not been filled in.
 10. **95 of 100 videos** are available; transcripts are ours, not the paper's.
 11. **One MaViLS test lecture has no video.**

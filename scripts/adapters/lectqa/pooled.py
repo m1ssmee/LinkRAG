@@ -180,7 +180,7 @@ def report(rows: list[dict], sizes: dict, cfg: dict) -> list[str]:
           "joined by the linking layer (`link_corpus`).", "",
           "## Results, all difficulties", "",
           "video@k: a top-k unit comes from the question's video. interval@k: it also overlaps the gold interval.", "",
-          f"| corpus | setting | method | video@1 | video@3 | video@8 | interval@1 | interval@3 | interval@8 |",
+          "| corpus | setting | method | video@1 | video@3 | video@8 | interval@1 | interval@3 | interval@8 |",
           "|---|---|---|---:|---:|---:|---:|---:|---:|"]
     for variant, _i, _l in VARIANTS:
         for setting in ("single video", "pooled"):
