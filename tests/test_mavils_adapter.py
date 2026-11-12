@@ -73,3 +73,12 @@ def test_sentence_frames_take_the_first_frame_at_each_timestamp(tmp_path, monkey
     grey = [np.asarray(Image.open(out / f"{i:05d}.jpg").convert("L")).mean() for i in range(4)]
     assert [round(g / 20) for g in grey] == [2, 1, 2, 9]   # first frame at/after t; past the end -> last frame
     assert json.loads((out / "done.json").read_text())["past_end"] == 1
+
+
+def test_lolo_chooses_on_the_other_lectures_only():
+    # "a" is better on w, x and y; "b" is better on z; gate 1 never helps
+    F = {s: {("a", 0): 0.8, ("a", 1): 0.7, ("b", 0): 0.6, ("b", 1): 0.5} for s in "wxy"}
+    F["z"] = {("a", 0): 0.5, ("a", 1): 0.4, ("b", 0): 0.7, ("b", 1): 0.6}
+    out = m.lolo(F, list("wxyz"), ["a", "b"], 2)
+    assert out["z"] == 0.5                       # z is scored at "a", the others' choice, not at its own best
+    assert out["w"] == 0.8

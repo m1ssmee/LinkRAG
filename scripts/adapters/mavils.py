@@ -1706,10 +1706,157 @@ def cmd_visual_ocr(args, cfg, encoder) -> int:
     return 0
 
 
+def lolo(F: dict, stems: list[str], weights: list, n_gates: int) -> dict:
+    """Leave one lecture out. For each lecture the fusion weights, then the gate (0 = off), are
+    chosen on every other lecture by mean F1, as `cmd_final_round` does on the tune half; the
+    held-out lecture is scored at that choice. F[stem][(weights, gate index)] -> F1."""
+    out = {}
+    for s in stems:
+        rest = [x for x in stems if x != s]
+        mean = lambda w, g: float(np.mean([F[x][w, g] for x in rest]))      # noqa: E731
+        w = max(weights, key=lambda w_: mean(w_, 0))
+        g = max(range(n_gates), key=lambda g_: mean(w, g_))
+        out[s] = F[s][w, g if mean(w, g) > mean(w, 0) else 0]
+    return out
+
+
+def cmd_recheck(args, cfg, encoder) -> int:
+    """Free re-checks of the final MaViLS result from the cached matrices: position-only floors,
+    the decoder swapped on our final matrix, each channel alone and left out, wins and ties at
+    the precision their numbers are published at, a leave-one-lecture-out comparison over all 19
+    lectures with video, and where the tune-half errors sit. Nothing is tuned here."""
+    from scipy.stats import wilcoxon
+    from linkrag.link.visual import slide_visible
+    a = cfg["link"]["align"]
+    tuned = json.loads((EXTERNAL / "mavils_tuned.json").read_text())
+    sigma, vm, tm = float(tuned["sigma"]), tuned["visual_method"], tuned["frame_ocr_method"]
+    fr = tuned["visual_final_round"]
+    w_final, g_final = tuple(fr["sentence_time_three_way_weights"]), fr["sentence_time_gate"]
+    split = split_lectures()
+    fd = Path(args.figures_dir)
+    stems = [s for s in sorted(LECTURES) if (CACHE / "frames" / s / "slides.json").exists()]
+    sen = {s: lecture_matrices(s, cfg, encoder, fd, with_text=True, frame_source="sentence_time") for s in stems}
+    test, tune = [s for s in split["test"] if s in sen], [s for s in split["tune"] if s in sen]
+    theirs = {s: LECTURES[s][3] for s in stems}
+
+    def pred(s, w, gate, how="ours"):
+        d = sen[s]
+        S = three_way(d, vm, tm, w, gate)
+        if how == "theirs":
+            return decode_theirs(S, d["pages"], d["owner"])
+        return decode(S, d["pages"], d["owner"], a, variant="naive" if how == "naive" else "dp", min_sim=None,
+                      flat=0.0, sigma=sigma)
+
+    def score(w, gate, how="ours") -> dict:
+        return {s: their_f1(sen[s]["gt"], pred(s, w, gate, how)) for s in stems}
+
+    def ci(d) -> str:
+        d = np.asarray(d)
+        lo, hi = np.percentile(np.random.default_rng(20260924).choice(d, (10000, len(d))).mean(axis=1), [2.5, 97.5])
+        return f"{d.mean():+.3f} [{lo:+.3f}, {hi:+.3f}]" + ("" if lo > 0 or hi < 0 else " (crosses 0)")
+
+    m = lambda v, sel: f"{np.mean([v[s] for s in sel]):.3f}"                 # noqa: E731
+    final = score(w_final, g_final)
+    L = ["# MaViLS — free re-checks of the final result", "",
+         "From the cached sentence × page matrices of `mavils_final_round.md`. Nothing is tuned and no feature is "
+         "recomputed. LLM-free, $0.", "",
+         "## Caveats first", "",
+         "- **This is a fourth look at the test half** (findings 14–16 were the first three). No weight, threshold or "
+         "design choice is set from anything below; the tables are diagnostics of the system fixed in finding 16.",
+         "- **Leave-one-lecture-out is not the registered protocol.** The registered result is the fixed split of "
+         "`mavils_split.json`. In the leave-one-out table a tune-half lecture's weights are chosen with test-half "
+         "lectures among the others, and σ, the image score and the text score stay as tuned on the tune half, so "
+         "tune-half lectures remain optimistic. It is exploratory and does not replace the fixed-split number.",
+         "- **Their numbers are published per-lecture figures at two decimals**, decoded by their DP on their features; "
+         "they are not re-run. A difference below 0.005 is inside their rounding.",
+         "- Intervals: 10,000-resample bootstrap over lectures, numpy seed 20260924, as in `mavils_final_round.md`. An "
+         "interval that contains 0 is marked *(crosses 0)*: no measurable difference.", "",
+         f"Sanity: the final system reproduces {m(final, test)} on the test half and {m(final, tune)} on the tune half "
+         f"(weights {w_final[0]}/{w_final[1]}/{w_final[2]}, gate {g_final}).", "",
+         "## Floors: position only, no content", "",
+         "Sentence i of n, or time t of T, mapped linearly onto the deck's pages.", "",
+         "| lectures | linear by index | linear by time | their audio-only | their all-features |", "|---|---:|---:|---:|---:|"]
+    floor = {}
+    for s in sorted(LECTURES):
+        df = load_ground_truth(REPO / "data" / "ground_truth_files" / f"ground_truth_{s}.xlsx")
+        gt, t = df["slide"].astype(int).to_numpy(), df["time"].astype(float).to_numpy()
+        pages, n = int(gt.max()), len(gt)
+        floor[s] = (their_f1(gt, np.minimum((np.arange(n) / n * pages).astype(int) + 1, pages)),
+                    their_f1(gt, np.minimum((t / t.max() * pages).astype(int) + 1, pages)))
+    for name, sel in (("all 20", sorted(LECTURES)), (f"test, {len(test)} with video", test), (f"tune, {len(tune)}", tune)):
+        L.append(f"| {name} | {np.mean([floor[s][0] for s in sel]):.3f} | {np.mean([floor[s][1] for s in sel]):.3f} | "
+                 f"{np.mean([LECTURES[s][2] for s in sel]):.3f} | {np.mean([LECTURES[s][3] for s in sel]):.3f} |")
+
+    L += ["", "## The decoder, on our final fused matrix", "",
+          "| decoder | test | tune | test, paired against their all-features | all 19, paired against our DP |",
+          "|---|---:|---:|---:|---:|"]
+    for how, name in (("naive", "row-wise argmax, no DP"), ("theirs", "their DP (λ_jump 0.1), their code"), ("ours", f"our DP (σ = {sigma})")):
+        v = final if how == "ours" else score(w_final, g_final, how)
+        L.append(f"| {name} | {m(v, test)} | {m(v, tune)} | {ci([v[s] - theirs[s] for s in test])} | "
+                 + ("" if how == "ours" else ci([v[s] - final[s] for s in stems])) + " |")
+
+    L += ["", "## Channels, through our DP", "",
+          "Left-out rows renormalise the final weights. Differences are paired against the final system.", "",
+          "| channels | test | tune | test − final | tune − final |", "|---|---:|---:|---:|---:|"]
+    norm = lambda w: tuple(x / sum(w) for x in w)                             # noqa: E731
+    for name, w in (("image only", (1.0, 0.0, 0.0)), ("frame OCR only", (0.0, 1.0, 0.0)), ("speech-to-slide text only", (0.0, 0.0, 1.0)),
+                    ("without image", norm((0, w_final[1], w_final[2]))), ("without frame OCR", norm((w_final[0], 0, w_final[2]))),
+                    ("without speech-to-slide text", norm((w_final[0], w_final[1], 0)))):
+        v = score(w, g_final if name.startswith("without") else None)
+        L.append(f"| {name} | {m(v, test)} | {m(v, tune)} | {ci([v[s] - final[s] for s in test])} | {ci([v[s] - final[s] for s in tune])} |")
+    L.append(f"| final (all three) | {m(final, test)} | {m(final, tune)} | | |")
+
+    d_test = np.array([final[s] - theirs[s] for s in test])
+    wtl = lambda d: (int((np.round(d, 2) > 0).sum()), int((np.round(d, 2) == 0).sum()), int((np.round(d, 2) < 0).sum()))   # noqa: E731
+    L += ["", "## Wins, ties and losses at their published precision (fixed split, test half)", "",
+          "| lecture | ours | theirs | difference |", "|---|---:|---:|---:|",
+          *[f"| {LECTURES[s][1]} | {final[s]:.4f} | {theirs[s]:.2f} | {final[s] - theirs[s]:+.4f} |" for s in test], "",
+          "Rounded to two decimals: **{} wins, {} tied, {} losses**. ".format(*wtl(d_test))
+          + f"Paired mean {ci(d_test)}; Wilcoxon signed-rank p = {wilcoxon(d_test).pvalue:.2f}.", ""]
+
+    grid = [None] + [{"min_words": w, "min_margin": mg} for w, mg in GATE_GRID]
+    F = {s: {} for s in stems}
+    for w in SIMPLEX:
+        for gi, g in enumerate(grid):
+            for s, v in score(w, g).items():
+                F[s][w, gi] = v
+    lo = lolo(F, stems, SIMPLEX, len(grid))
+    d_all = np.array([lo[s] - theirs[s] for s in stems])
+    L += ["## Leave one lecture out, all 19 lectures with video (exploratory)", "",
+          "For each lecture the three-way weights, then the gate, are chosen on the other 18 as `final-round` chooses "
+          "them on the tune half.", "",
+          "| lectures | ours | theirs | paired difference |", "|---|---:|---:|---:|",
+          f"| all 19 | {m(lo, stems)} | {m(theirs, stems)} | {ci(d_all)} |",
+          f"| test half, 9 | {m(lo, test)} | {m(theirs, test)} | {ci([lo[s] - theirs[s] for s in test])} |",
+          f"| tune half, 10 | {m(lo, tune)} | {m(theirs, tune)} | {ci([lo[s] - theirs[s] for s in tune])} |", "",
+          "All 19, rounded to two decimals: {} wins, {} tied, {} losses. ".format(*wtl(d_all))
+          + f"Wilcoxon signed-rank p = {wilcoxon(d_all).pvalue:.2f}. The three largest differences are "
+          + ", ".join(f"{LECTURES[s][1]} {lo[s] - theirs[s]:+.2f}" for s in sorted(stems, key=lambda s: theirs[s] - lo[s])[:3])
+          + f"; without them the mean difference is {np.sort(d_all)[:-3].mean():+.3f}.", "",
+          "| lecture | half | ours, left out | theirs | difference |", "|---|---|---:|---:|---:|",
+          *[f"| {LECTURES[s][1]} | {'test' if s in test else 'tune'} | {lo[s]:.2f} | {theirs[s]:.2f} | {lo[s] - theirs[s]:+.2f} |"
+            for s in stems], "",
+          "## Where the errors are (tune half only, final system)", "",
+          "| lecture | F1 | errors / labelled | within 2 pages | on frames judged not a slide | such frames overall |",
+          "|---|---:|---:|---:|---:|---:|"]
+    for s in tune:
+        d, p = sen[s], pred(s, w_final, g_final)
+        lab = d["gt"] != -1
+        err = lab & (p != d["gt"])
+        vis = np.array(slide_visible(d["frame_words"], d["frame_margin"][vm], **g_final))
+        share = lambda x: f"{x.mean():.0%}" if len(x) else "—"                 # noqa: E731
+        L.append(f"| {LECTURES[s][1]} | {final[s]:.2f} | {int(err.sum())} / {int(lab.sum())} | "
+                 f"{share(np.abs(p - d['gt'])[err] <= 2)} | {share(~vis[err])} | {share(~vis[lab])} |")
+    L += ["", "## Provenance", "", "`python scripts/adapters/mavils.py recheck` · inputs: the caches under "
+          "`data/processed/mavils`, `mavils_tuned.json`, `mavils_split.json` · their DP executed from their source."]
+    write_report(args.out, L)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["run", "study", "inspect", "final", "fused", "gate", "gate-gran", "visual-frames", "visual", "frame-ocr",
-                                    "visual-ocr", "visibility-gate", "final-round"])
+                                    "visual-ocr", "visibility-gate", "final-round", "recheck"])
     ap.add_argument("--shuffles", type=int, default=30)
     ap.add_argument("--reuse", action="store_true", help="gate: reuse cached z-scores from the previous run's json")
     ap.add_argument("--config", default="configs/default.yaml")
@@ -1728,11 +1875,14 @@ def main(argv: list[str] | None = None) -> int:
                     "frame-ocr": "results/external/mavils_frame_ocr_sanity.md",
                     "visual-ocr": "results/external/mavils_frame_ocr.md",
                     "visibility-gate": "results/external/mavils_visibility_gate.md",
-                    "final-round": "results/external/mavils_final_round.md"}[args.cmd]
+                    "final-round": "results/external/mavils_final_round.md",
+                    "recheck": "results/external/mavils_recheck.md"}[args.cmd]
     setup_logging()
     cfg = load_config(args.config)
     if not (REPO / "data" / "ground_truth_files").exists():
         raise SystemExit(f"clone https://github.com/andererka/MaViLS to {REPO}")
+    if args.cmd == "recheck":                # cached matrices only: no embedder to load
+        return cmd_recheck(args, cfg, None)
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
     return {"run": cmd_run, "study": cmd_study, "inspect": cmd_inspect, "final": cmd_final, "fused": cmd_fused,
