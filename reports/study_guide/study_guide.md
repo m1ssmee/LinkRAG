@@ -632,7 +632,7 @@ Before and after every change that could affect numbers, we re-render every resu
 
 In order of how much they threaten a claim.
 
-1. **The novel components are not shown to help on a reported benchmark.** Link-following retrieval and complementarity reranking have only development evidence (pilot01: 25 questions, 4 cross-modal). On LectQA-Vid linking is inactive, and the complementarity reranker lowered localisation hit@3 (68.1 → 55.4 %, measured before unusable time stamps were excluded).
+1. **The novel components are not shown to help on a reported benchmark.** Link-following retrieval and complementarity reranking have only development evidence (pilot01: 25 questions, 4 cross-modal). On LectQA-Vid linking is inactive, and links plus the reranker lowered localisation hit@3 (63.7 % against 68.7 % for plain top-k). *Corrected 2026-11-12: this quoted 68.1 → 55.4 %, measured with the reranker running on raw scores; that row is not a valid estimate.*
 2. **LectQA-Vid cannot measure retrieval value**: the whole transcript beats every retrieval method, because every transcript fits in the model's input.
 3. **The MaViLS test half was examined in three rounds**, and the next round was chosen after seeing the last.
 4. **Only 9 MaViLS test lectures**, with a confidence interval that includes zero — hence parity.

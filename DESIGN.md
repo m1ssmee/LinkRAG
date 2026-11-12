@@ -242,23 +242,32 @@ explicit instruction.
    the pairing mechanism. Negative control (pilot01 audio × unrelated deck): 0
    cross-file links (`reports/relatedness_gate.md`).
 8. **LectQA-Vid (target T1) is a single-stream benchmark: linking is inactive by
-   construction, re-querying is what helps, and the reranker costs recall on
-   speech-defined gold.** (`results/external/lectqa_v2.md`, 28/100 videos, 840 QA.)
+   construction and re-querying is what helps.** *(Until 2026-11-12 the heading ended "and the
+   reranker costs recall on speech-defined gold"; see the note at the end of this finding.)* (`results/external/lectqa_v2.md`, 28/100 videos, 840 QA.)
    Their paper reports **no localisation metric** (§5.2 is answer quality only), so
    the localisation table is ours-on-their-data with their fixed-window configuration
    replicated as the baseline row. Findings: `linkrag` ≡ `baseline` to three decimals
    on hit@1/3/8 and IoU — one video, no deck or paper, so the only link type is
    temporal co-occurrence and expansion proposes units already retrieved; **iterative
    re-querying gains +7 pp hit@1** (44.8 → 52.0, `linkrag_iter` 52.7) while all modes
-   converge by hit@8 (84–86 %); and **complementarity costs 13 pp of hit@3** at every
-   difficulty (68.1 → 55.4) because it spends slots on frame OCR while the gold
-   interval is defined by what was *said*. The modality-need gate (α = 0 on
+   converge by hit@8 (84–86 %); and the baseline-mode complementarity rows are retired as *raw-score
+   reranker, not a valid estimate* (note 2026-11-12 below). The modality-need gate (α = 0 on
    concentrated pools) was built and evaluated: it fires on 79 % of cells and changes
    nothing measurable on either benchmark — α decides which unit is taken first, not
    which eight are taken. Default off; gating β and γ is the next thing to test.
    *Note 2026-09-26: the hit@k and IoU above scored every question, including 119 of 840 with no
    usable gold interval, so they are understated (correction `4225b5c`, dated note in
    `lectqa_v2.md`); finding 12 re-measured on the usable intervals (hit@1 45.6 % without slides).*
+   *Corrected 2026-11-12: this finding said "complementarity costs 13 pp of hit@3 at every
+   difficulty (68.1 → 55.4) because it spends slots on frame OCR while the gold interval is
+   defined by what was said". In `baseline` and `iterative` mode the reranker received raw RRF
+   scores (about 0.03) next to α = 0.3 and γ = 0.4, so relevance barely counted
+   (`lectqa_pooled.md`). The 13 pp measured that scale mismatch, and the explanation was never
+   tested. No reranker-only number replaces it. The nearest valid stored row is finding 12's
+   links + reranker on rank-normalised scores: hit@3 63.7 % against 68.7 % plain, −5.01 pp
+   [−7.60, −2.24] by video; at hit@8 −2.69 [−5.51, +0.53], no measurable difference
+   (`lectqa_recheck.md`). The gate's null result does not depend on those rows: it holds on the
+   normalised-score `linkrag` rows too.*
 9. **Sentence-aware segmentation is free on localisation, not on answers.** On
    LectQA-Vid, sentence cutting removes 82.8 % of mid-sentence boundaries
    (82.8 % → 0.0 %) and moves hit@1 by 0.5 pp and IoU by 0.010 — inside noise, at
@@ -633,8 +642,9 @@ rule*) and tested, but no reported table shows a benefit from them:
 On LectQA-Vid localisation the `linkrag` mode equals `baseline` by construction, since one video
 has no deck or paper to link to (finding 8, `lectqa_v2.md`); frame-derived slides and their links
 gave no gain (hit@1 43.2 % with them vs 45.6 % without, finding 12, `lectqa_frameslides.md`); and
-complementarity reranking lowered hit@3 (68.1 → 55.4 %, finding 8, scored before unusable
-timestamps were excluded). Their only positive evidence is on pilot01, a development lecture that
+links + reranker on rank-normalised scores lowered hit@3 (63.7 % against 68.7 % plain, finding 12;
+−5.01 pp [−7.60, −2.24] by video, `lectqa_recheck.md`). *Corrected 2026-11-12: this quoted
+finding 8's 68.1 → 55.4 %, a raw-score reranker row that is not a valid estimate.* Their only positive evidence is on pilot01, a development lecture that
 is never reported (n = 25, 4 cross-modal; findings 1–5). Measuring them needs a benchmark whose
 evidence spans files and does not fit in the answerer's context; the dataset policy (results only
 on the two target papers' datasets) did not permit building one.

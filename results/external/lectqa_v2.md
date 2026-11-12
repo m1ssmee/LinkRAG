@@ -10,6 +10,8 @@ Subset: the 28 of the first 35 videos whose YouTube links were still available; 
 
 > *Corrected 2026-09-23 (gold timestamps):* the localisation tables below scored all 840 QA pairs, but 119 of them have no usable gold interval: ambiguous format 86, beyond the fetched video's end 32, end before start 1. The published annotations mix timestamp conventions (e.g. `00:12:70` = 12.70 s, read here as 12 min 70 s), and some stamps end past the fetched video. Those questions could never be hit, so the hit@k and IoU below are understated. The filtered, all-video localisation is in `results/external/lectqa_frameslides.md` (`strict_seconds` / `gold_interval`).
 
+> *Corrected 2026-11-12 (raw-score reranker):* rows marked † ran the complementarity reranker on raw RRF scores (about 0.03) next to α = 0.3 and γ = 0.4, so relevance barely counted (`lectqa_pooled.md`). They are **raw-score reranker, not a valid estimate** of the reranker's effect, and the hit@3 68.1 % → 55.4 % drop quoted from them, with its explanation in the gate conclusion below, is retired. The `linkrag` rows rank-normalise scores before reranking; they measure links and reranker together. Nothing was re-run; the rows are kept as recorded.
+
 ## 1. Temporal localisation (primary metric; no answerer)
 
 **Their paper reports no localisation metric.** Its evaluation section lists token-level precision/recall/F1, BLEU, METEOR, ROUGE-1 and semantic similarity for open-ended questions and accuracy/precision/recall/F1 over option labels for MCQ (§5.2) — nothing about whether a retrieved segment matched the annotated interval, and it never states its top-K. **This table is therefore ours-on-their-data**, with their fixed-window configuration replicated as the `fixed` baseline row in §2 rather than a number copied from the paper.
@@ -21,50 +23,50 @@ hit@k: any of the top-k retrieved units overlaps the question's gold interval `[
 | level | n | mode | rerank | hit@1 | hit@3 | hit@8 | mean best IoU |
 |---|---:|---|---|---:|---:|---:|---:|
 | simple | 281 | baseline | none | 53.0% | 76.2% | 90.4% | 0.467 |
-| simple | 281 | baseline | complementarity | 53.4% | 64.1% | 78.6% | 0.396 |
-| simple | 281 | baseline | complementarity+gate | 53.4% | 64.1% | 78.6% | 0.396 |
+| simple | 281 | baseline | complementarity † | 53.4% | 64.1% | 78.6% | 0.396 |
+| simple | 281 | baseline | complementarity+gate † | 53.4% | 64.1% | 78.6% | 0.396 |
 | simple | 281 | linkrag | none | 53.4% | 76.2% | 90.4% | 0.467 |
 | simple | 281 | linkrag | complementarity | 53.4% | 69.8% | 84.3% | 0.454 |
 | simple | 281 | linkrag | complementarity+gate | 53.4% | 69.8% | 84.3% | 0.451 |
 | simple | 281 | iterative | none | 66.2% | 82.2% | 91.1% | 0.469 |
-| simple | 281 | iterative | complementarity | 66.2% | 74.4% | 86.5% | 0.447 |
-| simple | 281 | iterative | complementarity+gate | 66.2% | 74.4% | 86.5% | 0.447 |
+| simple | 281 | iterative | complementarity † | 66.2% | 74.4% | 86.5% | 0.447 |
+| simple | 281 | iterative | complementarity+gate † | 66.2% | 74.4% | 86.5% | 0.447 |
 | simple | 281 | linkrag_iter | none | 66.5% | 81.9% | 91.8% | 0.476 |
 | simple | 281 | linkrag_iter | complementarity | 66.5% | 77.9% | 87.9% | 0.481 |
 | simple | 281 | linkrag_iter | complementarity+gate | 66.5% | 78.6% | 87.2% | 0.479 |
 | hard | 280 | baseline | none | 36.4% | 60.0% | 80.0% | 0.392 |
-| hard | 280 | baseline | complementarity | 36.8% | 45.0% | 68.9% | 0.311 |
-| hard | 280 | baseline | complementarity+gate | 36.8% | 45.0% | 68.9% | 0.311 |
+| hard | 280 | baseline | complementarity † | 36.8% | 45.0% | 68.9% | 0.311 |
+| hard | 280 | baseline | complementarity+gate † | 36.8% | 45.0% | 68.9% | 0.311 |
 | hard | 280 | linkrag | none | 36.8% | 60.0% | 80.0% | 0.392 |
 | hard | 280 | linkrag | complementarity | 36.8% | 53.9% | 74.6% | 0.349 |
 | hard | 280 | linkrag | complementarity+gate | 36.8% | 55.0% | 74.6% | 0.347 |
 | hard | 280 | iterative | none | 44.3% | 60.0% | 80.0% | 0.395 |
-| hard | 280 | iterative | complementarity | 44.3% | 55.7% | 80.0% | 0.373 |
-| hard | 280 | iterative | complementarity+gate | 44.3% | 55.7% | 80.0% | 0.373 |
+| hard | 280 | iterative | complementarity † | 44.3% | 55.7% | 80.0% | 0.373 |
+| hard | 280 | iterative | complementarity+gate † | 44.3% | 55.7% | 80.0% | 0.373 |
 | hard | 280 | linkrag_iter | none | 46.4% | 60.0% | 79.3% | 0.391 |
 | hard | 280 | linkrag_iter | complementarity | 46.4% | 57.1% | 71.8% | 0.345 |
 | hard | 280 | linkrag_iter | complementarity+gate | 46.4% | 58.2% | 71.4% | 0.345 |
 | very hard | 279 | baseline | none | 44.8% | 68.1% | 83.5% | 0.354 |
-| very hard | 279 | baseline | complementarity | 44.8% | 57.0% | 77.8% | 0.304 |
-| very hard | 279 | baseline | complementarity+gate | 44.8% | 57.0% | 77.8% | 0.304 |
+| very hard | 279 | baseline | complementarity † | 44.8% | 57.0% | 77.8% | 0.304 |
+| very hard | 279 | baseline | complementarity+gate † | 44.8% | 57.0% | 77.8% | 0.304 |
 | very hard | 279 | linkrag | none | 44.8% | 68.1% | 83.5% | 0.354 |
 | very hard | 279 | linkrag | complementarity | 44.8% | 58.8% | 77.4% | 0.323 |
 | very hard | 279 | linkrag | complementarity+gate | 44.8% | 58.8% | 78.5% | 0.327 |
 | very hard | 279 | iterative | none | 45.5% | 68.5% | 81.4% | 0.345 |
-| very hard | 279 | iterative | complementarity | 45.5% | 61.6% | 79.9% | 0.341 |
-| very hard | 279 | iterative | complementarity+gate | 45.5% | 61.6% | 79.9% | 0.341 |
+| very hard | 279 | iterative | complementarity † | 45.5% | 61.6% | 79.9% | 0.341 |
+| very hard | 279 | iterative | complementarity+gate † | 45.5% | 61.6% | 79.9% | 0.341 |
 | very hard | 279 | linkrag_iter | none | 45.2% | 67.4% | 81.7% | 0.346 |
 | very hard | 279 | linkrag_iter | complementarity | 45.2% | 62.7% | 73.8% | 0.315 |
 | very hard | 279 | linkrag_iter | complementarity+gate | 45.2% | 63.4% | 74.2% | 0.316 |
 | overall | 840 | baseline | none | 44.8% | 68.1% | 84.6% | 0.404 |
-| overall | 840 | baseline | complementarity | 45.0% | 55.4% | 75.1% | 0.337 |
-| overall | 840 | baseline | complementarity+gate | 45.0% | 55.4% | 75.1% | 0.337 |
+| overall | 840 | baseline | complementarity † | 45.0% | 55.4% | 75.1% | 0.337 |
+| overall | 840 | baseline | complementarity+gate † | 45.0% | 55.4% | 75.1% | 0.337 |
 | overall | 840 | linkrag | none | 45.0% | 68.1% | 84.6% | 0.404 |
 | overall | 840 | linkrag | complementarity | 45.0% | 60.8% | 78.8% | 0.375 |
 | overall | 840 | linkrag | complementarity+gate | 45.0% | 61.2% | 79.2% | 0.375 |
 | overall | 840 | iterative | none | 52.0% | 70.2% | 84.2% | 0.403 |
-| overall | 840 | iterative | complementarity | 52.0% | 63.9% | 82.1% | 0.387 |
-| overall | 840 | iterative | complementarity+gate | 52.0% | 63.9% | 82.1% | 0.387 |
+| overall | 840 | iterative | complementarity † | 52.0% | 63.9% | 82.1% | 0.387 |
+| overall | 840 | iterative | complementarity+gate † | 52.0% | 63.9% | 82.1% | 0.387 |
 | overall | 840 | linkrag_iter | none | 52.7% | 69.8% | 84.3% | 0.404 |
 | overall | 840 | linkrag_iter | complementarity | 52.7% | 66.0% | 77.9% | 0.380 |
 | overall | 840 | linkrag_iter | complementarity+gate | 52.7% | 66.8% | 77.6% | 0.380 |
@@ -98,50 +100,50 @@ Same transcript words, same frames, same retrieval; only the cut points change. 
 | level | n | mode | rerank | hit@1 | hit@3 | hit@8 | mean best IoU |
 |---|---:|---|---|---:|---:|---:|---:|
 | simple | 281 | baseline | none | 53.0% | 75.4% | 91.8% | 0.446 |
-| simple | 281 | baseline | complementarity | 53.4% | 66.5% | 83.3% | 0.404 |
-| simple | 281 | baseline | complementarity+gate | 53.4% | 66.5% | 83.3% | 0.404 |
+| simple | 281 | baseline | complementarity † | 53.4% | 66.5% | 83.3% | 0.404 |
+| simple | 281 | baseline | complementarity+gate † | 53.4% | 66.5% | 83.3% | 0.404 |
 | simple | 281 | linkrag | none | 53.4% | 75.4% | 91.8% | 0.446 |
 | simple | 281 | linkrag | complementarity | 53.4% | 68.3% | 84.0% | 0.419 |
 | simple | 281 | linkrag | complementarity+gate | 53.4% | 68.3% | 84.0% | 0.418 |
 | simple | 281 | iterative | none | 65.8% | 84.0% | 92.5% | 0.446 |
-| simple | 281 | iterative | complementarity | 65.8% | 74.7% | 91.1% | 0.428 |
-| simple | 281 | iterative | complementarity+gate | 65.8% | 74.7% | 91.1% | 0.428 |
+| simple | 281 | iterative | complementarity † | 65.8% | 74.7% | 91.1% | 0.428 |
+| simple | 281 | iterative | complementarity+gate † | 65.8% | 74.7% | 91.1% | 0.428 |
 | simple | 281 | linkrag_iter | none | 65.1% | 84.3% | 91.5% | 0.441 |
 | simple | 281 | linkrag_iter | complementarity | 65.1% | 79.4% | 87.9% | 0.448 |
 | simple | 281 | linkrag_iter | complementarity+gate | 65.1% | 79.7% | 87.2% | 0.446 |
 | hard | 280 | baseline | none | 37.1% | 59.3% | 82.1% | 0.376 |
-| hard | 280 | baseline | complementarity | 37.5% | 46.4% | 72.9% | 0.319 |
-| hard | 280 | baseline | complementarity+gate | 37.5% | 46.4% | 72.9% | 0.319 |
+| hard | 280 | baseline | complementarity † | 37.5% | 46.4% | 72.9% | 0.319 |
+| hard | 280 | baseline | complementarity+gate † | 37.5% | 46.4% | 72.9% | 0.319 |
 | hard | 280 | linkrag | none | 37.5% | 59.3% | 82.1% | 0.376 |
 | hard | 280 | linkrag | complementarity | 37.5% | 53.2% | 72.9% | 0.340 |
 | hard | 280 | linkrag | complementarity+gate | 37.5% | 55.7% | 72.9% | 0.341 |
 | hard | 280 | iterative | none | 42.5% | 60.4% | 83.6% | 0.385 |
-| hard | 280 | iterative | complementarity | 42.5% | 53.9% | 80.7% | 0.374 |
-| hard | 280 | iterative | complementarity+gate | 42.5% | 53.9% | 80.7% | 0.374 |
+| hard | 280 | iterative | complementarity † | 42.5% | 53.9% | 80.7% | 0.374 |
+| hard | 280 | iterative | complementarity+gate † | 42.5% | 53.9% | 80.7% | 0.374 |
 | hard | 280 | linkrag_iter | none | 40.7% | 62.1% | 81.8% | 0.390 |
 | hard | 280 | linkrag_iter | complementarity | 40.7% | 54.3% | 75.0% | 0.349 |
 | hard | 280 | linkrag_iter | complementarity+gate | 40.7% | 55.0% | 75.0% | 0.349 |
 | very hard | 279 | baseline | none | 42.7% | 67.0% | 83.5% | 0.360 |
-| very hard | 279 | baseline | complementarity | 43.4% | 55.2% | 76.0% | 0.318 |
-| very hard | 279 | baseline | complementarity+gate | 43.4% | 55.2% | 76.0% | 0.318 |
+| very hard | 279 | baseline | complementarity † | 43.4% | 55.2% | 76.0% | 0.318 |
+| very hard | 279 | baseline | complementarity+gate † | 43.4% | 55.2% | 76.0% | 0.318 |
 | very hard | 279 | linkrag | none | 43.4% | 67.4% | 83.5% | 0.360 |
 | very hard | 279 | linkrag | complementarity | 43.4% | 63.1% | 77.8% | 0.339 |
 | very hard | 279 | linkrag | complementarity+gate | 43.4% | 63.4% | 77.8% | 0.340 |
 | very hard | 279 | iterative | none | 48.7% | 69.9% | 82.4% | 0.360 |
-| very hard | 279 | iterative | complementarity | 48.7% | 58.8% | 82.4% | 0.350 |
-| very hard | 279 | iterative | complementarity+gate | 48.7% | 58.8% | 82.4% | 0.350 |
+| very hard | 279 | iterative | complementarity † | 48.7% | 58.8% | 82.4% | 0.350 |
+| very hard | 279 | iterative | complementarity+gate † | 48.7% | 58.8% | 82.4% | 0.350 |
 | very hard | 279 | linkrag_iter | none | 47.7% | 70.3% | 83.5% | 0.365 |
 | very hard | 279 | linkrag_iter | complementarity | 47.7% | 63.4% | 78.5% | 0.332 |
 | very hard | 279 | linkrag_iter | complementarity+gate | 47.7% | 63.4% | 78.5% | 0.333 |
 | overall | 840 | baseline | none | 44.3% | 67.3% | 85.8% | 0.394 |
-| overall | 840 | baseline | complementarity | 44.8% | 56.1% | 77.4% | 0.347 |
-| overall | 840 | baseline | complementarity+gate | 44.8% | 56.1% | 77.4% | 0.347 |
+| overall | 840 | baseline | complementarity † | 44.8% | 56.1% | 77.4% | 0.347 |
+| overall | 840 | baseline | complementarity+gate † | 44.8% | 56.1% | 77.4% | 0.347 |
 | overall | 840 | linkrag | none | 44.8% | 67.4% | 85.8% | 0.394 |
 | overall | 840 | linkrag | complementarity | 44.8% | 61.5% | 78.2% | 0.366 |
 | overall | 840 | linkrag | complementarity+gate | 44.8% | 62.5% | 78.2% | 0.366 |
 | overall | 840 | iterative | none | 52.4% | 71.4% | 86.2% | 0.397 |
-| overall | 840 | iterative | complementarity | 52.4% | 62.5% | 84.8% | 0.384 |
-| overall | 840 | iterative | complementarity+gate | 52.4% | 62.5% | 84.8% | 0.384 |
+| overall | 840 | iterative | complementarity † | 52.4% | 62.5% | 84.8% | 0.384 |
+| overall | 840 | iterative | complementarity+gate † | 52.4% | 62.5% | 84.8% | 0.384 |
 | overall | 840 | linkrag_iter | none | 51.2% | 72.3% | 85.6% | 0.399 |
 | overall | 840 | linkrag_iter | complementarity | 51.2% | 65.7% | 80.5% | 0.377 |
 | overall | 840 | linkrag_iter | complementarity+gate | 51.2% | 66.1% | 80.2% | 0.376 |

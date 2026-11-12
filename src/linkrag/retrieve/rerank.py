@@ -41,6 +41,14 @@ Ablations
 ``complementarity`` -- the objective above.
 
 All three share one code path, so an ablation cannot diverge by accident.
+
+Score scale
+-----------
+:math:`rel` is used as given. ``retrieve_linkrag(normalise_seeds=True)`` hands over
+rank-normalised scores in (0, 1]. Baseline and iterative retrieval hand over raw RRF scores
+(about 0.03), next to which the default :math:`\alpha` and :math:`\gamma` decide almost
+everything. Reported ``baseline`` / ``iterative`` + ``complementarity`` rows up to 2026-11-12 ran
+that way and are retired as "raw-score reranker, not a valid estimate" (DESIGN.md finding 8).
 """
 
 from __future__ import annotations
