@@ -663,7 +663,7 @@ Lectern lets a user upload a lecture's recording, slides and notes, build the in
 
 | part of the screen | what it shows | pipeline behind it |
 |---|---|---|
-| top bar | lecture title, "Compare with baseline" switch, English / Hindi, spend so far and the answering model | cost ledger and spend guard |
+| top bar | lecture title, "Compare with baseline" switch, spend so far and the answering model | cost ledger and spend guard |
 | Materials (left) | each file with its length or page count; between a recording and a deck, a connector with the gate's z and a state (linked, unsure, unlinked) | ingestion; relatedness gate |
 | Links (left) | the number of links of each type | the linking layer |
 | centre | the question, the answer, each claim marked supported, weak or unsupported | answer generation and claim checking |

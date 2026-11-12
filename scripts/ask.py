@@ -70,7 +70,8 @@ def main(argv: list[str] | None = None) -> int:
         if not Path(links_path).exists():
             parser.error(f"no links at {links_path} -- run scripts/build_links.py first")
         graph = build_graph(list(index.units),
-                            load_links(links_path, expect_manifest=manifest_hash))
+                            load_links(links_path, expect_manifest=manifest_hash,
+                                       gated=cfg["link"]["relatedness"]["enabled"]))
     results, _ = retrieve_pool(args.mode, args.question, index, graph, encoder=encoder, cfg=cfg,
                                complete=None, pool=pool)
     results = rerank(results, k, method=method, index=index, graph=graph,

@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 
 from linkrag.core import EvidenceUnit, load_config, refuse_strong_in_batch, set_max_cost, setup_logging
-from linkrag.costs import cached_completer, price_for, record_run
+from linkrag.costs import cached_completer, record_run
 from linkrag.eval.redundancy import role_of
 from linkrag.eval.verify_gold import parse_json
 from linkrag.generate.answer import http_completer
@@ -122,9 +122,7 @@ def main(argv: list[str] | None = None) -> int:
 
     llm = cfg["models"]["llm"]
     complete = cached_completer(http_completer(llm), Path("data/processed/verify_cache") /
-                               manifest.get("hash", args.corpus) / f"{llm.get('model')}-propose",
-                               max_cost_usd=args.max_cost,
-                               price=price_for(str(llm.get("model")), cfg["models"].get("pricing")))
+                               manifest.get("hash", args.corpus) / f"{llm.get('model')}-propose")
 
     encoder = default_encoder(index.embedding_model, cfg["device"], index.normalize)
     encoder([""])

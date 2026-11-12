@@ -107,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.step == "frameslides":
         return frameslides(ids, cfg, dcfg, external / "lectqa_frameslides.md")
     if args.step == "v2":
-        return v2(ids, cfg, dcfg, external / "lectqa_v2.md", cache_only=not args.allow_new_calls, max_cost=args.max_cost)
+        return v2(ids, cfg, dcfg, external / "lectqa_v2.md", cache_only=not args.allow_new_calls)
     return run(ids, cfg, dcfg, args.modes.split(","), Path(args.out), args.repeats, cache_only=args.cache_only)
 
 

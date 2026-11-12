@@ -271,7 +271,10 @@ link:
 
   # --- relatedness gate (priority ii, 2026-09-21) ---
   # scripts/gate_links.py judges every link with eval.judge and flags failures in
-  # links.jsonl; load_links(gated=True) drops them. Report: reports/relatedness_<corpus>.md
+  # links.jsonl. `enabled` is what retrieval, the UI and the plots pass to
+  # load_links(gated=...): true drops them, false keeps every link. gate_links.py,
+  # negative_control.py and the UI's verdict read always load raw (gated=False).
+  # It only changes a corpus that was judged. Report: reports/relatedness_<corpus>.md
   relatedness:
     enabled: true
     runs: 3

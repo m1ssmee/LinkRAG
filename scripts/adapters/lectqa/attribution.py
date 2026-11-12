@@ -73,8 +73,7 @@ def attribution(ids: list[str], cfg: dict, stored: Path, out: Path, *, max_cost:
         return 0
     if est > max_cost:
         raise SystemExit(f"estimated ${est:.2f} exceeds --max-cost {max_cost}; nothing sent")
-    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / f"{llm['model']}-open",
-                                max_cost_usd=max_cost, price=price)
+    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / f"{llm['model']}-open")
 
     def answer_one(task):
         j, mode, rep = task

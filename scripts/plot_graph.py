@@ -46,7 +46,8 @@ def main(argv: list[str] | None = None) -> int:
     links = load_links(args.links or cfg["link"]["align"]["links_path"],
                        expect_manifest=(load_manifest(
                            Path(args.index or cfg["index"]["store_dir"]).parent
-                           / MANIFEST_NAME) or {}).get("hash"))
+                           / MANIFEST_NAME) or {}).get("hash"),
+                       gated=cfg["link"]["relatedness"]["enabled"])
     graph = build_graph(list(index.units), links)
 
     if args.unit not in graph:

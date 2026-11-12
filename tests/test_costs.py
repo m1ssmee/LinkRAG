@@ -98,7 +98,7 @@ def test_ledger_accumulates_and_footer_mentions_unpriced(tmp_path):
     assert len(ledger.read_text().splitlines()) == 3
 
 
-def test_cache_only_never_calls_and_cost_cap_stops(tmp_path):
+def test_cache_only_never_calls(tmp_path):
     from linkrag.costs import CacheMiss
     import pytest
     calls = {"n": 0}
@@ -111,12 +111,6 @@ def test_cache_only_never_calls_and_cost_cap_stops(tmp_path):
     with pytest.raises(CacheMiss):
         ro("s", "u")
     assert calls["n"] == 0
-    capped = cached_completer(inner, tmp_path, max_cost_usd=1.5, price={"input_per_m": 2.5, "output_per_m": 0})
-    capped("s", "u1")                       # $1.00 spent
-    capped("s", "u2")                       # $2.00 spent -> next call refused
-    with pytest.raises(RuntimeError, match="cost cap"):
-        capped("s", "u3")
-    assert calls["n"] == 2
 
 
 def test_spend_guard_zero_cost_mode():

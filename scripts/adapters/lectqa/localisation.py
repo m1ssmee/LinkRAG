@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 from linkrag.core import EvidenceUnit, Location
-from linkrag.costs import CacheMiss, cached_completer, price_for, record_run
+from linkrag.costs import CacheMiss, cached_completer, record_run
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, build_index, default_encoder
 from linkrag.link.align import load_links
@@ -26,7 +26,7 @@ def lectqa_link(link_types) -> dict:
 
 
 def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index", label: str = "",
-             cache_only: bool = True, max_cost: float = 1.0,
+             cache_only: bool = True,
              modes: tuple[str, ...] = ("baseline", "linkrag", "iterative", "linkrag_iter"),
              link_types: tuple[str, ...] | None = ("audio_slide",)) -> tuple[list[dict], dict]:
     """Temporal localisation: does a retrieved unit overlap the gold interval? No answerer.
@@ -37,8 +37,7 @@ def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index"
     qa = load_qa()
     llm = cfg["models"]["llm"]
     complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / str(llm.get("model")),
-                                cache_only=cache_only, max_cost_usd=max_cost,
-                                price=price_for(str(llm.get("model")), cfg["models"].get("pricing")))
+                                cache_only=cache_only)
     skipped = 0
     encoder = default_encoder(cfg["models"]["embedding"], cfg["device"], cfg["index"]["normalize_embeddings"])
     encoder([""])
@@ -53,7 +52,8 @@ def localise(ids: list[str], cfg: dict, dcfg: dict, *, index_name: str = "index"
         index = Index.load(index_dir)
         units = list(index.units)
         links_file = index_dir / "links.jsonl"            # an index with its own linking layer
-        graph = build_graph(units, load_links(links_file) if links_file.exists() else temporal_links(units))
+        graph = build_graph(units, load_links(links_file, gated=cfg["link"]["relatedness"]["enabled"])
+                            if links_file.exists() else temporal_links(units))
         for q in qa.get(vid, []):
             gi, why = gold_interval(vid, q)
             excluded[why] += 1
@@ -131,12 +131,12 @@ def rebuild_fixed_index(vid: str, cfg: dict, dcfg: dict) -> tuple[float, float]:
     return mid_sentence(sent_buckets), mid_sentence(fixed)
 
 
-def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = True, max_cost: float = 1.0) -> int:
+def v2(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, cache_only: bool = True) -> int:
     import statistics as st
     ids = [v for v in ids if (PROCESSED / v / "index").exists()]
-    rows_sent, u1 = localise(ids, cfg, dcfg, label="sentence", cache_only=cache_only, max_cost=max_cost)
+    rows_sent, u1 = localise(ids, cfg, dcfg, label="sentence", cache_only=cache_only)
     rates = [rebuild_fixed_index(v, cfg, dcfg) for v in ids]
-    rows_fixed, u2 = localise(ids, cfg, dcfg, index_name="index_fixed", label="fixed", cache_only=cache_only, max_cost=max_cost)
+    rows_fixed, u2 = localise(ids, cfg, dcfg, index_name="index_fixed", label="fixed", cache_only=cache_only)
     n_q = len({(r["vid"], r["kind"], r["level"]) for r in rows_sent}) and len(rows_sent) // 8
     L = [f"# LectQA-Vid — second pass ({len(ids)}/100 videos, {n_q} QA pairs)", "",
          f"Subset: the {len(ids)} of the first 35 videos whose YouTube links were still available; 7 were not "

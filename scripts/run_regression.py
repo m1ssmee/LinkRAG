@@ -81,7 +81,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.mode == "linkrag":
         links_path = args.links or cfg["link"]["align"]["links_path"]
         graph = build_graph(list(index.units),
-                            load_links(links_path, expect_manifest=(manifest or {}).get("hash")))
+                            load_links(links_path, expect_manifest=(manifest or {}).get("hash"),
+                                       gated=cfg["link"]["relatedness"]["enabled"]))
     warning = check_gold_manifest(gold_meta.get("manifest_hash"), manifest)
     if warning:
         print(f"WARNING: {warning}")
@@ -166,7 +167,8 @@ def main(argv: list[str] | None = None) -> int:
         "",
         f"mode=`{args.mode}` · index=`{args.index or cfg['index']['store_dir']}` · "
         f"embedder=`{index.embedding_model}` · units={len(index)} · "
-        f"top_k={cfg['retrieve']['top_k']}" + ("  · retrieval only (no LLM)" if args.no_llm else ""),
+        f"top_k={cfg['retrieve']['top_k']}" + ("  · retrieval only (no LLM)" if args.no_llm else "")
+        + ("" if cfg["link"]["relatedness"]["enabled"] else "  · relatedness gate **off** (every stored link kept)"),
         "",
         f"corpus manifest `{(manifest or {}).get('hash', 'none')}` "
         f"({(manifest or {}).get('total_units', '?')} units) · "

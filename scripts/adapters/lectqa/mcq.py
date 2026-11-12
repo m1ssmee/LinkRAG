@@ -78,8 +78,7 @@ def mcq_shuffled(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, max_cost: 
     if est > max_cost:
         raise SystemExit(f"estimated ${est:.3f} exceeds --max-cost {max_cost}; nothing sent")
     from concurrent.futures import ThreadPoolExecutor
-    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / f"{llm['model']}-mcq-shuffled",
-                                max_cost_usd=max_cost, price=price)
+    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / f"{llm['model']}-mcq-shuffled")
 
     def answer(j):
         it = items[j]

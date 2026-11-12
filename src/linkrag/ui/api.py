@@ -589,6 +589,7 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
     sample_bases: dict[bool, dict[str, Any]] = {}     # the sample with / without its notes
     rcfg = cfg["retrieve"]["rerank"]
     k = int(cfg["retrieve"]["linkrag"]["k_final"])
+    gated = cfg["link"]["relatedness"]["enabled"]
     unsure_below_z = float((cfg.get("ui") or {}).get("unsure_below_z", UNSURE_BELOW_Z))
     linked_rows = int((cfg.get("ui") or {}).get("linked_rows", LINKED_ROWS))
     if log.getEffectiveLevel() > logging.INFO:
@@ -731,8 +732,8 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         per-figure cap depend on the texts present) and could change which links exist; on
         pilot01 the links are the frozen ones without the paper, and only scores move. Stored
         relatedness verdicts (the LLM judge on pilot01) carry over to every link judged before,
-        keyed by (src, dst, type), so parallel links share one; load_links(gated=True) drops the
-        failures, as it does for the frozen links, and a link never judged is kept. Built once,
+        keyed by (src, dst, type), so parallel links share one; `link.relatedness.enabled` drops
+        the failures, as it does for the frozen links, and a link never judged is kept. Built once,
         into the standard corpus layout under the workdir, and read from there after."""
         units = [u for u in index.units if kind(u) != "notes"]
         names = {fname(u) for u in units}
@@ -761,8 +762,8 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
             save_links(ungated, folder / "ungated.jsonl", manifest_hash=sub["hash"])
             dump_gates(gates, folder / "gates.json")      # last: it marks the folder complete
         return {"index": Index.load(folder / "index"),
-                "auto": load_links(folder / "links.jsonl", expect_manifest=sub["hash"]),
-                "ungated": load_links(folder / "ungated.jsonl", expect_manifest=sub["hash"]),
+                "auto": load_links(folder / "links.jsonl", expect_manifest=sub["hash"], gated=gated),
+                "ungated": load_links(folder / "ungated.jsonl", expect_manifest=sub["hash"], gated=gated),
                 "gates": read_gates(folder / "gates.json")}
 
     def ensure_sample(job, paper: bool) -> dict[str, Any]:
@@ -777,8 +778,8 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
                         raise ValueError(f"the sample was embedded with {index.embedding_model}; "
                                          f"questions would be embedded with {cfg['models']['embedding']}")
                     manifest = load_manifest(sample / MANIFEST_NAME) or {}
-                    # frozen as stored: gated=True drops per-link relatedness failures, as scripts/ask.py does
-                    frozen = load_links(sample / "links.jsonl", expect_manifest=manifest.get("hash"))
+                    # frozen as stored: the gate drops per-link relatedness failures, as scripts/ask.py does
+                    frozen = load_links(sample / "links.jsonl", expect_manifest=manifest.get("hash"), gated=gated)
                     encoder([""])           # load the embedder now, not on the first question
                 if paper:
                     gates, ready = {}, threading.Event()

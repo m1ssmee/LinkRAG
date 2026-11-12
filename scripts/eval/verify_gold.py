@@ -72,14 +72,11 @@ def main(argv: list[str] | None = None) -> int:
     jcfg = cfg.get("eval", {}).get("judge") or llm
     if jcfg.get("model") == llm.get("model"):
         print("WARNING: eval.judge is the same model as models.llm -- self-grading is lenient")
-    from linkrag.costs import price_for
     complete = cached_completer(http_completer(llm), Path(args.cache) / mhash / str(llm.get("model")),
-                                max_cost_usd=args.max_cost, cache_only=args.answerer_cache_only,
-                                price=price_for(str(llm.get("model")), cfg["models"].get("pricing")))
+                                cache_only=args.answerer_cache_only)
     ent = entailment_opts(cfg, args.entailment)
     judge = cached_completer(judge_completer(cfg, ent["backend"]), Path(args.cache) / mhash / str(jcfg.get("model")),
-                             max_cost_usd=args.max_cost, cache_only=args.judge_cache_only,
-                             price=price_for(str(jcfg.get("model")), cfg["models"].get("pricing")))
+                             cache_only=args.judge_cache_only)
     deck_files = {Path(u.source_file).name for u in index.units if u.metadata.get("slide_deck")}
     print(f"{len(rows)} questions · corpus {mhash} ({len(index)} units) · deck files {sorted(deck_files)}")
     print(f"answerer {llm.get('model')} · judge {jcfg.get('model')} @ temperature={jcfg.get('temperature')} "

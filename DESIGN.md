@@ -531,7 +531,7 @@ the previous behaviour, and each was applied once, before re-measuring.
 | **Cost accounting** | `linkrag.costs`, `reports/llm_ledger.jsonl` | Every LLM-touching run prints per-run and cumulative spend; exact tokens from `usage`, cache replays free, backfilled rows flagged *estimated*. |
 | **Colab backend for Phase 8** | backend `colab` (`LINKRAG_LLM_BACKEND` / `LINKRAG_JUDGE_BACKEND`), URL from `LINKRAG_COLAB_BASE_URL` | Reported Phase 8 numbers come from an open model served from Colab (Ollama/vLLM) on the same code path. `notebooks/colab_serve.ipynb` serves it; as judge only after `scripts/eval/judge_agreement.py --judge colab` has measured it. Setup in `scripts/README.md`. |
 | **Dataset intake** | `scripts/dataset/candidate.py`, `dataset.intake` | A candidate lecture is measured before it is ingested for real; deck→transcript ≥ 0.65 rejects. Procedure in `scripts/dataset/README.md`. |
-| **Relatedness gate (links)** | `link.relatedness.enabled`, `load_links(gated=...)` | Structural links are judged for shared content before they enter the graph; the per-type pass rate is the signal-strength number. Found the deictic file/page bug. |
+| **Relatedness gate (links)** | `link.relatedness.enabled`, `load_links(gated=...)` | Structural links are judged for shared content before they enter the graph; the per-type pass rate is the signal-strength number. Found the deictic file/page bug. *Corrected 2026-11-07: nothing read `link.relatedness.enabled` from 2026-09-21 until this date, so setting it `false` changed nothing. It now reaches `load_links(gated=...)` in retrieval, the UI and the plots; `gate_links.py`, `negative_control.py` and the UI's verdict read load raw. It only changes a corpus that `gate_links.py` has judged (pilot01, pilot01-w1), so on T1 and T2 it is not an ablation.* |
 | **Relatedness gate (file pairs)** | `align.relatedness_z` (1.27; 2.0 when this row was written, set to 1.27 from `mavils_gate_v2.md`, finding 7) | Before any cross-file link is emitted, the penalised DP objective must beat 5 shuffled-slide-order alignments by z std devs; cross-document semantic figure_text uses a word-shuffle null. Negative control (pilot01 audio × unrelated deck): 0 cross-file links; false-rejection on 20 related MaViLS pairs: 15 % at 30 s windows, 40 % at sentence level (`reports/relatedness_gate.md`). Unrelated pairs fall back to plain hybrid retrieval. |
 | **Sampled redundancy (2026-09-23)** | `redundancy.py --sample N`, `dataset.intake.redundancy_sample` (0 = census), `sample_seed` | Redundancy is an estimate for a gate. N sentences per direction, stratified by reading position, fixed recorded seed; each fraction gets a Wilson 95 % CI. **Rule:** KEEP if the CI's upper bound of deck→transcript < 0.65, REJECT if its lower bound > 0.65, otherwise BORDERLINE (exit 3) and the census decides. On pilot01's stored LLM verdicts all four full-run fractions lie inside the sampled CIs at N = 150 and at N = 50; a real N = 150 run (cache replay, $0) reproduced the simulated counts exactly. N = 150 saves only 8 % of judge calls on pilot01 (15 % on pilot01-w1) because a deck has ~52 sentences; N = 50 saves 54–58 % and still decides both (deck→transcript CI lower bound 83.8 % / 76.2 %). Evidence is two lectures, replayed — direction only. |
 
@@ -543,8 +543,10 @@ tier, and nothing bills without an explicit budget.
 - **`--max-cost` is required** on every batch script (`verify_gold`, `compare_retrieval`,
   `run_regression`, `redundancy`, `candidate`, `propose_questions`, `lectqa_vid`,
   `gate_links`, `judge_agreement`). `0` allows only cache replays and free backends. The
-  spend guard prices each request before sending it and refuses anything that could
-  exceed the budget.
+  spend guard (`SpendGuard`, the one budget check, inside `http_completer`) prices each
+  request before sending it and refuses anything that could exceed the budget. An
+  open-ended run it stops writes `*_partial` files marked not reportable and replaces
+  no complete report.
 - **Judge:** gpt-4.1-mini (`eval.judge`), the model behind the stored verdicts.
 - **Batch answerer:** a different cheap model (`gpt-5.4-mini-2026-03-17`, verified on this account's model list 2026-09-23). It must not be the judge
   (*Separate judge*).

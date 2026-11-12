@@ -3,11 +3,18 @@ failures; pass rates sum per type."""
 
 from __future__ import annotations
 
+import ast
 import json
+from pathlib import Path
+
+import pytest
 
 from linkrag.core import EvidenceUnit, Link, Location
 from linkrag.link.align import load_links, save_links
 from linkrag.link.relatedness import apply_verdicts, gate_links, pass_rates
+
+ROOT = Path(__file__).resolve().parents[1]
+PILOT_LINKS = ROOT / "data" / "processed" / "links.jsonl"
 
 
 def _u(uid, modality, content):
@@ -36,3 +43,19 @@ def test_gate_flags_and_load_drops(tmp_path):
 def test_ungated_file_loads_whole(tmp_path):
     save_links([Link("a", "b", "audio_slide", 0.5)], tmp_path / "l.jsonl", manifest_hash="h")
     assert len(load_links(tmp_path / "l.jsonl", "h")) == 1 and load_links.last_dropped == 0
+
+
+def test_every_load_states_the_gate():
+    """`link.relatedness.enabled` reaches a load only through `gated=`: a call that leaves it
+    out would ignore the switch."""
+    for path in [*(ROOT / "scripts").rglob("*.py"), *(ROOT / "src").rglob("*.py")]:
+        for node in ast.walk(ast.parse(path.read_text())):
+            if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "load_links":
+                gated = [k.value for k in node.keywords if k.arg == "gated"]
+                assert gated and getattr(gated[0], "value", None) is not True, f"{path}:{node.lineno}"
+
+
+@pytest.mark.skipif(not PILOT_LINKS.exists(), reason="pilot01's links are not tracked")
+@pytest.mark.parametrize("enabled, kept", [(True, 279), (False, 311)])
+def test_the_switch_on_pilot01(enabled, kept):
+    assert len(load_links(PILOT_LINKS, gated=enabled)) == kept      # 32 of 311 failed the judge

@@ -48,8 +48,7 @@ class CacheMiss(RuntimeError):
     """Raised by a cache-only completer when a prompt has never been answered."""
 
 
-def cached_completer(inner: Completer, cache_dir: Path, *, cache_only: bool = False,
-                     max_cost_usd: float | None = None, price: dict[str, float] | None = None) -> Completer:
+def cached_completer(inner: Completer, cache_dir: Path, *, cache_only: bool = False) -> Completer:
     """Disk cache keyed by (system, user, n-th identical call). Thread-safe.
 
     The n-th index keeps repeated judge runs distinct calls while letting an
@@ -63,10 +62,8 @@ def cached_completer(inner: Completer, cache_dir: Path, *, cache_only: bool = Fa
     are estimated and counted under `estimated_tokens`.
 
     `cache_only=True` never calls the model: a miss raises `CacheMiss`, so a report
-    can be filled from what was already paid for and nothing else.
-    `max_cost_usd` (with `price`) stops the run with a RuntimeError once the
-    uncached spend of this process crosses the cap -- the guard that was missing
-    when a batch cost more than it should have (2026-09-22).
+    can be filled from what was already paid for and nothing else. The budget is
+    `SpendGuard`'s, inside the `inner` that `http_completer` builds.
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
     seen: Counter = Counter()
@@ -105,11 +102,6 @@ def cached_completer(inner: Completer, cache_dir: Path, *, cache_only: bool = Fa
             return text
         if cache_only:
             raise CacheMiss(f"no cached reply for this prompt ({base[:12]}…); cache-only mode makes no calls")
-        if max_cost_usd is not None:
-            spent = usage_cost(usage, price) or 0.0
-            if spent >= max_cost_usd:
-                raise RuntimeError(f"cost cap reached: ${spent:.2f} uncached spend >= max_cost_usd ${max_cost_usd:.2f}; "
-                                   f"raise --max-cost to continue (everything so far is cached)")
         text = inner(system, user)
         last = getattr(inner, "last_usage", None) or {}
         path.write_text(text)

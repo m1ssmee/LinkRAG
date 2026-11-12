@@ -257,6 +257,19 @@ def _frozen_sample(root: Path, stub_encoder) -> Path:
     return processed
 
 
+@pytest.mark.parametrize("enabled, kept", [(True, 2), (False, 3)])
+def test_relatedness_enabled_reaches_the_sample_load(tmp_path, stub_encoder, enabled, kept):
+    processed = _frozen_sample(tmp_path / "pilot", stub_encoder)
+    cfg = _cfg()
+    cfg["link"]["relatedness"]["enabled"] = enabled
+    app = api.create_app(cfg, workdir=tmp_path / "work", sample=processed, answerer="mock",
+                         encoder=stub_encoder(SLIDES + SPEECH))
+    client = TestClient(app, headers={"X-Session": SID})
+    with client.stream("POST", "/sample?paper=true") as r:
+        assert _stream(r)[-1] == {"status": "ready"}
+    assert client.get("/stats").json()["by_type"] == {"audio_slide": kept}
+
+
 def test_sample_loads_recording_and_deck_by_default_and_the_paper_on_request(tmp_path, stub_encoder, monkeypatch):
     processed = _frozen_sample(tmp_path / "pilot", stub_encoder)
     before = sorted((p.relative_to(processed), p.stat().st_mtime) for p in processed.rglob("*"))

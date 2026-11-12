@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from linkrag.core import EvidenceUnit, Location
-from linkrag.costs import cached_completer, price_for, record_run, usage_cost
+from linkrag.costs import BillingRefused, cached_completer, price_for, record_run, usage_cost
 from linkrag.generate.answer import http_completer
 from linkrag.index import Index, default_encoder
 
@@ -196,8 +196,7 @@ def open_modes(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, max_cost: fl
     if est > max_cost:
         raise SystemExit(f"estimated ${est:.2f} exceeds --max-cost {max_cost}; nothing sent (lower --rest)")
 
-    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / f"{llm['model']}-open",
-                                max_cost_usd=max_cost, price=price)
+    complete = cached_completer(http_completer(llm), PROCESSED / "llm_cache" / f"{llm['model']}-open")
     lock = threading.Lock()
 
     def locked(texts):
@@ -207,9 +206,7 @@ def open_modes(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, max_cost: fl
     def one(task):
         try:
             return answer_one(task)
-        except RuntimeError as exc:                   # the cost cap: report what ran, never exceed it
-            if "cost cap" not in str(exc):
-                raise
+        except BillingRefused:                        # the budget is spent: report what ran
             return None, None
 
     def answer_one(task):
@@ -243,12 +240,18 @@ def open_modes(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, max_cost: fl
                 evs.append(ev)
             if n % 300 == 0:
                 print(f"  {n}/{len(tasks)} answered · ${usage_cost(complete.usage, price) or 0:.3f}")
-    EVIDENCE.write_text("\n".join(json.dumps(e) for e in evs) + "\n")
+    notice = ""
+    if len(rows) < len(tasks):            # a stopped run never replaces a complete report or its evidence
+        out = out.with_name(f"{out.stem}_partial{out.suffix}")
+        notice = (f"**Not reportable: stopped at the budget.** {len(rows)} of {len(tasks)} answers ran; the spend "
+                  "guard refused the rest. Repeats below are unequal and the titles describe the planned run.")
+    else:
+        EVIDENCE.write_text("\n".join(json.dumps(e) for e in evs) + "\n")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.with_suffix(".jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
     return open_report(rows, items, subset, cfg, llm, repeats, out,
                        record_run("scripts/adapters/lectqa_vid.py", "lectqa_vid open-ended baseline/iterative/full_context",
-                                  [(str(llm["model"]), complete.usage)], cfg["models"].get("pricing")))
+                                  [(str(llm["model"]), complete.usage)], cfg["models"].get("pricing")), notice)
 
 
 def faithfulness(cfg: dict, src: Path, out: Path, *, max_cost: float, dry_run: bool, runs: int) -> int:
@@ -287,8 +290,7 @@ def faithfulness(cfg: dict, src: Path, out: Path, *, max_cost: float, dry_run: b
         return 0
     if est_hi > max_cost:
         raise SystemExit(f"upper estimate ${est_hi:.2f} exceeds --max-cost {max_cost}; nothing sent (lower --runs)")
-    complete = cached_completer(http_completer(judge), PROCESSED / "llm_cache" / f"{judge['model']}-faith",
-                                max_cost_usd=max_cost, price=price)
+    complete = cached_completer(http_completer(judge), PROCESSED / "llm_cache" / f"{judge['model']}-faith")
 
     def check(r):
         ans = Answer(answer=r["answer"], claims=[Claim(**c) for c in r["claims"]], raw="")
@@ -334,6 +336,8 @@ METRICS = (("f1", "F1"), ("sim", "Sim"), ("bleu", "BLEU"), ("meteor", "METEOR"),
 
 def paired_cell(diffs) -> str:
     """Mean paired difference and its 95 % bootstrap CI over questions (10,000 resamples, seed 20260923)."""
+    if not diffs:
+        return "—"
     d = np.array(diffs)
     boots = np.random.default_rng(20260923).choice(d, (10000, len(d))).mean(axis=1)
     lo, hi = np.percentile(boots, [2.5, 97.5])
@@ -341,7 +345,7 @@ def paired_cell(diffs) -> str:
 
 
 def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict, llm: dict, repeats: int,
-                out: Path, footer: list[str]) -> int:
+                out: Path, footer: list[str], notice: str = "") -> int:
     import statistics as st
     from linkrag.eval import lectqa_metrics as LM
     score = lambda sel: LM.score_open([r["answer"] for r in sel], [r["ref"] for r in sel], device=cfg["device"])
@@ -349,7 +353,7 @@ def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict
     all_vids = len({r["vid"] for r in rows})
     label = (f"answerer `{llm['model']}` temperature {llm.get('temperature')} (JSON answer with claims, the same "
              f"prompt for every mode) · metrics T1 eqs. 29-35 (`linkrag.eval.lectqa_metrics`), in %")
-    L = ["# LectQA-Vid — open-ended: T1 replica vs iterative vs full context", "",
+    L = ["# LectQA-Vid — open-ended: T1 replica vs iterative vs full context", "", *([notice, ""] if notice else []),
          "Three ways to give the same answerer its context, scored with T1's own metric suite:", "",
          f"- **baseline**: T1's pipeline (§4.2-4.4) replicated. Chunks: whisper sentences merged while cosine > "
          f"{T1['theta_sem']} and gap < {T1['delta_gap']} s, near-duplicates (> {T1['delta_dup']}) dropped, frame OCR "
@@ -368,7 +372,7 @@ def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict
          "without other videos competing for the top-K); Gemini captions (ours: tesseract OCR, mostly "
          "suppressed by their θt rule).", ""]
     rest = len(items) - len(subset)
-    if not any(not r["subset"] for r in rows):
+    if not notice and not any(not r["subset"] for r in rows):
         L += [f"**Scope.** The single run on the other {rest} open-ended questions was not made: the dry run "
               "estimated $7.43 for subset + rest against the item's $3.50 cap, so only the subset ran.", ""]
     tables = [(f"## Subset: {len(subset)} questions (100 per difficulty, seed `{OPEN_SEED}`), {sub_vids} videos, "
@@ -385,7 +389,7 @@ def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict
                 sel = [r for r in sel_rows if r["mode"] == mode and (level == "overall" or r["level"] == level)]
                 if not sel:
                     continue
-                per = [score([r for r in sel if r["rep"] == k]) for k in range(reps)]
+                per = [score(x) for k in range(reps) if (x := [r for r in sel if r["rep"] == k])]
                 cell = lambda key: (f"{100*st.mean(p[key] for p in per):.2f} ± {100*st.pstdev(p[key] for p in per):.2f}"
                                     if reps > 1 else f"{100*per[0][key]:.2f}")
                 abst = sum("not found in the provided material" in r["answer"].lower() or
@@ -409,7 +413,7 @@ def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict
         cells = []
         for level in (*LEVELS, "overall"):
             cells.append(paired_cell([100 * (st.mean(m[a]) - st.mean(m[b])) for (_, lv), m in f1.items()
-                                      if level == "overall" or lv == level]))
+                                      if (level == "overall" or lv == level) and m[a] and m[b]]))
         L.append(f"| {a} − {b} | " + " | ".join(cells) + " |")
     L.append("")
     one = [r for r in rows if r["rep"] == 0]
@@ -421,7 +425,7 @@ def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict
     for name, keep in (("eq. 22 applied (usable gold stamp)", True), ("eq. 22 not applicable", False)):
         qs = {r["qi"] for r in one if r["mode"] == "baseline" and r["oracle"] == keep}
         by = {m: [r for r in one if r["mode"] == m and r["qi"] in qs] for m in OPEN_MODES}
-        if qs:
+        if all(by.values()):
             s, si, sf = score(by["baseline"]), score(by["iterative"]), score(by["full_context"])
             L.append(f"| {name} | {len(qs)} | {100*s['f1']:.2f} | {100*s['sim']:.2f} | "
                      f"{sum(not r['evidence'] for r in by['baseline'])} | {100*si['f1']:.2f} | {100*sf['f1']:.2f} |")

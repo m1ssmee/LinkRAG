@@ -121,7 +121,8 @@ def main(argv: list[str] | None = None) -> int:
     manifest = load_manifest(index_dir.parent / MANIFEST_NAME) or {}
     graph = build_graph(list(index.units),
                         load_links(args.links or cfg["link"]["align"]["links_path"],
-                                   expect_manifest=manifest.get("hash")))
+                                   expect_manifest=manifest.get("hash"),
+                                   gated=cfg["link"]["relatedness"]["enabled"]))
 
     rows = [json.loads(l) for l in Path(args.questions).read_text().splitlines()
             if l.strip() and "_meta" not in l]
@@ -220,7 +221,8 @@ def main(argv: list[str] | None = None) -> int:
           f"model `{llm.get('model')}` temperature={llm.get('temperature')} seed={llm.get('seed')} · "
           f"repeats {args.repeats} for LLM modes · {calls_total} LLM calls · "
           f"expansion `{cfg['retrieve'].get('expansion', 'additive')}` · "
-          f"normalise_seeds `{lcfg.get('normalise_seeds', False)}`", "",
+          f"normalise_seeds `{lcfg.get('normalise_seeds', False)}`"
+          + ("" if cfg["link"]["relatedness"]["enabled"] else " · relatedness gate **off** (every stored link kept)"), "",
           f"| mode | rerank | recall@{k} | precision@{k} | distinct modalities "
           f"| redundancy | runs |", "|---|---|---:|---:|---:|---:|---:|"]
     for mode in modes:
