@@ -37,7 +37,7 @@ The mentor's rule was: report results only on the datasets of the papers we try 
 
 ## 1.5 The headline results, one sentence each
 
-- **LectQA-Vid (T1):** with the same answering model for everyone, our retrieval with one re-query beats our faithful rebuild of T1's pipeline (with its "cheating" timestamp filter switched off) by **+2.00 F1 points, 95 % confidence interval [+0.88, +3.21]** (`results/external/lectqa_attribution.md`).
+- **LectQA-Vid (T1):** with the same answering model for everyone, in a controlled re-implementation, our retrieval with one re-query scores +2.00 F1 points above our rebuild of T1's pipeline (with its "cheating" timestamp filter switched off), 95 % confidence interval [+0.96, +3.11] when whole videos are resampled (`results/external/lectqa_recheck.md`). The re-query is MI-RAG's technique, not ours, and it carries +1.74 of the +2.00.
 - **But:** giving the model the **whole transcript** beats every retrieval method (38.74 F1 against 36.70 for ours), because every LectQA-Vid transcript is short enough to fit in the model's input. This benchmark therefore cannot measure what retrieval is worth.
 - **LectQA-Vid multiple choice:** not a fair test — the correct option is option A in 99.7 % of the published questions, and "pick the longest option" scores 94.4 % without watching anything.
 - **MaViLS (T2):** our slide alignment scores **0.853 against their 0.80** on the same 9 held-out lectures; the difference (+0.055, 95 % CI [−0.050, +0.161]) is inside the noise, so we call it **parity**, not a win.
@@ -435,7 +435,7 @@ The paired differences are what matter. **Paired** means we compare the two mode
 
 | difference | what it isolates | overall |
 |---|---|---:|
-| **ours (with re-query) − replica, eq. 22 off** | ours against T1's pipeline without its oracle | **+2.00 [+0.88, +3.21]** |
+| ours (with re-query) − replica, eq. 22 off | ours against T1's pipeline without its oracle | +2.00 [+0.88, +3.21] |
 | replica (eq. 22 on) − replica, eq. 22 off | T1's time filter | −3.46 [−4.91, −2.12] |
 | ours (no re-query) − replica, eq. 22 off | the two search pipelines alone | +0.27 [−1.13, +1.63] |
 | ours (with re-query) − ours (no re-query) | the re-query | +1.74 [+0.76, +2.75] |
@@ -457,7 +457,7 @@ The paired differences are what matter. **Paired** means we compare the two mode
 1. **T1's time filter reads the gold time stamps** at question time (on 160 of the 300 questions, where the stamp is usable). With it on the replica is 3.46 F1 lower, and 2.93 of that comes from 34 questions it leaves with no context at all, where our rebuild gives a fixed "no evidence" reply. On those 34, the replica scores 1.73 F1 with the filter and 27.63 without it. Elsewhere the filter makes no measurable difference (−0.53, interval includes zero). *Corrected 2026-11-12: this said the filter "costs the replica 3.46 F1".*
 2. **Without the filter, the two search pipelines are level overall** (+0.27, interval includes zero). On very hard questions ours is ahead: +2.10 [+0.48, +3.72].
 3. **The re-query adds +1.74.**
-4. So the fair headline is **+2.00 [+0.88, +3.21]**: ours with the re-query against T1's pipeline without its oracle. By difficulty: simple +2.91 [+0.48, +5.58], hard +1.05 [−0.83, +2.95] (interval includes zero), very hard +2.06 [+0.70, +3.49].
+4. So the comparison to quote is +2.00 [+0.88, +3.21] ([+0.96, +3.11] when whole videos are resampled): ours with the re-query against T1's pipeline without its oracle. It is a controlled re-implementation, not a result over T1's published numbers, and the re-query is MI-RAG's technique. *Corrected 2026-11-12: this called +2.00 "the fair headline", in bold.* By difficulty: simple +2.91 [+0.48, +5.58], hard +1.05 [−0.83, +2.95] (interval includes zero), very hard +2.06 [+0.70, +3.49].
 
 ## 7.5 The full transcript wins, so this benchmark cannot measure retrieval
 
@@ -498,9 +498,9 @@ The largest gap (ours against full context, 1.2 points) is inside the noise (p �
 
 > **If ma'am asks…**
 >
-> **Q: So is your method better than T1's?** A: On the same answerer and questions, ours with the re-query is 2.0 F1 points better than their pipeline without its timestamp oracle, interval +0.9 to +3.2. Without the re-query the two search pipelines are level overall.
+> **Q: So is your method better than T1's?** A: In a controlled re-implementation, on the same answerer and questions, ours with the re-query is 2.0 F1 points above our rebuild of their pipeline without its timestamp oracle, interval +1.0 to +3.1. The re-query is MI-RAG's technique, and without it the two search pipelines are level overall.
 >
-> **Q: Why did you report +5.5 first and then +2.0?** A: The +5.5 compared two whole pipelines, and one of them read gold time stamps. The attribution study split it up; +2.0 is the fair comparison. Both numbers are in the report, with the reason.
+> **Q: Why did you report +5.5 first and then +2.0?** A: The +5.5 compared two whole pipelines, and one of them read gold time stamps. The attribution study split it up; +2.0 is the controlled comparison, and most of it is the re-query. Both numbers are in the report, with the reason.
 >
 > **Q: If the whole transcript wins, what is the point of retrieval?** A: On 2–5 minute videos, none — everything fits. That is why we say LectQA-Vid cannot measure retrieval. It needs long lectures with several files, which the dataset rule did not allow us to add.
 >
@@ -898,7 +898,7 @@ At question time, a hybrid search — meaning plus keywords — finds the best p
 
 **The first paper and its dataset (2.5 minutes).** "The first target is Intra-Video Temporal-Aware RAG, on the LectQA-Vid dataset of 100 short computer-science videos. Their code is not published, so I rebuilt their pipeline from the paper and tested each step. I used one answering model for all methods, on a stratified subset of 300 questions, three repeats each, with their own metrics.
 
-My first result was plus 5.5 F1 over their pipeline. But the two pipelines differed in many ways, so I ran an attribution study. It showed their time filter — equation 22 — reads the annotated time interval of the answer at question time, which a real user does not have. It leaves 34 questions with no context, and the fixed reply there costs their pipeline 2.9 F1 points; elsewhere the filter makes no measurable difference. Without it, the two search pipelines are level overall; my re-query adds 1.7 points; and the fair comparison is plus 2.0, interval 0.9 to 3.2.
+My first result was plus 5.5 F1 over their pipeline. But the two pipelines differed in many ways, so I ran an attribution study. It showed their time filter — equation 22 — reads the annotated time interval of the answer at question time, which a real user does not have. It leaves 34 questions with no context, and the fixed reply there costs their pipeline 2.9 F1 points; elsewhere the filter makes no measurable difference. Without it, the two search pipelines are level overall; the re-query, which is MI-RAG's technique, adds 1.7 points; and the controlled comparison is plus 2.0, interval 1.0 to 3.1.
 
 The most important finding is that giving the model the whole transcript beats every retrieval method. Every transcript fits easily in the model's input, so retrieval can only lose information. LectQA-Vid simply cannot measure the value of retrieval. My audit found more: the correct multiple-choice option is A in 99.7 % of questions and usually the longest option, so a rule that picks the longest option scores 94 % without watching anything; and only about 56 % of the time stamps are usable."
 
@@ -910,7 +910,7 @@ The most important finding is that giving the model the whole transcript beats e
 
 > **If ma'am asks…**
 >
-> **Q: Can you say it in one sentence?** A: "I built a lecture question-answering system that links speech, slides and papers, compared it fairly with a rebuilt published pipeline (+2.0 F1), matched a published slide aligner (0.853 vs 0.80, parity), and showed that one benchmark cannot measure retrieval at all."
+> **Q: Can you say it in one sentence?** A: "I built a lecture question-answering system that links speech, slides and papers, compared it with a rebuilt published pipeline in a controlled re-implementation (+2.0 F1, mostly from a re-query that is MI-RAG's technique), matched a published slide aligner (0.853 vs 0.80, parity), and showed that one benchmark cannot measure retrieval at all."
 >
 > **Q: What would you do with more time?** A: Test the linking layer where it should matter: long lectures with several files, where the whole transcript does not fit. That needs a benchmark beyond the two the dataset rule allowed.
 >

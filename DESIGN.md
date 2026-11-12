@@ -595,9 +595,11 @@ What the reported tables support; each item names its table, and nothing here re
 link-following retrieval, complementarity-aware reranking). Those are listed below as system
 components, because no reported table shows a benefit from them.*
 
-1. **Replication of T1 and a corrected comparison on LectQA-Vid**
-   (`results/external/lectqa_open_modes.md`, `lectqa_attribution.md`). T1's pipeline (§4.2–4.4)
-   replicated with the values their Table 3 gives (M, L and the merge gap are ours); one answerer
+1. **Controlled re-implementation of T1 and a corrected comparison on LectQA-Vid**
+   (`results/external/lectqa_open_modes.md`, `lectqa_attribution.md`). *Until 2026-11-12 this was
+   titled "Replication of T1": their code is unpublished, so it is our re-implementation, and the
+   re-query in our pipeline is MI-RAG's technique, not ours.* T1's pipeline (§4.2–4.4)
+   rebuilt with the values their Table 3 gives (M, L and the merge gap are ours); one answerer
    (gpt-5.4-mini-2026-03-17) for every mode; a 300-question stratified subset, 93 videos,
    3 repeats, T1's metrics. Overall token F1: replica 31.23 ± 0.06, replica without eq. 22
    34.69 ± 0.04, our RRF retrieval 34.96 ± 0.31, RRF with one re-query 36.70 ± 0.16, full

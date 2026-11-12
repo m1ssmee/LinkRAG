@@ -17,7 +17,7 @@ Draft of 2026-09-25, revised 2026-09-27 with the attribution ablation (`lectqa_a
 
 | paper | dataset | their number | our number | protocol | verdict |
 |---|---|---|---|---|---|
-| T1, Intra-Video Temporal-Aware RAG | LectQA-Vid, open-ended | Table 4 overall F1 23.52 (their unnamed answerer, not comparable with ours) | replica of their pipeline **31.23 ± 0.06**, and **34.69 ± 0.04** without its eq. 22 filter; ours: RRF **34.96 ± 0.31**, RRF + one re-query **36.70 ± 0.16**; full transcript **38.74 ± 0.23** | one answerer for every mode; their metrics | **Ours (RRF + re-query) exceeds T1's pipeline without its oracle filter by +2.00 F1, 95 % CI [+0.88, +3.21].** Eq. 22 reads the gold timestamps at inference (160 of 300 questions) and leaves 34 questions with no context; our fixed reply there costs the replica 2.93 F1 [1.45, 4.56], and the filter elsewhere has no measurable effect (−0.53 [−1.30, +0.20]); without it the two retrieval pipelines are level (RRF − replica +0.27 [−0.90, +1.48]); the re-query adds +1.74 [+0.77, +2.75] (by video, §1c). *Corrected 2026-11-12 from "costs the replica 3.46 F1 [2.12, 4.91]".* **The benchmark cannot measure retrieval value**: the full transcript beats every mode (+2.04 [+1.14, +2.99] over ours), and every transcript fits a 2,048-token window. |
+| T1, Intra-Video Temporal-Aware RAG | LectQA-Vid, open-ended | Table 4 overall F1 23.52 (their unnamed answerer, not comparable with ours) | replica of their pipeline **31.23 ± 0.06**, and **34.69 ± 0.04** without its eq. 22 filter; ours: RRF **34.96 ± 0.31**, RRF + one re-query **36.70 ± 0.16**; full transcript **38.74 ± 0.23** | one answerer for every mode; their metrics | In a controlled re-implementation, RRF with one re-query (MI-RAG's technique) exceeds our replica of T1's pipeline without its oracle filter by +2.00 F1, 95 % CI [+0.96, +3.11] by video. *Corrected 2026-11-12: the +2.00 was set in bold as a result over T1; the interval was [+0.88, +3.21] by question.* Eq. 22 reads the gold timestamps at inference (160 of 300 questions) and leaves 34 questions with no context; our fixed reply there costs the replica 2.93 F1 [1.45, 4.56], and the filter elsewhere has no measurable effect (−0.53 [−1.30, +0.20]); without it the two retrieval pipelines are level (RRF − replica +0.27 [−0.90, +1.48]); the re-query adds +1.74 [+0.77, +2.75] (by video, §1c). *Corrected 2026-11-12 from "costs the replica 3.46 F1 [2.12, 4.91]".* **The benchmark cannot measure retrieval value**: the full transcript beats every mode (+2.04 [+1.14, +2.99] over ours), and every transcript fits a 2,048-token window. |
 | T1 | LectQA-Vid, MCQ | Table 5 accuracy 53.43 | 95.33 with shuffled options | baseline retrieval, one run | **Not a retrieval measure.** A no-video "pick the longest option" rule scores 94.4. |
 | T2, MaViLS | MaViLS, 9 test lectures with video | all-features **0.80** on the same lectures (0.82 is their 20-lecture average) | **0.853** (image + frame OCR + speech-to-slide text, frames at each sentence's timestamp) | their F1, sentence granularity; test half run once per round | **Parity**: +0.055, 95 % CI [−0.050, +0.161] |
 
@@ -38,7 +38,7 @@ Draft of 2026-09-25, revised 2026-09-27 with the attribution ablation (`lectqa_a
   - The open-ended comparison runs on a stratified 300-question subset.
   - The single run on the other 1,118 open-ended questions was not made: the dry run estimated $7.43 against the item's $3.50 cap (`lectqa_open_modes.md`, "Scope").
 - **The baseline is our replica of their pipeline, not their code**, which is unpublished. The choices the paper leaves open are ours (§1b).
-- **Their eq. 22 filter reads the gold timestamps at inference**, an oracle, on the 160 of 300 subset questions with a usable stamp. Our headline comparison is therefore against the replica with eq. 22 off (§1c, Table 1c-iii).
+- **Their eq. 22 filter reads the gold timestamps at inference**, an oracle, on the 160 of 300 subset questions with a usable stamp. The comparison we report is therefore against the replica with eq. 22 off (§1c, Table 1c-iii).
 - **Faithfulness uses one judge run per check**, so it is *direction only*. It was corrected twice on 2026-09-24 (§1f).
 
 ### 1a. Their published numbers
@@ -150,7 +150,7 @@ Paired differences, token F1 points, 95 % bootstrap CI over questions (as Table 
 
 | difference | what it isolates | simple | hard | very hard | overall |
 |---|---|---:|---:|---:|---:|
-| **ours (RRF + re-query) − replica, eq. 22 off** | **ours vs T1's pipeline without its oracle** | +2.91 [+0.48, +5.58] | +1.05 [−0.83, +2.95] | +2.06 [+0.70, +3.49] | **+2.00 [+0.88, +3.21]** |
+| ours (RRF + re-query) − replica, eq. 22 off | ours vs T1's pipeline without its oracle | +2.91 [+0.48, +5.58] | +1.05 [−0.83, +2.95] | +2.06 [+0.70, +3.49] | +2.00 [+0.88, +3.21] |
 | replica (eq. 22 on) − replica, eq. 22 off | the eq. 22 filter | −2.05 [−4.31, −0.03] | −7.15 [−10.48, −4.17] | −1.19 [−2.54, −0.00] | −3.46 [−4.91, −2.12] |
 | RRF − replica, eq. 22 off | the two retrieval pipelines, neither reading timestamps | −0.75 [−3.96, +2.40] | −0.55 [−2.75, +1.52] | +2.10 [+0.48, +3.72] | +0.27 [−1.13, +1.63] |
 | RRF + re-query − RRF | the re-query (same index, same top-4) | +3.66 [+1.69, +5.92] | +1.60 [−0.02, +3.41] | −0.04 [−1.29, +1.15] | +1.74 [+0.76, +2.75] |
@@ -174,7 +174,7 @@ So the −3.46 row of Table 1c-iii is mostly the reply on empty windows, not the
 
 The caveats above apply to both sentences.
 
-1. **On the 300-question stratified subset of LectQA-Vid, our retrieval with one re-query beats our replication of T1's pipeline without its oracle filter by +2.00 token-F1 points (95 % CI +0.88 to +3.21)** (simple +2.91, hard +1.05 with a CI that includes zero, very hard +2.06; Table 1c-iii).
+1. On the 300-question stratified subset of LectQA-Vid, in a controlled re-implementation, RRF with one re-query scores +2.00 token-F1 points above our replica of T1's pipeline without its oracle filter (95 % CI +0.96 to +3.11, resampled by video) (simple +2.91, hard +1.05 with a CI that includes zero, very hard +2.06; Table 1c-iii). The re-query is MI-RAG's technique, not ours; it carries +1.74 of the +2.00. *Corrected 2026-11-12: the +2.00 was set in bold as a result over T1; the interval was [+0.88, +3.21] by question.*
    - T1's eq. 22 filter reads the gold timestamps at inference (160 of 300 questions). It leaves 34 questions with no context, and the fixed reply there accounts for 2.93 [1.45, 4.56] of the replica's 3.46-point loss (*corrected 2026-11-12 from "It costs the replica 3.46 F1 [2.12, 4.91]"*), so the +5.47 [+3.80, +7.24] against the replica *with* eq. 22 (Table 1c-ii) overstates the retrieval comparison.
    - Without eq. 22, the two retrieval pipelines are level overall (RRF − replica +0.27 [−1.13, +1.63]; very hard +2.10 [+0.48, +3.72]). The re-query adds +1.74 [+0.76, +2.75].
 2. **Giving the answerer the whole transcript beats every retrieval mode** (+2.04 [+1.14, +2.99] over ours, +7.51 [+5.72, +9.40] over the replica), **so LectQA-Vid cannot measure the value of retrieval.**
