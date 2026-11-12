@@ -8,6 +8,7 @@ point; the steps live in `scripts/adapters/lectqa/`:
   metrics        run: T1's metric suite on stored answers; audit (LLM-free)
   localisation   hit@k / IoU against the gold interval; v2 segmentation ablation
   frameslides    frame-derived slide units and links
+  pooled         every video in one corpus: retrieval when the video is not given (exploratory)
   mcq            MCQ with options shuffled under a recorded seed
   open_ended     T1 replica vs iterative vs full context; faithfulness
 
@@ -42,6 +43,7 @@ from lectqa.localisation import v2  # noqa: E402
 from lectqa.mcq import mcq_shuffled  # noqa: E402
 from lectqa.metrics import audit, run  # noqa: E402
 from lectqa.open_ended import faithfulness, open_modes, open_rerender  # noqa: E402
+from lectqa.pooled import pooled  # noqa: E402
 from lectqa.transcription import prepare  # noqa: E402
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging  # noqa: E402
 
@@ -49,13 +51,14 @@ from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setu
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("step", choices=["fetch", "prepare", "run", "v2", "frameslides", "coverage", "audit", "mcq",
-                                     "open", "faith", "attribution"])
+                                     "open", "faith", "attribution", "pooled"])
     ap.add_argument("--runs", type=int, default=3, help="faith: judge runs per check (majority)")
     ap.add_argument("--rest", type=int, default=None, help="open: how many non-subset questions (seeded order)")
     ap.add_argument("--report-only", action="store_true", help="open: re-render the report from the stored answers")
     ap.add_argument("--dry-run", action="store_true", help="mcq/open: build prompts and estimate cost only")
     ap.add_argument("--videos", type=int, default=None, help="first N video ids")
     ap.add_argument("--only", default=None, help="comma-separated video ids")
+    ap.add_argument("--cells", default=None, help="pooled: recompute only these method labels, separated by ;")
     ap.add_argument("--config", default="configs/default.yaml")
     ap.add_argument("--modes", default="baseline,linkrag")
     ap.add_argument("--repeats", type=int, default=1)
@@ -106,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
         return coverage(external / "lectqa_coverage.md")
     if args.step == "frameslides":
         return frameslides(ids, cfg, dcfg, external / "lectqa_frameslides.md")
+    if args.step == "pooled":
+        return pooled(ids, cfg, external / "lectqa_pooled.md", only=args.cells)
     if args.step == "v2":
         return v2(ids, cfg, dcfg, external / "lectqa_v2.md", cache_only=not args.allow_new_calls)
     return run(ids, cfg, dcfg, args.modes.split(","), Path(args.out), args.repeats, cache_only=args.cache_only)
