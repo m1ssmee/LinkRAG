@@ -40,11 +40,11 @@ that aim yet (see below). Everything runs CPU-first; a GPU only makes it faster.
    the context modes' unsupported-claim rates are 3.7 / 3.1 / 4.3 %, one judge run, direction
    only (`lectqa_faithfulness.md`).
 
-The Evidence Linking Layer, link-following retrieval and complementarity reranking are system
-components with development-only evidence (pilot01, never reported). LectQA-Vid cannot show
-them: one video per question and every transcript fits in the context. They need a cross-file
-benchmark whose material does not fit in the context, which the dataset policy did not permit
-(`DESIGN.md` → *Contributions*).
+**Limitation.** The Evidence Linking Layer, link-following retrieval and complementarity reranking
+are system components, not results: no link variant measurably improved localisation on LectQA-Vid,
+and cross-file links cannot be tested on LectQA-Vid or MaViLS, because neither has evidence that
+spans files (`DESIGN.md` → *Contributions*). *Replaced 2026-11-12: this paragraph said the
+components have "development-only evidence (pilot01, never reported)".*
 
 ## How this differs from existing work
 
@@ -90,8 +90,8 @@ src/linkrag/
   core.py       EvidenceUnit / Link / Location / Mode  — the only currency between stages
   ingest/       PDF, DOCX, image and audio  -> EvidenceUnits
   index/        bge-m3 embeddings, exact numpy dense search + BM25, persisted
-  link/         Evidence Linking Layer                      [novel 1]
-  retrieve/     baseline.py: RRF(dense, BM25) top-k. Link-following + complementarity  [novel 2, 3]
+  link/         Evidence Linking Layer
+  retrieve/     baseline.py: RRF(dense, BM25) top-k. Link-following + complementarity
   generate/     cited answer synthesis (Ollama / OpenAI-compatible)
   eval/         metrics, both modes, ablations
   ui/           Streamlit chat + evidence panel

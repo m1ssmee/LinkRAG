@@ -643,15 +643,14 @@ rule*) and tested, but no reported table shows a benefit from them:
 - **Complementarity-aware reranking** (`src/linkrag/retrieve/rerank.py`): the evidence set scored
   for modality coverage and link structure.
 
-On LectQA-Vid localisation the `linkrag` mode equals `baseline` by construction, since one video
-has no deck or paper to link to (finding 8, `lectqa_v2.md`); frame-derived slides and their links
-gave no gain (hit@1 43.2 % with them vs 45.6 % without, finding 12, `lectqa_frameslides.md`); and
-links + reranker on rank-normalised scores lowered hit@3 (63.7 % against 68.7 % plain, finding 12;
-−5.01 pp [−7.60, −2.24] by video, `lectqa_recheck.md`). *Corrected 2026-11-12: this quoted
-finding 8's 68.1 → 55.4 %, a raw-score reranker row that is not a valid estimate.* Their only positive evidence is on pilot01, a development lecture that
-is never reported (n = 25, 4 cross-modal; findings 1–5). Measuring them needs a benchmark whose
-evidence spans files and does not fit in the answerer's context; the dataset policy (results only
-on the two target papers' datasets) did not permit building one.
+**Limitation.** No link variant measurably improved localisation on LectQA-Vid (temporal links,
+finding 8; frame-derived slide links, finding 12; links with the reranker on rank-normalised scores,
+hit@3 63.7 % against 68.7 % plain, finding 12 and `lectqa_recheck.md`), and cross-file links cannot
+be tested on LectQA-Vid or MaViLS, because neither has evidence that spans files.
+*Replaced 2026-11-12: this paragraph also said "Their only positive evidence is on pilot01, a
+development lecture that is never reported (n = 25, 4 cross-modal; findings 1–5)" and that measuring
+them "needs a benchmark whose evidence spans files and does not fit in the answerer's context"; and,
+until the correction of the same date, quoted finding 8's raw-score 68.1 → 55.4 %.*
 
 ## Coding conventions
 
