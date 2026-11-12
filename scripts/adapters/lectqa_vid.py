@@ -9,6 +9,7 @@ point; the steps live in `scripts/adapters/lectqa/`:
   localisation   hit@k / IoU against the gold interval; v2 segmentation ablation
   frameslides    frame-derived slide units and links
   pooled         every video in one corpus: retrieval when the video is not given (exploratory)
+  recheck        free re-checks of the stored results: by-video intervals, eq. 22 empties, echo floor
   mcq            MCQ with options shuffled under a recorded seed
   open_ended     T1 replica vs iterative vs full context; faithfulness
 
@@ -44,6 +45,7 @@ from lectqa.mcq import mcq_shuffled  # noqa: E402
 from lectqa.metrics import audit, run  # noqa: E402
 from lectqa.open_ended import faithfulness, open_modes, open_rerender  # noqa: E402
 from lectqa.pooled import pooled  # noqa: E402
+from lectqa.recheck import recheck  # noqa: E402
 from lectqa.transcription import prepare  # noqa: E402
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging  # noqa: E402
 
@@ -51,7 +53,7 @@ from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setu
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("step", choices=["fetch", "prepare", "run", "v2", "frameslides", "coverage", "audit", "mcq",
-                                     "open", "faith", "attribution", "pooled"])
+                                     "open", "faith", "attribution", "pooled", "recheck"])
     ap.add_argument("--runs", type=int, default=3, help="faith: judge runs per check (majority)")
     ap.add_argument("--rest", type=int, default=None, help="open: how many non-subset questions (seeded order)")
     ap.add_argument("--report-only", action="store_true", help="open: re-render the report from the stored answers")
@@ -109,6 +111,8 @@ def main(argv: list[str] | None = None) -> int:
         return coverage(external / "lectqa_coverage.md")
     if args.step == "frameslides":
         return frameslides(ids, cfg, dcfg, external / "lectqa_frameslides.md")
+    if args.step == "recheck":
+        return recheck(ids, cfg, external)
     if args.step == "pooled":
         return pooled(ids, cfg, external / "lectqa_pooled.md", only=args.cells)
     if args.step == "v2":
