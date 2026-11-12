@@ -542,9 +542,31 @@ explicit instruction.
      frame OCR and image features, taken from the frame at each sentence's timestamp, our
      alignment reaches a mean F1 of 0.853 on the 9 held-out lectures with video, against
      0.80 for MaViLS's published all-features result on the same lectures (5 wins, 1 tie, 3
-     losses; *corrected 2026-11-12 from "6 wins, 3 losses"*). The paired difference (+0.055, 95 % CI −0.050 to +0.161) is within
-     lecture-to-lecture variation, so we report parity with their result, not an
-     improvement.
+     losses; *corrected 2026-11-12 from "6 wins, 3 losses"*). The paired difference
+     (+0.055, 95 % CI −0.050 to +0.161) is within lecture-to-lecture variation, so we
+     report parity with their result, not an improvement.
+   - **Re-checked 2026-11-12** (`results/external/mavils_recheck.md`; cached matrices,
+     nothing tuned, $0; a fourth look at the test half, from which no choice was set).
+     - *Parity holds.* Leave-one-lecture-out over all 19 lectures with video (exploratory,
+       not the registered split): 0.866 against their 0.816, +0.050 [+0.002, +0.103], but
+       9 wins, 2 ties, 8 losses and Wilcoxon p = 0.20. Three lectures where their published
+       score is low carry it (Phonetics +0.30, Solar resource +0.29, Sensory systems
+       +0.27); on the other 16 the mean difference is +0.006. On the fixed split,
+       Wilcoxon p = 0.43.
+     - *The decoder is not where the result comes from.* On our final matrix their DP
+       scores 0.849 and ours 0.853 on test (all 19: −0.004 [−0.015, +0.007], no measurable
+       difference); row-wise argmax without any DP already reaches 0.789.
+     - *The frames carry it; speech contributes little.* Frame OCR alone scores 0.818 on
+       test, speech-to-slide text alone 0.483. Leaving the speech text out costs 0.011
+       [−0.034, +0.005] on test (no measurable difference) and 0.030 on tune. So this is a
+       frame-to-slide matching result; it says little about linking speech to slides
+       without the video.
+     - *No position floor.* Mapping sentence index or time linearly onto the deck scores
+       0.21, against their audio-only 0.53.
+     - *Where it fails (tune half only).* In the four weakest tune lectures 47–82 % of the
+       errors fall on frames judged not to show a slide (25–52 % of their frames), and
+       73–100 % of errors are within two pages: speaker shots, during which only the
+       speech text and the DP decide.
 
 ### Design changes recorded against the verified-gold result (2026-09-21)
 
