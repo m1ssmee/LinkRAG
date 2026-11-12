@@ -540,11 +540,11 @@ Then we added their other two features, one round at a time, always choosing set
 | our text only | 0.426 | 0 / 9 |
 | fused text (ours + theirs) | 0.493 | 0 / 9 |
 | + image (SwiftFormer) | 0.765 | 3 / 6 |
-| + frame OCR (one frame per visual segment) | 0.810 | 5 / 4 |
-| + frames taken at each sentence's time | 0.850 | 6 / 3 |
+| + frame OCR (one frame per visual segment) | 0.810 | 4 / 4, and 1 tie |
+| + frames taken at each sentence's time | 0.850 | 5 / 3, and 1 tie |
 | + slide-visibility gate (final) | **0.853** | **5 / 3, and 1 tie** |
 
-*Corrected 2026-11-12: the last row said 6 / 3. One lecture (Deep learning, 0.99 against 0.99) is a tie at the two decimals MaViLS publishes; the rows above still count that tie as a win.*
+*Corrected 2026-11-12: the last row said 6 / 3. One lecture (Deep learning, 0.99 against 0.99) is a tie at the two decimals MaViLS publishes; the two rows above it said 5 / 4 and 6 / 3 for the same reason.*
 | *MaViLS all features, same 9 lectures* | *0.80* | |
 
 ![Mean F1 as each feature is added, against MaViLS' published results on the same lectures.](figures/mavils.png)

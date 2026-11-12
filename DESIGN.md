@@ -471,7 +471,8 @@ explicit instruction.
    LLM-free, $0.)
    - **Caveats first.**
      - *Parity, not a win.* The per-lecture differences to their published numbers run
-       from −0.23 (Reinforcement) to +0.24 (Phonetics); we win 5 lectures and lose 4. A
+       from −0.23 (Reinforcement) to +0.24 (Phonetics); we win 4 lectures, tie 1 and lose 4 (*corrected 2026-11-12 from "win 5 lectures and lose 4": Deep
+       learning is 0.99 against 0.99*). A
        +0.01 mean over 9 lectures supports "matches", nothing stronger.
      - *Coverage.* 9 test lectures: Climate policies has no video (finding 14).
      - *Frames.* We read frame text from 320 px representative frames, one per dHash

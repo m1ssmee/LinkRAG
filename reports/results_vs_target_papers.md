@@ -329,7 +329,7 @@ Climate policies, which has no video, scores 0.79 audio-only and 0.93 all-featur
 | Solar resource | 0.35 | 0.39 | 0.55 | 0.60 | 0.80 | 0.81 | 0.53 |
 | Computation theory | 0.28 | 0.35 | 0.85 | 0.96 | 0.87 | 0.87 | 0.84 |
 | **mean (9)** | **0.426** | **0.493** | **0.765** | **0.810** | **0.850** | **0.853** | **0.80** |
-| wins / losses against their all-features | — | — | 3 / 6 | 5 / 4 | TODO: not stated in the sources | **5 / 3, 1 tie** (corrected 2026-11-12 from 6 / 3; earlier columns also count the Deep learning tie as a win) | |
+| wins / losses against their all-features | — | — | 3 / 6 | 4 / 4, 1 tie (corrected 2026-11-12 from 5 / 4) | TODO: not stated in the sources | **5 / 3, 1 tie** (corrected 2026-11-12 from 6 / 3) | |
 
 A tie counts as a win. Precision-on-answered and coverage for every cell are in the source files; coverage is 1.00 throughout, since the DP always answers.
 
