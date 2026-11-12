@@ -416,3 +416,47 @@ def test_the_rebuilt_sample_is_cached_per_parent_corpus(tmp_path, stub_encoder):
             assert _stream(r)[-1] == {"status": "ready"}
         folders = sorted(p.name for p in (tmp_path / "work").glob("sample_lecture_*"))
     assert len(folders) == 2
+
+
+def test_a_second_lecture_under_the_same_file_names_is_read_afresh(tmp_path, monkeypatch, wav_path, stub_encoder):
+    """Start over, upload different files with the old names: the transcript, the page renders and
+    the clips are named by file stem or unit id, so each must be made again, not served from the
+    first lecture."""
+    other_slides = ["Zebra habitat migration routes", "Giraffe feeding height", "Elephant memory span"]
+    other_speech = ["Zebra herds follow migration routes across the habitat.",
+                    "Giraffe feeding happens at great height.", "Elephant memory has a long span."]
+
+    def other_transcript(*_args, **_kwargs) -> list[Word]:
+        words, t = [], 0.0
+        for sentence in other_speech:
+            for w in sentence.split():
+                words.append(Word(round(t, 2), round(t + 0.1, 2), w))
+                t += 0.1
+            t += 0.8
+        return words
+
+    app = api.create_app(_cfg(), workdir=tmp_path / "work", answerer="mock",
+                         encoder=stub_encoder([*SLIDES, *SPEECH, *other_slides, *other_speech]))
+    client = TestClient(app, headers={"X-Session": SID})
+
+    def build(slides: list[str], transcribe) -> None:
+        monkeypatch.setattr("linkrag.ingest.audio.transcribe_words", transcribe)
+        doc = pymupdf.open()
+        for text in slides:
+            doc.new_page(width=720, height=405).insert_text((40, 80), text, fontsize=20)
+        files = [("files", ("deck.pdf", doc.tobytes(), "application/pdf")),
+                 ("files", ("talk.wav", wav_path.read_bytes(), "audio/wav"))]
+        assert client.post("/upload", files=files).status_code == 200
+        with client.stream("POST", "/build") as r:
+            assert _stream(r)[-1] == {"status": "ready"}
+
+    build(SLIDES, _transcript)
+    first = client.post("/ask", json={"question": QUESTION}).json()["evidence"]
+    page_url = next(e["crop_url"] for e in first if e["modality"] == "slides")
+    first_page = client.get(page_url).content
+
+    assert client.post("/reset").status_code == 200
+    build(other_slides, other_transcript)
+    second = client.post("/ask", json={"question": "Where do zebra herds follow migration routes?"}).json()["evidence"]
+    assert any("Zebra herds" in e["excerpt"] for e in second if e["modality"] == "speech")     # transcribed again
+    assert client.get(page_url).content != first_page                                          # rendered again

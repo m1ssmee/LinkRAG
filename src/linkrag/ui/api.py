@@ -680,6 +680,8 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
         bcfg = copy.deepcopy(cfg)       # ingest writes figures and transcripts: into the session
         bcfg["ingest"]["figures_dir"] = str(s.dir / "figures")
         bcfg["ingest"]["frozen_transcript_dir"] = str(s.dir / "transcripts")
+        for stale in ("pages", "clips"):    # named by unit id, and a rebuilt lecture mints the same ids
+            shutil.rmtree(s.dir / stale, ignore_errors=True)
         with hold(build_lock, job):
             with stage(job, "ingest"):
                 units = ingest_files(list(s.uploads.values()), bcfg)
@@ -892,6 +894,9 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
                 dest.unlink()
                 raise HTTPException(413, f"uploads are limited to {MAX_SESSION_BYTES >> 20} MB per lecture")
             s.uploads[name] = dest
+            # the frozen transcript is found by file stem alone (ingest.audio.frozen_transcript_for):
+            # a new upload under an old name must not inherit the old recording's words
+            (s.dir / "transcripts" / f"{Path(name).stem}.frozen.json").unlink(missing_ok=True)
         s.stale = True
         return {"files": names, "pending": list(s.uploads)}
 
@@ -920,7 +925,8 @@ def create_app(cfg: dict[str, Any], *, workdir: Path, sample: Path | None = None
             raise HTTPException(409, "a build is running")
         s.corpus, s.stale = None, False
         s.uploads.clear()
-        shutil.rmtree(s.dir / "uploads", ignore_errors=True)
+        for derived in ("uploads", "transcripts", "figures", "pages", "clips"):
+            shutil.rmtree(s.dir / derived, ignore_errors=True)
         return {"ok": True}
 
     @app.get("/pairs")
