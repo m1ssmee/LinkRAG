@@ -530,7 +530,9 @@ explicit instruction.
        frames, +0.003 on sentence-time). It does not generalise here.
      - *Sentence-time frames* did the work. Frame text went from 52 % to 75 % of frames on
        average, and Numerics from 56 % to 99 %.
-   - **Per lecture (+ both vs their all-features).** 6 wins, 3 losses.
+   - **Per lecture (+ both vs their all-features).** 5 wins, 1 tie, 3 losses. *Corrected
+     2026-11-12: this said "6 wins, 3 losses"; Deep learning is 0.9947 against their published
+     0.99, a tie at the two decimals their numbers have (`mavils_recheck.md`).*
      - *Numerics* now wins, 0.89 vs 0.81 (it was 0.71).
      - *Reinforcement* improves, 0.52 → 0.67, but still loses to 0.75.
      - *Short range* falls with sentence-time frames, 0.84 → 0.58 vs their 0.80. This was
@@ -539,8 +541,8 @@ explicit instruction.
    - **Verdict (the sentence for the paper).** On MaViLS, combining speech-to-slide text,
      frame OCR and image features, taken from the frame at each sentence's timestamp, our
      alignment reaches a mean F1 of 0.853 on the 9 held-out lectures with video, against
-     0.80 for MaViLS's published all-features result on the same lectures (6 wins, 3
-     losses). The paired difference (+0.055, 95 % CI −0.050 to +0.161) is within
+     0.80 for MaViLS's published all-features result on the same lectures (5 wins, 1 tie, 3
+     losses; *corrected 2026-11-12 from "6 wins, 3 losses"*). The paired difference (+0.055, 95 % CI −0.050 to +0.161) is within
      lecture-to-lecture variation, so we report parity with their result, not an
      improvement.
 
@@ -622,7 +624,7 @@ components, because no reported table shows a benefit from them.*
 3. **Multi-feature slide alignment at parity with MaViLS** (`mavils_final_round.md`,
    `reports/mavils_final.md`). Image, frame-OCR and speech-to-slide text scores, from the frame
    at each sentence's timestamp: 0.853 against their all-features 0.80 on the 9 test lectures
-   with video (6 wins, 3 losses; paired +0.055, 95 % CI [−0.050, +0.161]), i.e. parity. On their
+   with video (5 wins, 1 tie, 3 losses, corrected 2026-11-12 from "6 wins, 3 losses"; paired +0.055, 95 % CI [−0.050, +0.161]), i.e. parity. On their
    own similarity matrix our decoder scores 0.520 against their decoder's 0.513 (all 20
    lectures, text only). Bounded by n = 9 and a test half examined in three rounds (finding 16).
 4. **Claim-level verification** (`lectqa_faithfulness.md`). Every claim of an answer is checked

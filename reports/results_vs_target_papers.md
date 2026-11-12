@@ -329,7 +329,7 @@ Climate policies, which has no video, scores 0.79 audio-only and 0.93 all-featur
 | Solar resource | 0.35 | 0.39 | 0.55 | 0.60 | 0.80 | 0.81 | 0.53 |
 | Computation theory | 0.28 | 0.35 | 0.85 | 0.96 | 0.87 | 0.87 | 0.84 |
 | **mean (9)** | **0.426** | **0.493** | **0.765** | **0.810** | **0.850** | **0.853** | **0.80** |
-| wins / losses against their all-features | — | — | 3 / 6 | 5 / 4 | TODO: not stated in the sources | **6 / 3** | |
+| wins / losses against their all-features | — | — | 3 / 6 | 5 / 4 | TODO: not stated in the sources | **5 / 3, 1 tie** (corrected 2026-11-12 from 6 / 3; earlier columns also count the Deep learning tie as a win) | |
 
 A tie counts as a win. Precision-on-answered and coverage for every cell are in the source files; coverage is 1.00 throughout, since the DP always answers.
 
@@ -344,7 +344,7 @@ The visibility gate gained +0.031 on the tune half but nothing on the test half:
 
 Finding 16's verdict sentence, verbatim:
 
-> On MaViLS, combining speech-to-slide text, frame OCR and image features, taken from the frame at each sentence's timestamp, our alignment reaches a mean F1 of 0.853 on the 9 held-out lectures with video, against 0.80 for MaViLS's published all-features result on the same lectures (6 wins, 3 losses). The paired difference (+0.055, 95 % CI −0.050 to +0.161) is within lecture-to-lecture variation, so we report parity with their result, not an improvement.
+> On MaViLS, combining speech-to-slide text, frame OCR and image features, taken from the frame at each sentence's timestamp, our alignment reaches a mean F1 of 0.853 on the 9 held-out lectures with video, against 0.80 for MaViLS's published all-features result on the same lectures (5 wins, 1 tie, 3 losses). The paired difference (+0.055, 95 % CI −0.050 to +0.161) is within lecture-to-lecture variation, so we report parity with their result, not an improvement.
 
 **Caveats that bound it:**
 - one test lecture (Climate policies) has no video, so n = 9;
