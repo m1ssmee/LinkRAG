@@ -94,7 +94,7 @@ src/linkrag/
   retrieve/     baseline.py: RRF(dense, BM25) top-k. Link-following + complementarity
   generate/     cited answer synthesis (Ollama / OpenAI-compatible)
   eval/         metrics, both modes, ablations
-  ui/           Streamlit chat + evidence panel
+  ui/           Lectern: FastAPI backend + web frontend (chat, evidence panel)
 configs/        default.yaml — models, chunk sizes, thresholds, top-k
 scripts/        ingest.py, build_links.py, ask.py, run_regression.py, compare_retrieval.py, eval_*.py
 docs/           pilot01_history.md — the v0-pilot narrative and numbers

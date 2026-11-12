@@ -115,6 +115,14 @@ explicit instruction.
    citation checks on its answers.
 5. **(v) MaViLS alignment rows.** As already done (finding 6); no new work planned.
 
+*Outside this list, on explicit instruction (2026-11-12), all $0:* the free re-checks of the
+stored results on both targets (`results/external/lectqa_recheck.md`, `mavils_recheck.md`),
+the text corrections that followed from them, and the pooled-corpus run on LectQA-Vid
+(`lectqa_pooled.md`), which stays **exploratory**: it has not been agreed with the mentor
+and is not to be cited until it has. One paid run is proposed and not approved: the same
+300 questions answered closed-book and with the full transcript under one prompt that allows
+the model's own knowledge (about $1.20; one repeat first as a check, then the other two).
+
 ### Previous priority order (2026-09-20 → 2026-09-23), for the record
 
 (ii) relatedness gate, (iv) MaViLS and (v) Phase 6 were completed. (iii) LectQA-Vid was
@@ -655,7 +663,9 @@ components, because no reported table shows a benefit from them.*
    mode; one judge run, direction only), so the full transcript's F1 gain is not paid for in
    unsupported claims.
 
-### System components with development-only evidence
+### System components with no reported benefit
+
+*Until 2026-11-12 this heading was "System components with development-only evidence".*
 
 The system is built around three components. They are implemented, ablatable (*The two-mode
 rule*) and tested, but no reported table shows a benefit from them:
@@ -773,6 +783,11 @@ reported until it has been inspected.**
   numbers.** Per-category counts sum to the stated total (*Measurement rules* §2).
 - **Corrections go in their own commit,** naming the number, what was wrong and the fix;
   the corrected report keeps a dated note of the old value.
+- **Paired intervals resample the unit that was sampled** (from 2026-11-12): whole videos on
+  LectQA-Vid, whole lectures on MaViLS. Questions on one video share a transcript and are not
+  independent. An interval that contains 0 is reported as *no measurable difference*, never
+  as a gain or a loss. Reports written before that date give by-question intervals;
+  `lectqa_recheck.md` gives both side by side.
 
 ## Execution rule (binding)
 
@@ -891,6 +906,20 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   position confound. The length confound remains: a no-video longest-option picker scores
   94.4 %. LectQA-Vid MCQ accuracy is therefore not reportable as a retrieval or
   video-understanding result in any option order.
+- **(j) The complementarity reranker is not scale-aware.** It adds α (0.3), β (0.2) and γ (0.4)
+  to whatever relevance scores it is given. `linkrag` retrieval hands it rank-normalised
+  scores in (0, 1]; `baseline` and `iterative` hand it raw RRF scores of about 0.03, so the
+  bonuses decide almost everything. Found 2026-11-12 (`lectqa_pooled.md`); the reported rows
+  that ran that way are retired (finding 8). Not fixed: normalising inside the reranker is a
+  design change that needs a config switch and a real run, and none has been approved.
+- **(k) No LectQA-Vid gold timestamp has been checked by hand.** 1,598 pass the format and
+  range checks (issue (h)); a 75-row sheet for a second person is prepared
+  (`results/external/lectqa_timestamp_check.csv`) and not filled in.
+- **(l) Decks and PDFs outside git are stale.** The four decks under `reports/presentation/`,
+  the synopsis documents and the PDFs built from the study guide and the results draft still
+  carry the claims corrected on 2026-11-12 (the +2.00 headline, "3.46 for eq. 22", the
+  68.1 → 55.4 % reranker row, "usable" timestamps, "6 wins, 3 losses"). Their build path
+  and the study guide's `figures/` are not in the repository.
 
 ## Environment decisions worth not re-litigating
 

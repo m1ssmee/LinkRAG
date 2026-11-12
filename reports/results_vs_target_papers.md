@@ -38,7 +38,7 @@ Draft of 2026-09-25, revised 2026-09-27 with the attribution ablation (`lectqa_a
   - The open-ended comparison runs on a stratified 300-question subset.
   - The single run on the other 1,118 open-ended questions was not made: the dry run estimated $7.43 against the item's $3.50 cap (`lectqa_open_modes.md`, "Scope").
 - **The baseline is our replica of their pipeline, not their code**, which is unpublished. The choices the paper leaves open are ours (§1b).
-- **In our replica the eq. 22 filter is given the question's annotated interval**, on the 160 of 300 subset questions with a usable stamp. T1 does not say where its interval comes from at inference, and the fixed reply when the filter leaves nothing is our choice. *Corrected 2026-11-12: this said "Their eq. 22 filter reads the gold timestamps at inference, an oracle".* The comparison we report is therefore against the replica with eq. 22 off (§1c, Table 1c-iii).
+- **In our replica the eq. 22 filter is given the question's annotated interval**, on the 160 of 300 subset questions whose stamp passes the format and range checks. T1 does not say where its interval comes from at inference, and the fixed reply when the filter leaves nothing is our choice. *Corrected 2026-11-12: this said "Their eq. 22 filter reads the gold timestamps at inference, an oracle".* The comparison we report is therefore against the replica with eq. 22 off (§1c, Table 1c-iii).
 - **Faithfulness uses one judge run per check**, so it is *direction only*. It was corrected twice on 2026-09-24 (§1f).
 
 ### 1a. Their published numbers
@@ -212,7 +212,7 @@ All LLM-free, $0 (`lectqa_audit.md`, except where another file is named).
 The relatedness gate rejected the speech-to-deck alignment on **49 of 95** videos: 16 of 19 slide talks, 11 of 29 mixed, 22 of 47 animated explainers. Frame-derived slides gave no localisation gain: hit@1 43.2 % with slides vs 45.6 % without (DESIGN finding 12).
 
 **With eq. 22 on, the replica loses 3.46 F1; 2.93 of it is the empty windows.** The controlled ablation is Table 1c-iii (−3.46 F1 [−4.91, −2.12] with eq. 22 on vs off, same questions); the step table under it shows that the filter has no measurable effect where it keeps something. *Corrected 2026-11-12: the heading was "Eq. 22 hurts their own pipeline."* The first, uncontrolled look below split repeat 0 by question group; the two groups are different questions, so the other modes are the control (`lectqa_open_modes.md`).
-- *Where eq. 22 applies* (usable gold stamp, n = 160): the replica scores 27.54 F1, against 35.71 for ours and 36.76 for full context on the same questions.
+- *Where eq. 22 applies* (the stamp passes the format and range checks, n = 160): the replica scores 27.54 F1, against 35.71 for ours and 36.76 for full context on the same questions.
 - *Where it doesn't* (n = 140): 35.45, against 37.92 and 41.49.
 - So the replica loses about five points more than the controls where eq. 22 is on, and the filter leaves 34 of those 160 questions with no context at all.
 - Their Table 7 reports the opposite: F1 falls to 11.40 without the filter.
