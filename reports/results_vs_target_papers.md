@@ -17,7 +17,7 @@ Draft of 2026-09-25, revised 2026-09-27 with the attribution ablation (`lectqa_a
 
 | paper | dataset | their number | our number | protocol | verdict |
 |---|---|---|---|---|---|
-| T1, Intra-Video Temporal-Aware RAG | LectQA-Vid, open-ended | Table 4 overall F1 23.52 (their unnamed answerer, not comparable with ours) | replica of their pipeline **31.23 ± 0.06**, and **34.69 ± 0.04** without its eq. 22 filter; ours: RRF **34.96 ± 0.31**, RRF + one re-query **36.70 ± 0.16**; full transcript **38.74 ± 0.23** | one answerer for every mode; their metrics | **Ours (RRF + re-query) exceeds T1's pipeline without its oracle filter by +2.00 F1, 95 % CI [+0.88, +3.21].** Eq. 22 reads the gold timestamps at inference (160 of 300 questions), costs the replica 3.46 F1 [2.12, 4.91] and leaves 34 questions with no context; without it the two retrieval pipelines are level (RRF − replica +0.27 [−1.13, +1.63]); the re-query adds +1.74 [+0.76, +2.75]. **The benchmark cannot measure retrieval value**: the full transcript beats every mode (+2.04 [+1.14, +2.99] over ours), and every transcript fits a 2,048-token window. |
+| T1, Intra-Video Temporal-Aware RAG | LectQA-Vid, open-ended | Table 4 overall F1 23.52 (their unnamed answerer, not comparable with ours) | replica of their pipeline **31.23 ± 0.06**, and **34.69 ± 0.04** without its eq. 22 filter; ours: RRF **34.96 ± 0.31**, RRF + one re-query **36.70 ± 0.16**; full transcript **38.74 ± 0.23** | one answerer for every mode; their metrics | **Ours (RRF + re-query) exceeds T1's pipeline without its oracle filter by +2.00 F1, 95 % CI [+0.88, +3.21].** Eq. 22 reads the gold timestamps at inference (160 of 300 questions) and leaves 34 questions with no context; our fixed reply there costs the replica 2.93 F1 [1.45, 4.56], and the filter elsewhere has no measurable effect (−0.53 [−1.30, +0.20]); without it the two retrieval pipelines are level (RRF − replica +0.27 [−0.90, +1.48]); the re-query adds +1.74 [+0.77, +2.75] (by video, §1c). *Corrected 2026-11-12 from "costs the replica 3.46 F1 [2.12, 4.91]".* **The benchmark cannot measure retrieval value**: the full transcript beats every mode (+2.04 [+1.14, +2.99] over ours), and every transcript fits a 2,048-token window. |
 | T1 | LectQA-Vid, MCQ | Table 5 accuracy 53.43 | 95.33 with shuffled options | baseline retrieval, one run | **Not a retrieval measure.** A no-video "pick the longest option" rule scores 94.4. |
 | T2, MaViLS | MaViLS, 9 test lectures with video | all-features **0.80** on the same lectures (0.82 is their 20-lecture average) | **0.853** (image + frame OCR + speech-to-slide text, frames at each sentence's timestamp) | their F1, sentence granularity; test half run once per round | **Parity**: +0.055, 95 % CI [−0.050, +0.161] |
 
@@ -158,12 +158,24 @@ Paired differences, token F1 points, 95 % bootstrap CI over questions (as Table 
 
 **Eq. 22 at inference.** It read the gold interval on 160 of the 300 questions and left 34 of them with no context at all. On those 34 the replica scores 1.73 F1 with eq. 22 and 27.63 without it (6 stay empty without it: nothing clears T1's cosine threshold of 0.6), against 28.95 for our RRF (repeat 0).
 
+**The same gap, step by step** (`lectqa_recheck.md`, 2026-11-12; intervals resampled by video, which Table 1c-iii's are not):
+
+| step | F1 after | change |
+|---|---:|---:|
+| replica, eq. 22 on | 31.23 | |
+| the unfiltered replica's answer on the 34 empty windows | 34.16 | +2.93 [+1.45, +4.56] |
+| eq. 22 off everywhere | 34.69 | +0.53 [−0.20, +1.30], no measurable difference |
+| our RRF index in place of T1's pipeline | 34.96 | +0.27 [−0.90, +1.48], no measurable difference |
+| one re-query | 36.70 | +1.74 [+0.77, +2.75] |
+
+So the −3.46 row of Table 1c-iii is mostly the reply on empty windows, not the filter, and the +3.73 row contains it too. The fallback is our construction: T1 does not say what its pipeline does when the filter leaves nothing.
+
 ### 1d. Verdicts
 
 The caveats above apply to both sentences.
 
 1. **On the 300-question stratified subset of LectQA-Vid, our retrieval with one re-query beats our replication of T1's pipeline without its oracle filter by +2.00 token-F1 points (95 % CI +0.88 to +3.21)** (simple +2.91, hard +1.05 with a CI that includes zero, very hard +2.06; Table 1c-iii).
-   - T1's eq. 22 filter reads the gold timestamps at inference (160 of 300 questions). It costs the replica 3.46 F1 [2.12, 4.91] and leaves 34 questions with no context, so the +5.47 [+3.80, +7.24] against the replica *with* eq. 22 (Table 1c-ii) overstates the retrieval comparison.
+   - T1's eq. 22 filter reads the gold timestamps at inference (160 of 300 questions). It leaves 34 questions with no context, and the fixed reply there accounts for 2.93 [1.45, 4.56] of the replica's 3.46-point loss (*corrected 2026-11-12 from "It costs the replica 3.46 F1 [2.12, 4.91]"*), so the +5.47 [+3.80, +7.24] against the replica *with* eq. 22 (Table 1c-ii) overstates the retrieval comparison.
    - Without eq. 22, the two retrieval pipelines are level overall (RRF − replica +0.27 [−1.13, +1.63]; very hard +2.10 [+0.48, +3.72]). The re-query adds +1.74 [+0.76, +2.75].
 2. **Giving the answerer the whole transcript beats every retrieval mode** (+2.04 [+1.14, +2.99] over ours, +7.51 [+5.72, +9.40] over the replica), **so LectQA-Vid cannot measure the value of retrieval.**
    - The reason is context fit (`lectqa_audit.md` §(e)). Full transcripts run from 140 to 1,544 o200k tokens, median 780, n = 95, and all 95 fit in a 2,048-token window.
@@ -198,7 +210,7 @@ All LLM-free, $0 (`lectqa_audit.md`, except where another file is named).
 
 The relatedness gate rejected the speech-to-deck alignment on **49 of 95** videos: 16 of 19 slide talks, 11 of 29 mixed, 22 of 47 animated explainers. Frame-derived slides gave no localisation gain: hit@1 43.2 % with slides vs 45.6 % without (DESIGN finding 12).
 
-**Eq. 22 hurts their own pipeline.** The controlled ablation is Table 1c-iii (−3.46 F1 [−4.91, −2.12] with eq. 22 on vs off, same questions). The first, uncontrolled look below split repeat 0 by question group; the two groups are different questions, so the other modes are the control (`lectqa_open_modes.md`).
+**With eq. 22 on, the replica loses 3.46 F1; 2.93 of it is the empty windows.** The controlled ablation is Table 1c-iii (−3.46 F1 [−4.91, −2.12] with eq. 22 on vs off, same questions); the step table under it shows that the filter has no measurable effect where it keeps something. *Corrected 2026-11-12: the heading was "Eq. 22 hurts their own pipeline."* The first, uncontrolled look below split repeat 0 by question group; the two groups are different questions, so the other modes are the control (`lectqa_open_modes.md`).
 - *Where eq. 22 applies* (usable gold stamp, n = 160): the replica scores 27.54 F1, against 35.71 for ours and 36.76 for full context on the same questions.
 - *Where it doesn't* (n = 140): 35.45, against 37.92 and 41.49.
 - So the replica loses about five points more than the controls where its oracle filter is on, and the filter leaves 34 of those 160 questions with no context at all.

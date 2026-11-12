@@ -46,8 +46,11 @@ What the targets already have, stated plainly so it is not re-claimed as ours:
   and reports an ablation. What it cannot do: link to a slide deck or paper that
   is *not the video*, follow a relation from one retrieved unit to another, or
   select for modality coverage. Its own Table 7 reports the temporal filter as worth
-  12 F1 points. On our replica it is the opposite: eq. 22 costs 3.46 F1 [2.12, 4.91]
-  (`results/external/lectqa_attribution.md`).
+  12 F1 points. On our replica the filter has no measurable effect where it keeps something
+  (−0.53 [−1.30, +0.20], by video); the replica's 3.46-point loss with it on comes from the 34
+  questions it leaves with no context, which our replica answers with a fixed reply
+  (`results/external/lectqa_recheck.md`). *Corrected 2026-11-12: this said "On our replica it is
+  the opposite: eq. 22 costs 3.46 F1 [2.12, 4.91]".*
 
 ### Components and related work (not targets)
 
@@ -362,12 +365,20 @@ explicit instruction.
      same way (66.88 / 65.79 / 57.32). Paired bootstrap over questions: full_context −
      iterative **+2.04 F1 [+1.14, +2.99]**, iterative − replica +5.47 [+3.80, +7.24]. Every
      difficulty level's interval excludes 0.
-   - **T1's temporal filter hurts its own pipeline here.** On the questions where eq. 22
+   - **With eq. 22 on the replica loses 3.46 F1, and 2.93 of it is the empty windows.** On the questions where eq. 22
      applies, the replica scores 27.54 F1, against 35.71 for iterative and 36.76 for
      full_context on the same questions. Where it does not apply, the replica scores 35.45
      (37.92, 41.49). So the replica loses about 5 points more than the controls, and the
      filter leaves 34 of 160 questions with no context. Their Table 7 reports the opposite
-     (F1 falls to 11.40 without the filter).
+     (F1 falls to 11.40 without the filter). Re-checked from the stored answers
+     (`lectqa_recheck.md`, 2026-11-12, intervals by video): with the unfiltered replica's answer on
+     those 34 the replica scores 34.16, and the filter's remaining effect is −0.53 [−1.30, +0.20],
+     no measurable difference. In all 34 a chunk inside the window existed and was cut before the
+     filter ran (18 at or below cosine 0.6, 16 below the top-10). Our own top-4 overlaps the window
+     on 32 % of the 34 against 87 % of the other 126, so those stamps may point at the wrong part
+     of the video; that is a proxy, and a hand-check sheet is prepared
+     (`lectqa_timestamp_check.csv`). *Corrected 2026-11-12: the heading was "T1's temporal filter
+     hurts its own pipeline here."*
    - **Faithfulness** (unsupported / claims): replica 3.7 %, iterative 3.1 %, full_context
      4.3 %, on 647–796 claims per mode. *Corrected 2026-09-24, twice: from 4.6 / 5.4 / 5.6 %.
      First iterative 5.4 → 5.3 % (a judge-cache replay artefact). Then all three, after
@@ -381,11 +392,16 @@ explicit instruction.
      method can show a benefit over reading everything. LinkRAG's cross-file linking is also
      inactive on one video (the v2 caption). What LectQA-Vid can support is the audit, the
      replication (our iterative pipeline beats a T1 replica by 5.5 F1 without reading
-     timestamps: a whole-pipeline difference, split by the attribution ablation into eq. 22
-     −3.46, the rest of the pipeline +3.73 and the re-query +1.74; `lectqa_attribution.md`), and
-     the full-context ceiling. A retrieval claim needs material that does not fit in the
-     context. *Corrected 2026-09-26: this sentence said "our retrieval beats a T1 replica by 5.5
-     F1", which credited retrieval with a difference between two whole pipelines.*
+     timestamps: a whole-pipeline difference, split into +2.93 [+1.45, +4.56] from our fixed
+     reply on the 34 questions where eq. 22 left no context, +0.53 [−0.20, +1.30] from the
+     filter on the questions where it kept something and +0.27 [−0.90, +1.48] between the two
+     retrieval pipelines (neither measurable), and +1.74 [+0.77, +2.75] from the re-query
+     (intervals resampled by video, `lectqa_recheck.md`); *corrected 2026-11-12 from "eq. 22
+     −3.46, the rest of the pipeline +3.73 and the re-query +1.74", where the +3.73 already
+     contained eq. 22*), and the full-context ceiling. A retrieval claim needs material that
+     does not fit in the context. *Corrected 2026-09-26: this sentence said "our retrieval
+     beats a T1 replica by 5.5 F1", which credited retrieval with a difference between two
+     whole pipelines.*
 
 14. **MaViLS: the video frames carry the alignment. A visual channel lifts our text-only
    F1 from about 0.49 to 0.76 and comes within 0.035 of their all-features result, but still
@@ -576,12 +592,15 @@ components, because no reported table shows a benefit from them.*
    (gpt-5.4-mini-2026-03-17) for every mode; a 300-question stratified subset, 93 videos,
    3 repeats, T1's metrics. Overall token F1: replica 31.23 ± 0.06, replica without eq. 22
    34.69 ± 0.04, our RRF retrieval 34.96 ± 0.31, RRF with one re-query 36.70 ± 0.16, full
-   transcript 38.74 ± 0.23. The attribution ablation splits the replica-to-re-query gap: T1's
-   eq. 22 filter, which reads the gold interval at test time, costs the replica 3.46 F1
-   [2.12, 4.91] and leaves 34 questions with no context; RRF over the replica is +3.73
-   [+2.03, +5.50]; the re-query adds +1.74 [+0.76, +2.75]. The full transcript beats every
-   retrieval mode (+2.04 [+1.14, +2.99] over the re-query), so LectQA-Vid does not measure
-   the value of retrieval.
+   transcript 38.74 ± 0.23. The replica-to-re-query gap of 5.47 splits, in order, into +2.93
+   [+1.45, +4.56] from our fixed "no evidence" reply on the 34 questions where eq. 22 left no
+   context, +0.53 [−0.20, +1.30] from the filter on the questions where it kept something and
+   +0.27 [−0.90, +1.48] between the two retrieval pipelines (neither measurable), and +1.74
+   [+0.77, +2.75] from the re-query (intervals resampled by video, `lectqa_recheck.md`).
+   *Corrected 2026-11-12: this said eq. 22 "costs the replica 3.46 F1 [2.12, 4.91]" and "RRF
+   over the replica is +3.73 [+2.03, +5.50]"; both numbers contain the empty-window reply.* The
+   full transcript beats every retrieval mode (+2.04 [+1.14, +2.99] over the re-query), so
+   LectQA-Vid does not measure the value of retrieval.
 2. **Benchmark audit of LectQA-Vid** (`lectqa_audit.md`, `lectqa_mcq_shuffled.md`). The correct
    MCQ option is A in 1,484 of 1,489 published MCQs and the unique longest option in 1,409; a
    no-video longest-option picker scores 94.4 % (T1 reports 53.43). Only 1,598 of the 2,832 QA
