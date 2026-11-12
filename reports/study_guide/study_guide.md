@@ -475,7 +475,7 @@ We audited the dataset without any language model ($0).
 | correct option = the unique longest option | 1,409 of 1,489 (94.6 %); 100 % of very hard |
 | "pick the longest option", no video | 94.4 % on the 1,414 MCQs of our 95 videos |
 | our MCQ run with options shuffled | 95.33 % (T1 reports 53.43 %) — but it tracks the length bias, so it measures neither retrieval nor the video |
-| usable time stamps | only 1,598 of 2,832 questions (878 ambiguous format, 355 past the end of the video, 1 ending before it starts) |
+| time stamps that pass the format and range checks | only 1,598 of 2,832 questions (878 ambiguous format, 355 past the end of the video, 1 ending before it starts); none checked by hand |
 | videos obtained | 95 of 100 |
 | genre | 19 slide talks, 29 mixed, 47 animated explainers |
 
@@ -639,7 +639,7 @@ In order of how much they threaten a claim.
 5. **T1's answering model is unnamed and their split unpublished**, and our baseline is a rebuild from the paper, checked against its equations, not its outputs.
 6. **The open-ended results use a 300-question subset**, not all 1,418 questions (cost cap).
 7. **MCQ accuracy on LectQA-Vid is not a valid measure**, because of position and length bias.
-8. **Only 1,598 of 2,832 LectQA-Vid time stamps are usable.**
+8. **Only 1,598 of 2,832 LectQA-Vid time stamps pass the format and range checks**, and passing does not show a stamp points at the answer. *Corrected 2026-11-12: this said they "are usable".*
 9. **Judge and answerer come from the same vendor** (both OpenAI models); the faithfulness check used one judge run, so it is direction only; development gold is machine-verified, and the human audit sheet has not been filled in.
 10. **95 of 100 videos** are available; transcripts are ours, not the paper's.
 11. **One MaViLS test lecture has no video.**
@@ -899,7 +899,7 @@ At question time, a hybrid search — meaning plus keywords — finds the best p
 
 My first result was plus 5.5 F1 over their pipeline. But the two pipelines differed in many ways, so I ran an attribution study. Their time filter — equation 22 — needs a time interval, and the paper does not say where it comes from at question time; my rebuild gives it the annotated interval, which a real user does not have. It leaves 34 questions with no context, and the fixed reply there costs their pipeline 2.9 F1 points; elsewhere the filter makes no measurable difference. Without it, the two search pipelines are level overall; the re-query, which is MI-RAG's technique, adds 1.7 points; and the controlled comparison is plus 2.0, interval 1.0 to 3.1.
 
-The most important finding is that giving the model the whole transcript beats every retrieval method. Every transcript fits easily in the model's input, so retrieval can only lose information. LectQA-Vid simply cannot measure the value of retrieval. My audit found more: the correct multiple-choice option is A in 99.7 % of questions and usually the longest option, so a rule that picks the longest option scores 94 % without watching anything; and only about 56 % of the time stamps are usable."
+The most important finding is that giving the model the whole transcript beats every retrieval method. Every transcript fits easily in the model's input, so retrieval can only lose information. LectQA-Vid simply cannot measure the value of retrieval. My audit found more: the correct multiple-choice option is A in 99.7 % of questions and usually the longest option, so a rule that picks the longest option scores 94 % without watching anything; and only about 56 % of the time stamps pass basic format and range checks."
 
 **The second paper (1.5 minutes).** "The second target is MaViLS, which aligns spoken sentences to slides using three features: the speech text, text read from the video frames, and the frame images. This is exactly my speech-to-slide link. I split the lectures into a tune half and a test half and chose every setting on the tune half. A decomposition with their code showed their text features beat mine, while my decoder is at least as good as theirs. Adding the image, frame text, and frames taken at each sentence's time brought me to 0.853 against their 0.80 on the same nine lectures. The confidence interval includes zero, so I report parity."
 

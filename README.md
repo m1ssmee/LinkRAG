@@ -30,8 +30,8 @@ that aim yet (see below). Everything runs CPU-first; a GPU only makes it faster.
    `lectqa_recheck.md`). *Corrected 2026-11-12: this said eq. 22 "costs the replica 3.46 F1"; 2.93 of
    that is the fixed reply on empty windows.*
 2. **Benchmark audit of LectQA-Vid.** The MCQ answer is option A in 99.7 % of questions and the
-   unique longest option in 94.6 %, so a no-video picker scores 94.4 %; only 1,598 of 2,832 QA
-   pairs have a usable gold interval; every transcript fits in 2,048 tokens
+   unique longest option in 94.6 %, so a no-video picker scores 94.4 %; the gold intervals of only 1,598
+   of 2,832 QA pairs pass the format and range checks (not checked by hand); every transcript fits in 2,048 tokens
    (`lectqa_audit.md`, `lectqa_mcq_shuffled.md`).
 3. **Multi-feature slide alignment at parity with MaViLS**: 0.853 vs their 0.80 on the 9 test
    lectures with video (paired +0.055, 95 % CI [−0.050, +0.161]); on their similarity matrix our

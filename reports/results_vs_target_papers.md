@@ -198,8 +198,9 @@ All LLM-free, $0 (`lectqa_audit.md`, except where another file is named).
 
 **Timestamps.** The published start/end stamps mix eight digit shapes: `HH:MM:SS`, `MM:SS`, `SS:cc` (`00:12:70` = 12.70 s), `SSS:cc`, `M:SSS:cc`, plain seconds and others. Their meaning differs between videos (§(b)).
 - Only 4,532 of 5,964 stamps are unambiguous.
-- Of the 2,832 QA pairs of the 95 obtained videos, 1,598 have a usable gold interval. The rest: 878 ambiguous format, 355 past the video's end, 1 ending before it starts.
-- By video range, 828 are usable in videos 1–35, 595 in 36–63, and 175 in 64–100.
+- Of the 2,832 QA pairs of the 95 obtained videos, the gold intervals of 1,598 pass the format and range checks. The rest: 878 ambiguous format, 355 past the video's end, 1 ending before it starts.
+- By video range, 828 pass in videos 1–35, 595 in 36–63, and 175 in 64–100.
+- Passing is not the same as pointing at the answer, and no stamp has been checked by hand (`lectqa_timestamp_check.csv` is the sheet for it). *Corrected 2026-11-12: these 1,598 were called "usable".*
 
 **Unavailable videos.** 95 of 100 videos were obtained. Mendeley ships no media or transcripts, so everything comes from YouTube. Five are dead (§(c)): videos 1, 10 and 12 ("This video is not available") and videos 38 and 75 (HTTP 403).
 

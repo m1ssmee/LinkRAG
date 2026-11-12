@@ -318,8 +318,8 @@ explicit instruction.
    alignment, not the slides.** (`results/external/lectqa_frameslides.md`, 2026-09-23; 95
    videos; retrieval only, $0; baseline and linkrag modes, since the iterative modes need
    new LLM calls.)
-   - **Caveats first.** Only **1,598 of 2,832** questions have a usable gold interval;
-     the rest have ambiguous or out-of-range timestamps (known issue (h)). The dHash
+   - **Caveats first.** The gold intervals of only **1,598 of 2,832** questions pass the format
+     and range checks; the rest have ambiguous or out-of-range timestamps (known issue (h)). The dHash
      thresholds were set by eye, not tuned. Many LectQA videos are animated explainers,
      not static slide talks, so "slides" here are often animation states (2,175 slides,
      about 23 per 2–5-minute video).
@@ -362,8 +362,8 @@ explicit instruction.
      Faithfulness used one judge run per check (3 runs did not fit the cap), so it is
      *direction only*. Their split and 1,000-pair subset are unpublished.
    - **Audit (LLM-free).** A constant-"A" answerer scores 99.7 % on the MCQs. The gold is
-     also the unique longest option in 94.6 % of them (100 % of *very hard*). Only 1,598 of
-     2,832 questions have usable timestamps. By the stated slide-rate rule, the videos are
+     also the unique longest option in 94.6 % of them (100 % of *very hard*). The gold intervals of 1,598 of
+     2,832 questions pass the format and range checks. By the stated slide-rate rule, the videos are
      19 slide talks, 29 mixed and 47 animated explainers. Transcripts run 140–1,544 o200k
      tokens (median 780), so every one fits in 2k.
    - **MCQ with shuffled options** (1,414 questions, one run): 95.33 % (simple 90.11, hard
@@ -616,8 +616,8 @@ components, because no reported table shows a benefit from them.*
    LectQA-Vid does not measure the value of retrieval.
 2. **Benchmark audit of LectQA-Vid** (`lectqa_audit.md`, `lectqa_mcq_shuffled.md`). The correct
    MCQ option is A in 1,484 of 1,489 published MCQs and the unique longest option in 1,409; a
-   no-video longest-option picker scores 94.4 % (T1 reports 53.43). Only 1,598 of the 2,832 QA
-   pairs of the 95 obtained videos have a usable gold interval. Every transcript fits in 2,048
+   no-video longest-option picker scores 94.4 % (T1 reports 53.43). The gold intervals of only 1,598 of
+   the 2,832 QA pairs of the 95 obtained videos pass the format and range checks. Every transcript fits in 2,048
    tokens (140–1,544, median 780).
 3. **Multi-feature slide alignment at parity with MaViLS** (`mavils_final_round.md`,
    `reports/mavils_final.md`). Image, frame-OCR and speech-to-slide text scores, from the frame
@@ -853,9 +853,14 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   conventions (HH:MM:SS, SS:cc as in `00:12:70` = 12.70 s, SSS:cc, M:SSS:cc), and their
   meaning differs between videos. Some stamps also end past the fetched video. Only
   unambiguous, in-range intervals are scored (`strict_seconds`, `gold_interval` in
-  `scripts/adapters/lectqa_vid.py`): **1,598 of 2,832** questions. By video range: 1–35: 828
-  usable, 36–63: 595, 64–100: only 175. The first-run and v2 localisation scored everything,
-  so they are understated (dated note in `results/external/lectqa_v2.md`).
+  `scripts/adapters/lectqa_vid.py`): **1,598 of 2,832** questions pass these format and range checks. By
+  video range: 1–35: 828, 36–63: 595, 64–100: only 175. The first-run and v2 localisation
+  scored everything, so they are understated (dated note in `results/external/lectqa_v2.md`).
+  *Corrected 2026-11-12: these 1,598 were called "usable" here and in findings 12 and 13, the
+  Contributions and the README. Passing the checks is not the same as pointing at the answer:
+  on the 34 of 160 subset questions where eq. 22 left no context, our top-4 overlaps the stamp
+  on 32 % against 87 % on the other 126 (`lectqa_recheck.md`, a proxy). No stamp has been
+  checked by hand; a 75-row sheet is prepared (`results/external/lectqa_timestamp_check.csv`).*
 - **(i) LectQA-Vid MCQ answers are position- and length-confounded.** The correct option is
   A in 1,484 of 1,489 published MCQs. It is also the unique longest option in 1,409
   (94.6 %; every *very hard* MCQ). The shuffled re-run (finding 13, 95.33 %) removes the
