@@ -166,9 +166,12 @@ class Index:
             if location.get("bbox") is not None:
                 location["bbox"] = tuple(location["bbox"])
             units.append(EvidenceUnit(location=Location(**location), **record))
+        vectors = np.load(path / "vectors.npy")
+        if len(vectors) != len(units):      # save() writes two files: an interrupted one mis-pairs every row
+            raise ValueError(f"{path}: {len(vectors)} vectors for {len(units)} units; rebuild the index")
         return cls(
             units=units,
-            vectors=np.load(path / "vectors.npy"),
+            vectors=vectors,
             # Rebuilt rather than pickled: pickle of a third-party object is a
             # version trap, and re-fitting BM25 is milliseconds.
             bm25=BM25Okapi([tokenize(embeddable_text(u)) for u in units]),
