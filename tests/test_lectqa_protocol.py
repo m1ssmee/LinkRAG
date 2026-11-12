@@ -29,7 +29,7 @@ class FakeCE:
         return [len(c) for _, c in pairs]
 
 
-def test_t1_retrieve_threshold_oracle_filter_merge_and_top_l():
+def test_t1_retrieve_threshold_temporal_filter_merge_and_top_l():
     L = open_ended
     unit = lambda n, a, b, text: EvidenceUnit(id=f"v:c{n}", modality="audio", content=text, source_file="v.m4a",
                                               location=Location(start_s=a, end_s=b))

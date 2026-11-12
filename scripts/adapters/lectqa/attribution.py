@@ -1,5 +1,5 @@
 """Attribution ablation: which part of "ours vs the T1 replica" comes from re-querying, which from
-the rest of the pipeline, and what T1's eq. 22 oracle filter does.
+the rest of the pipeline, and what T1's eq. 22 temporal filter does.
 
 Two new modes on the open-ended subset, same answerer, same prompt, same repeats:
 - `rrf`: our plain baseline -- RRF (bge-m3 dense + BM25) over our units, top-L, no follow-up query.
@@ -107,7 +107,8 @@ def attribution_report(rows: list[dict], gold: dict[int, bool], cfg: dict, llm: 
          f"- **{LABEL['baseline']}** (stored mode `baseline`, `lectqa_open_modes.jsonl`): T1's pipeline replicated "
          "(bge-base, semantic chunking, top-10 above cosine 0.6, merge, MS MARCO MiniLM cross-encoder). Eq. 22 keeps "
          "only chunks overlapping the question's **annotated (gold) interval ± 3 s, read at test time**, where the "
-         "stamp is usable.",
+         "stamp is usable. T1 does not say where its interval comes from at inference, and the fixed reply when the "
+         "filter leaves nothing is our choice. (Until 2026-11-12 this report called the filter an oracle.)",
          f"- **{LABEL['replica_no_eq22']}** (new): the same pipeline; the gold interval is never read.",
          f"- **{LABEL['rrf']}** (new): our plain baseline, RRF of bge-m3 dense + BM25 over our sentence-packed "
          "transcript and frame-OCR units; no LLM call before answering.",
@@ -138,11 +139,11 @@ def attribution_report(rows: list[dict], gold: dict[int, bool], cfg: dict, llm: 
           "questions (numpy seed 20260923), as in `lectqa_open_modes.md`.", "",
           "| difference | what it isolates | " + " | ".join((*LEVELS, "overall")) + " |",
           "|---|---|" + "---:|" * (len(LEVELS) + 1)]
-    what = {("baseline", "replica_no_eq22"): "the eq. 22 oracle filter",
+    what = {("baseline", "replica_no_eq22"): "eq. 22 on the annotated interval, with our fixed reply where it leaves nothing",
             ("iterative", "rrf"): "the re-query (same index, same top-4)",
             ("rrf", "baseline"): "the rest of the pipeline: embedder, index, chunking, reranker, eq. 22",
             ("rrf", "replica_no_eq22"): "the two retrieval pipelines, neither reading gold timestamps",
-            ("iterative", "replica_no_eq22"): "ours (with re-query) vs T1's pipeline without its oracle filter"}
+            ("iterative", "replica_no_eq22"): "ours (with re-query) vs T1's pipeline with eq. 22 off"}
     for a, b in PAIRS:
         cells = [paired_cell([100 * (st.mean(m[a]) - st.mean(m[b])) for (_, lv), m in f1.items()
                               if level == "overall" or lv == level]) for level in (*LEVELS, "overall")]

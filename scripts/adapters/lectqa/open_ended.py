@@ -89,7 +89,8 @@ def t1_retrieve(q: str, gi: tuple[float, float] | None, chunks: list[EvidenceUni
     """T1 §4.4: top-K cosine above theta_r (eqs. 17, 21); the temporal filter of eq. 22 on the
     question's annotated interval +- dt when it is usable; merge of temporally consecutive
     results with gap < delta_gap (eq. 23); cross-encoder over the top-M (eqs. 24-25); the top-L
-    in temporal order (eqs. 26-27). Eq. 22 reads the gold timestamps: an oracle."""
+    in temporal order (eqs. 26-27). T1 does not say where eq. 22's interval comes from at inference;
+    here it is the annotated one, and an empty result is returned as it is."""
     sims = vecs @ np.asarray(enc([q]), dtype=np.float32)[0]
     top = [i for i in np.argsort(-sims)[:T1["K"]] if sims[i] > T1["theta_r"]]
     if gi is not None:
@@ -189,7 +190,7 @@ def open_modes(ids: list[str], cfg: dict, dcfg: dict, out: Path, *, max_cost: fl
     empty = sum(1 for j in run_idx if not fixed[(j, "baseline")])
     print(f"{len(items)} open-ended on {len({it['vid'] for it in items})} videos · subset {len(subset)} x {repeats} "
           f"+ rest {len(others)} x 1 · {len(tasks)} answers · ~{tok_in:,} in / ~{tok_out:,} out · estimated ${est:.2f} "
-          f"(cap ${max_cost:.2f}) · baseline: oracle filter on {sum(oracle[j] for j in run_idx)}/{len(run_idx)}, "
+          f"(cap ${max_cost:.2f}) · baseline: eq. 22 on {sum(oracle[j] for j in run_idx)}/{len(run_idx)}, "
           f"empty context {empty}")
     if dry_run:
         return 0
@@ -360,7 +361,9 @@ def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict
          f"overlapping speech by > {T1['theta_t']} s suppressed; embedder `{T1_EMBEDDER}` mean-pooled; top-{T1['K']} "
          f"above cosine {T1['theta_r']}; temporal filter (eq. 22) on the question's annotated interval ± {T1['dt']} s; "
          f"merge of consecutive results with gap < {T1['delta_gap']} s; cross-encoder `{T1_RERANKER}` over the top-"
-         f"{T1['M']}; top-{T1['L']} in temporal order. **Eq. 22 reads the gold timestamps (an oracle).** It is applied "
+         f"{T1['M']}; top-{T1['L']} in temporal order. **Eq. 22 is given the question's annotated interval. T1 does not say where its "
+         "interval comes from at inference, and the fixed reply when the filter leaves nothing is our choice** (until "
+         "2026-11-12 this report called the filter an oracle). It is applied "
          "only where the stamp is usable (`gold_interval`); elsewhere the pipeline runs without it. Both are "
          "reported separately below.",
          f"- **iterative**: ours: RRF (bge-m3 dense + BM25) over our sentence-packed transcript and frame-OCR "
@@ -417,7 +420,7 @@ def open_report(rows: list[dict], items: list[dict], subset: set[int], cfg: dict
         L.append(f"| {a} − {b} | " + " | ".join(cells) + " |")
     L.append("")
     one = [r for r in rows if r["rep"] == 0]
-    L += ["## Baseline with and without its oracle filter (repeat 0, subset)", "", label + ".", "",
+    L += ["## Baseline with and without eq. 22 (repeat 0, subset)", "", label + ".", "",
           "The two groups are different questions, so the other modes' F1 on the same groups is the control: "
           "a gap they share is the questions, not the filter.", "",
           "| questions | n | baseline F1 | baseline Sim | baseline empty context | iterative F1 | full_context F1 |",

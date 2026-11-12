@@ -37,7 +37,7 @@ The mentor's rule was: report results only on the datasets of the papers we try 
 
 ## 1.5 The headline results, one sentence each
 
-- **LectQA-Vid (T1):** with the same answering model for everyone, in a controlled re-implementation, our retrieval with one re-query scores +2.00 F1 points above our rebuild of T1's pipeline (with its "cheating" timestamp filter switched off), 95 % confidence interval [+0.96, +3.11] when whole videos are resampled (`results/external/lectqa_recheck.md`). The re-query is MI-RAG's technique, not ours, and it carries +1.74 of the +2.00.
+- **LectQA-Vid (T1):** with the same answering model for everyone, in a controlled re-implementation, our retrieval with one re-query scores +2.00 F1 points above our rebuild of T1's pipeline (with its timestamp filter switched off), 95 % confidence interval [+0.96, +3.11] when whole videos are resampled (`results/external/lectqa_recheck.md`). The re-query is MI-RAG's technique, not ours, and it carries +1.74 of the +2.00.
 - **But:** giving the model the **whole transcript** beats every retrieval method (38.74 F1 against 36.70 for ours), because every LectQA-Vid transcript is short enough to fit in the model's input. This benchmark therefore cannot measure what retrieval is worth.
 - **LectQA-Vid multiple choice:** not a fair test — the correct option is option A in 99.7 % of the published questions, and "pick the longest option" scores 94.4 % without watching anything.
 - **MaViLS (T2):** our slide alignment scores **0.853 against their 0.80** on the same 9 held-out lectures; the difference (+0.055, 95 % CI [−0.050, +0.161]) is inside the noise, so we call it **parity**, not a win.
@@ -147,9 +147,9 @@ T1 (Shafiq, Ejaz, Shah, Kamal, Sohail, Aslam; *CMC* 88(2), article 96, 2026) ans
 7. **Rerank** with a cross-encoder and keep the best few, in time order.
 8. **Answer** with a language model.
 
-![T1's pipeline as we rebuilt it. The temporal filter reads the question's annotated time interval — the answer's location — at question time.](figures/t1.png)
+![T1's pipeline as we rebuilt it. In our rebuild the temporal filter is given the question's annotated time interval.](figures/t1.png)
 
-The crucial detail is step 5. The time interval comes from the dataset's annotation of *where the answer is*. Using it at question time is like being told which page of the book the answer is on. We call it an **oracle** filter. A real user asking a question would not have it.
+The crucial detail is step 5. The paper does not say where the filter's time interval comes from when a real user asks a question. The only intervals it describes are the dataset's annotations of *where the answer is*, so our rebuild gives the filter those. That is like being told which page of the book the answer is on, and a real user would not have it. The paper also does not say what happens when the filter leaves nothing; our rebuild then gives a fixed "no evidence" reply. Both are our choices, and the comparison we report switches the filter off. *Corrected 2026-11-12: this said "We call it an oracle filter", as if the paper stated that it reads the annotation.*
 
 ## 3.3 Their dataset: LectQA-Vid
 
@@ -180,7 +180,7 @@ Two more: their multimodal RAG without time stamps scores F1 14.80 (Table 6), an
 >
 > **Q: What is T1's main idea?** A: Restrict retrieval to the right moment of the video, using time stamps, then rerank with a cross-encoder.
 >
-> **Q: What is wrong with their temporal filter?** A: It reads the question's annotated time interval — where the answer is — at question time. That is information a real user does not have. On our rebuild it also leaves 34 questions with no context at all; our fixed reply there costs 2.93 F1, and elsewhere the filter makes no measurable difference.
+> **Q: What is wrong with their temporal filter?** A: The paper does not say where the filter's time interval comes from at question time. Our rebuild gives it the question's annotated interval — where the answer is — which a real user does not have. On our rebuild it also leaves 34 questions with no context at all; our fixed reply there costs 2.93 F1, and elsewhere the filter makes no measurable difference.
 >
 > **Q: Can you compare your F1 with their 23.52 directly?** A: No. They do not name their answering model, and their evaluation subset is unpublished. We compare only methods that use the same answerer, on the same questions.
 >
@@ -352,7 +352,7 @@ Take the demo question "How does Focus use clustering to reduce query cost?" on 
 | frame text | Gemini captions | tesseract OCR | free; most frame text is suppressed by their overlap rule anyway |
 | embedding | BGE base, mean-pooled | bge-m3 plus BM25, merged with RRF | keyword search catches exact terms |
 | search limit | top 10 above cosine 0.6 | top candidates from both searches | no hard threshold that can leave nothing |
-| time filter (eq. 22) | keep chunks near the question's annotated interval ± 3 s | none: we never read time stamps | the annotation is the answer's location — an oracle |
+| time filter (eq. 22) | keep chunks near the question's annotated interval ± 3 s | none: we never read time stamps | the paper does not say where the interval comes from; our rebuild uses the annotation |
 | rerank | cross-encoder (MS MARCO MiniLM in our rebuild) | none, or one LLM re-query (iterative) | the re-query measurably helps (+1.74 F1) |
 | context given to the answerer | top 4 | top 4 | same budget for fairness |
 | answerer | not named | gpt-5.4-mini, the same for every mode | only same-answerer comparisons are fair |
@@ -375,7 +375,7 @@ Take the demo question "How does Focus use clustering to reduce query cost?" on 
 
 > **If ma'am asks…**
 >
-> **Q: Isn't dropping their time filter unfair to them?** A: It is the opposite: keeping it would be unfair to *us*, because it reads the answer's location. And on our rebuild the filter does not measurably help where it keeps something (−0.53, interval includes zero).
+> **Q: Isn't dropping their time filter unfair to them?** A: It is the opposite: keeping it would be unfair to *us*, because in our rebuild it is given the answer's location. And on our rebuild the filter does not measurably help where it keeps something (−0.53, interval includes zero).
 >
 > **Q: Why not use a cross-encoder too?** A: We tested the re-query instead, which is part of our retrieval family; it adds 1.74 F1. A cross-encoder is in the config as an option but not part of a reported comparison.
 >
@@ -435,7 +435,7 @@ The paired differences are what matter. **Paired** means we compare the two mode
 
 | difference | what it isolates | overall |
 |---|---|---:|
-| ours (with re-query) − replica, eq. 22 off | ours against T1's pipeline without its oracle | +2.00 [+0.88, +3.21] |
+| ours (with re-query) − replica, eq. 22 off | ours against T1's pipeline with its time filter off | +2.00 [+0.88, +3.21] |
 | replica (eq. 22 on) − replica, eq. 22 off | T1's time filter | −3.46 [−4.91, −2.12] |
 | ours (no re-query) − replica, eq. 22 off | the two search pipelines alone | +0.27 [−1.13, +1.63] |
 | ours (with re-query) − ours (no re-query) | the re-query | +1.74 [+0.76, +2.75] |
@@ -457,7 +457,7 @@ The paired differences are what matter. **Paired** means we compare the two mode
 1. **T1's time filter reads the gold time stamps** at question time (on 160 of the 300 questions, where the stamp is usable). With it on the replica is 3.46 F1 lower, and 2.93 of that comes from 34 questions it leaves with no context at all, where our rebuild gives a fixed "no evidence" reply. On those 34, the replica scores 1.73 F1 with the filter and 27.63 without it. Elsewhere the filter makes no measurable difference (−0.53, interval includes zero). *Corrected 2026-11-12: this said the filter "costs the replica 3.46 F1".*
 2. **Without the filter, the two search pipelines are level overall** (+0.27, interval includes zero). On very hard questions ours is ahead: +2.10 [+0.48, +3.72].
 3. **The re-query adds +1.74.**
-4. So the comparison to quote is +2.00 [+0.88, +3.21] ([+0.96, +3.11] when whole videos are resampled): ours with the re-query against T1's pipeline without its oracle. It is a controlled re-implementation, not a result over T1's published numbers, and the re-query is MI-RAG's technique. *Corrected 2026-11-12: this called +2.00 "the fair headline", in bold.* By difficulty: simple +2.91 [+0.48, +5.58], hard +1.05 [−0.83, +2.95] (interval includes zero), very hard +2.06 [+0.70, +3.49].
+4. So the comparison to quote is +2.00 [+0.88, +3.21] ([+0.96, +3.11] when whole videos are resampled): ours with the re-query against T1's pipeline with its time filter off. It is a controlled re-implementation, not a result over T1's published numbers, and the re-query is MI-RAG's technique. *Corrected 2026-11-12: this called +2.00 "the fair headline", in bold.* By difficulty: simple +2.91 [+0.48, +5.58], hard +1.05 [−0.83, +2.95] (interval includes zero), very hard +2.06 [+0.70, +3.49].
 
 ## 7.5 The full transcript wins, so this benchmark cannot measure retrieval
 
@@ -498,7 +498,7 @@ The largest gap (ours against full context, 1.2 points) is inside the noise (p �
 
 > **If ma'am asks…**
 >
-> **Q: So is your method better than T1's?** A: In a controlled re-implementation, on the same answerer and questions, ours with the re-query is 2.0 F1 points above our rebuild of their pipeline without its timestamp oracle, interval +1.0 to +3.1. The re-query is MI-RAG's technique, and without it the two search pipelines are level overall.
+> **Q: So is your method better than T1's?** A: In a controlled re-implementation, on the same answerer and questions, ours with the re-query is 2.0 F1 points above our rebuild of their pipeline with its time filter off, interval +1.0 to +3.1. The re-query is MI-RAG's technique, and without it the two search pipelines are level overall.
 >
 > **Q: Why did you report +5.5 first and then +2.0?** A: The +5.5 compared two whole pipelines, and one of them read gold time stamps. The attribution study split it up; +2.0 is the controlled comparison, and most of it is the re-query. Both numbers are in the report, with the reason.
 >
@@ -845,7 +845,6 @@ For the MCQ and faithfulness commands, CAP must be above the script's cost estim
 | modality | the kind of material: text, figure, audio |
 | multimodal | using more than one kind of material |
 | OCR | reading text inside an image |
-| oracle | information a real user would not have, such as where the answer is |
 | paired difference | comparing two methods question by question, then averaging |
 | parity | level: the difference is inside the noise |
 | precision / recall | how much of what we produced is right / how much of the right thing we produced |
@@ -870,7 +869,7 @@ For the MCQ and faithfulness commands, CAP must be above the script's cost estim
 
 > **If ma'am asks…**
 >
-> **Q: What is the difference between gold and an oracle?** A: Gold is the known correct answer or evidence, used to *score* a system afterwards. An oracle is gold used *at question time*, which a real user never has. T1's equation 22 is an oracle: it reads the answer's annotated time interval.
+> **Q: Does T1's time filter read the gold answer location?** A: The paper does not say where the filter's interval comes from at question time. Gold is the known correct answer or evidence, used to *score* a system afterwards; a real user never has it. Our rebuild gives the filter the annotated interval because that is the only interval the paper describes, and we report the comparison with the filter off.
 >
 > **Q: Precision, recall, F1 — in one breath?** A: Precision: how much of what we produced is right. Recall: how much of the right thing we produced. F1: their harmonic mean, high only when both are high.
 >
@@ -898,7 +897,7 @@ At question time, a hybrid search — meaning plus keywords — finds the best p
 
 **The first paper and its dataset (2.5 minutes).** "The first target is Intra-Video Temporal-Aware RAG, on the LectQA-Vid dataset of 100 short computer-science videos. Their code is not published, so I rebuilt their pipeline from the paper and tested each step. I used one answering model for all methods, on a stratified subset of 300 questions, three repeats each, with their own metrics.
 
-My first result was plus 5.5 F1 over their pipeline. But the two pipelines differed in many ways, so I ran an attribution study. It showed their time filter — equation 22 — reads the annotated time interval of the answer at question time, which a real user does not have. It leaves 34 questions with no context, and the fixed reply there costs their pipeline 2.9 F1 points; elsewhere the filter makes no measurable difference. Without it, the two search pipelines are level overall; the re-query, which is MI-RAG's technique, adds 1.7 points; and the controlled comparison is plus 2.0, interval 1.0 to 3.1.
+My first result was plus 5.5 F1 over their pipeline. But the two pipelines differed in many ways, so I ran an attribution study. Their time filter — equation 22 — needs a time interval, and the paper does not say where it comes from at question time; my rebuild gives it the annotated interval, which a real user does not have. It leaves 34 questions with no context, and the fixed reply there costs their pipeline 2.9 F1 points; elsewhere the filter makes no measurable difference. Without it, the two search pipelines are level overall; the re-query, which is MI-RAG's technique, adds 1.7 points; and the controlled comparison is plus 2.0, interval 1.0 to 3.1.
 
 The most important finding is that giving the model the whole transcript beats every retrieval method. Every transcript fits easily in the model's input, so retrieval can only lose information. LectQA-Vid simply cannot measure the value of retrieval. My audit found more: the correct multiple-choice option is A in 99.7 % of questions and usually the longest option, so a rule that picks the longest option scores 94 % without watching anything; and only about 56 % of the time stamps are usable."
 

@@ -21,8 +21,9 @@ that aim yet (see below). Everything runs CPU-first; a GPU only makes it faster.
    technique. One answerer
    (gpt-5.4-mini) for every mode, 300-question stratified subset, 3 repeats, T1's metrics:
    overall token F1 replica 31.23, replica without its eq. 22 filter 34.69, our RRF retrieval
-   34.96, RRF with one re-query 36.70, full transcript 38.74. Eq. 22 reads the gold interval at
-   test time. The 5.47 gap from replica to re-query is 2.93 from our fixed reply on the 34 questions
+   34.96, RRF with one re-query 36.70, full transcript 38.74. In our replica eq. 22 is given
+   the question's annotated interval: T1 does not say where its interval comes from at inference,
+   and the reply when the filter leaves nothing is our choice. The 5.47 gap from replica to re-query is 2.93 from our fixed reply on the 34 questions
    where eq. 22 left no context, 0.53 from the filter elsewhere and 0.27 between the two retrieval
    pipelines (neither measurable), and 1.74 from the re-query; the full transcript beats every
    retrieval mode (`results/external/lectqa_open_modes.md`, `lectqa_attribution.md`,

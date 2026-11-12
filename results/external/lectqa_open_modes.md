@@ -2,7 +2,7 @@
 
 Three ways to give the same answerer its context, scored with T1's own metric suite:
 
-- **baseline**: T1's pipeline (§4.2-4.4) replicated. Chunks: whisper sentences merged while cosine > 0.75 and gap < 5.0 s, near-duplicates (> 0.9) dropped, frame OCR overlapping speech by > 2.0 s suppressed; embedder `BAAI/bge-base-en-v1.5` mean-pooled; top-10 above cosine 0.6; temporal filter (eq. 22) on the question's annotated interval ± 3.0 s; merge of consecutive results with gap < 5.0 s; cross-encoder `cross-encoder/ms-marco-MiniLM-L-6-v2` over the top-8; top-4 in temporal order. **Eq. 22 reads the gold timestamps (an oracle).** It is applied only where the stamp is usable (`gold_interval`); elsewhere the pipeline runs without it. Both are reported separately below.
+- **baseline**: T1's pipeline (§4.2-4.4) replicated. Chunks: whisper sentences merged while cosine > 0.75 and gap < 5.0 s, near-duplicates (> 0.9) dropped, frame OCR overlapping speech by > 2.0 s suppressed; embedder `BAAI/bge-base-en-v1.5` mean-pooled; top-10 above cosine 0.6; temporal filter (eq. 22) on the question's annotated interval ± 3.0 s; merge of consecutive results with gap < 5.0 s; cross-encoder `cross-encoder/ms-marco-MiniLM-L-6-v2` over the top-8; top-4 in temporal order. **Eq. 22 is given the question's annotated interval. T1 does not say where its interval comes from at inference, and the fixed reply when the filter leaves nothing is our choice** (until 2026-11-12 this report called the filter an oracle). It is applied only where the stamp is usable (`gold_interval`); elsewhere the pipeline runs without it. Both are reported separately below.
 - **iterative**: ours: RRF (bge-m3 dense + BM25) over our sentence-packed transcript and frame-OCR units, one LLM follow-up query, top-4. No timestamps are read.
 - **full_context**: no retrieval; every transcript unit of the video, in time order. No timestamps and no frame OCR.
 
@@ -43,7 +43,7 @@ Each question's F1 averaged over its repeats; the mean paired difference and a 1
 | full_context − baseline | +7.54 [+4.03, +11.35] | +10.33 [+7.11, +13.82] | +4.66 [+2.80, +6.61] | +7.51 [+5.72, +9.40] |
 | iterative − baseline | +4.95 [+1.68, +8.45] | +8.20 [+4.98, +11.62] | +3.25 [+1.46, +5.18] | +5.47 [+3.80, +7.24] |
 
-## Baseline with and without its oracle filter (repeat 0, subset)
+## Baseline with and without eq. 22 (repeat 0, subset)
 
 answerer `gpt-5.4-mini-2026-03-17` temperature 0.0 (JSON answer with claims, the same prompt for every mode) · metrics T1 eqs. 29-35 (`linkrag.eval.lectqa_metrics`), in %.
 

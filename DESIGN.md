@@ -354,8 +354,10 @@ explicit instruction.
      run on the other 1,118 questions was not made: $7.43 was estimated against a $3.50 cap.
      The T1 baseline is our replica of §4.2–4.4. M, L, the merge gap, the cross-encoder
      (MS MARCO MiniLM), per-video search and tesseract OCR in place of Gemini captions are our
-     choices where the paper is silent. Its eq. 22 filter reads the question's gold
-     timestamps (an oracle), usable on 160 of the 300. T1's answerer is unnamed, so absolute
+     choices where the paper is silent. Its eq. 22 filter is given the question's
+     annotated interval, on 160 of the 300: T1 does not say where its interval comes from at
+     inference, and the fixed reply when the filter leaves nothing is our choice (*until
+     2026-11-12 this called the filter "an oracle"*). T1's answerer is unnamed, so absolute
      numbers are not comparable with Table 4: our F1 is higher and our similarity lower.
      Faithfulness used one judge run per check (3 runs did not fit the cap), so it is
      *direction only*. Their split and 1,000-pair subset are unpublished.
