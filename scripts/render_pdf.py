@@ -17,7 +17,10 @@ FOOTER = ('<div style="font: 7pt Helvetica, Arial, sans-serif; color: #5b6270; w
 
 def render(src: Path, out: Path) -> None:
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        try:
+            browser = p.chromium.launch()
+        except Exception:           # Playwright's own Chromium is not downloaded: use the installed Chrome
+            browser = p.chromium.launch(channel="chrome")
         page = browser.new_page()
         page.goto(src.resolve().as_uri(), wait_until="load")
         page.pdf(path=str(out), prefer_css_page_size=True, print_background=True,

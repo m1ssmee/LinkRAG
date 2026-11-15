@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LinkRAG paper draft</title>
+<style>
+@page { size: A4; margin: 22mm 20mm 22mm 20mm; }
+* { box-sizing: border-box; }
+body { margin: 0; color: #111; background: #fff; font: 10.2pt/1.42 Georgia, "Times New Roman", serif; text-align: justify; hyphens: auto; }
+h1 { font-size: 16.5pt; line-height: 1.22; text-align: center; margin: 0 0 3mm; hyphens: none; }
+.authors { text-align: center; margin: 0 0 1mm; }
+.affil { text-align: center; color: #444; font-size: 9pt; margin: 0 0 5mm; }
+.draft { text-align: center; color: #8a1c1c; font: 600 8.6pt Helvetica, Arial, sans-serif; margin: 0 0 4mm; }
+.abstract { margin: 0 9mm 5mm; font-size: 9.4pt; }
+.abstract b.h { display: block; text-align: center; margin-bottom: 1mm; }
+h2 { font-size: 11.6pt; margin: 5.5mm 0 1.5mm; break-after: avoid; text-align: left; }
+h3 { font-size: 10.2pt; margin: 3.5mm 0 1mm; break-after: avoid; text-align: left; font-style: italic; }
+p { margin: 0 0 2mm; }
+ul, ol { margin: 0 0 2mm; padding-left: 5.5mm; }
+li { margin-bottom: 0.8mm; }
+table { width: 100%; border-collapse: collapse; margin: 2mm 0 3.5mm; font: 8.5pt/1.3 Helvetica, Arial, sans-serif; break-inside: avoid; text-align: left; hyphens: none; }
+caption { caption-side: top; text-align: left; padding-bottom: 1.2mm; font: 8.8pt/1.3 Georgia, serif; }
+caption b { font-family: Helvetica, Arial, sans-serif; }
+th, td { padding: 0.9mm 1.5mm; vertical-align: top; }
+thead th, tr.h th { border-top: 1px solid #111; border-bottom: 0.6px solid #111; font-weight: 600; }
+tr.last td { border-bottom: 1px solid #111; }
+td.n, th.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tr.ref td { font-style: italic; color: #444; }
+tr.key td { font-weight: 600; }
+tr.rule td { border-top: 0.6px solid #999; }
+code { font: 8.6pt Menlo, Consolas, monospace; }
+.refs { font-size: 8.9pt; text-align: left; hyphens: none; }
+.refs li { margin-bottom: 1.1mm; }
+.todo { color: #8a1c1c; }
+</style>
+</head>
+<body>
+
+<p class="draft">DRAFT, 15 November 2026 · not submitted · author list, venue format and items marked in red to be completed</p>
+
+<h1>What Do Lecture-Video Benchmarks Measure? A Controlled Re-implementation and Audit of LectQA-Vid, and Slide Alignment at Parity with MaViLS</h1>
+<p class="authors"><span class="todo">[Author names]</span></p>
+<p class="affil"><span class="todo">[Affiliation · contact]</span></p>
+
+<div class="abstract">
+<b class="h">Abstract</b>
+We built LinkRAG, a retrieval-augmented question-answering system for lecture material that links speech, slides and
+documents at indexing time, and evaluated it against two published systems on their own benchmarks. On LectQA-Vid, the
+benchmark of Intra-Video Temporal-Aware RAG, we re-implemented the published pipeline and compared every method with
+one answering model. Hybrid retrieval with one iterative re-query scores +2.00 token-F1 (95 % CI [+0.96, +3.11]) above
+the re-implemented pipeline; +1.74 of that comes from the re-query. We could not reproduce the benefit reported for
+timestamp-constrained retrieval: where the temporal filter keeps evidence it makes no measurable difference, and it
+leaves 21 % of the questions it applies to with no context. An audit shows that the benchmark cannot measure retrieval
+at all. Giving the model the whole transcript beats every retrieval method, echoing the question as the answer scores
+22.87 F1 against a published 23.52, and the correct multiple-choice option is the first option in 99.7 % of questions
+and the longest in 94.6 %. On MaViLS, a video-to-slide alignment benchmark, a fusion of image, frame-OCR and
+speech features reaches a mean F1 of 0.853 against the published 0.80 on the same nine held-out lectures; the paired
+difference (+0.055, CI [−0.050, +0.161]) is parity, and the video frames, not the speech or the decoder, carry it.
+The linking and set-level reranking components of our own system show no measured benefit on either benchmark, and we
+report that as a negative result. We release the code, the stored answers and the scripts that reproduce every number.
+</div>
+
+<h2>1. Introduction</h2>
+<p>Lecture recordings are a natural target for retrieval-augmented generation (RAG) [1]: the content is long, it is
+spread over speech, slides and written notes, and a student's question is usually answered by a specific moment or
+slide. Two recent lines of work address parts of this problem. Intra-Video Temporal-Aware RAG [2] answers questions
+about a single lecture video by restricting retrieval to a temporal window, and introduces the LectQA-Vid benchmark.
+MaViLS [3] aligns each spoken sentence of a lecture with the slide on screen, and provides a hand-labelled benchmark
+for that task.</p>
+<p>We set out to improve on both with LinkRAG, a system whose design centres on an evidence linking layer: typed,
+scored links between speech segments, slides and figures are built at indexing time, retrieval follows them, and a
+reranker selects an evidence set for coverage rather than scoring each unit alone. To make any gain attributable, we
+measured the system only on the two target papers' own benchmarks, with their metrics.</p>
+<p>The outcome is not the one we designed for, and we report it as it is. Our contributions are:</p>
+<ol>
+<li><b>A controlled re-implementation of Temporal-Aware RAG on LectQA-Vid</b> with one answering model for every
+method, and an attribution of the observed gap to its parts (§5.2–5.3).</li>
+<li><b>An audit of LectQA-Vid</b> showing that neither its multiple-choice nor its open-ended half can measure the
+value of retrieval, with three simple baselines that any future use of the benchmark should report (§5.1, §5.4).</li>
+<li><b>A multi-feature slide alignment at parity with MaViLS</b>, with a decomposition showing which features and
+which decoder produce the result (§6).</li>
+<li><b>A negative result for link-following retrieval and set-level reranking</b> on single-stream benchmarks, and a
+score-scale defect in complementarity reranking that inflated an earlier estimate of its cost (§7).</li>
+</ol>
+
+<h2>2. Related Work</h2>
+<p><b>RAG over video and lectures.</b> Temporal-Aware RAG [2] segments a transcript and frame captions into
+timestamped chunks, retrieves the top-K by embedding similarity, filters them to a temporal window (their eq. 22),
+re-ranks with a cross-encoder and answers with a language model. It reports that the temporal filter is its most
+important component. MI-RAG [4] alternates retrieval and reasoning, issuing follow-up queries from intermediate
+answers; we use one round of such re-querying as a component. MARA [5] studies adaptive retrieval for multi-page
+document question answering. Knowledge-graph approaches to educational material [6, 7] extract entities and relations
+with a language model; our links are structural (co-occurrence in time, layout, deixis) and need no extraction model.
+MultiHaystack [8] benchmarks retrieval over a large mixed corpus of images, videos and documents.</p>
+<p><b>Speech-to-slide alignment.</b> MaViLS [3] computes three sentence-by-slide similarity matrices, from OCR text,
+image features and the audio transcript, and decodes a slide sequence with dynamic programming under a slide-jump
+penalty. The Lecture Presentations Multimodal dataset [9] poses cross-modal retrieval between spoken language and
+slide figures, and narrated-lecture generation [10] aligns narration with slide regions.</p>
+<p><b>Building blocks.</b> We use BM25 [11] and BGE-M3 dense embeddings [12] fused by reciprocal rank fusion [13],
+Whisper speech recognition [14], Sentence-BERT models [15] for the similarity metric that [2] defines, SwiftFormer
+[16] image features as in [3], and maximal marginal relevance [17] as a reranking ablation.</p>
+
+<h2>3. System</h2>
+<p><b>Ingestion and indexing.</b> Documents, slide decks, images and audio become evidence units with a modality and a
+location (page and box, or start and end time). Speech is transcribed locally with word timestamps and packed into
+sentence-aligned segments. Units are embedded with BGE-M3 and indexed for exact dense search and BM25.</p>
+<p><b>Evidence linking layer.</b> Four link types are built at indexing time: <i>audio–slide</i>, from a monotone
+dynamic-programming alignment of speech segments to slides over a hybrid similarity; <i>figure–text</i>, between a
+figure and the paragraph that explains it; <i>deictic</i>, between a spoken pointing phrase and the visual element on
+screen; and <i>same-slide</i>. A relatedness gate tests each recording–deck pair against a shuffled null before its
+links are admitted.</p>
+<p><b>Retrieval and reranking.</b> The baseline is reciprocal rank fusion of dense and BM25 rankings. Link-following
+retrieval expands the top seeds by one hop along the links. A complementarity reranker then selects a set of k units
+greedily, scoring relevance plus a bonus for each newly covered modality and each link into the set, minus
+within-modality redundancy. Iterative retrieval issues one follow-up query written by the language model [4].</p>
+<p><b>Answering and verification.</b> The answerer returns an answer as a list of claims, each citing evidence units.
+A separate judge model checks every claim against the text it cites and must quote a supporting span.</p>
+<p>Every stage runs in a baseline and a linked mode from the same code, so that each component is an ablation.</p>
+
+<h2>4. Experimental Setup</h2>
+<p><b>LectQA-Vid.</b> The benchmark [2] has 100 computer-science lecture videos of 2–5 minutes and 3,000 question–answer
+pairs, half multiple choice and half open-ended, at three difficulty levels. 95 videos were still available, with
+2,832 pairs. The published split and 1,000-pair evaluation subset are not released, so open-ended answers are
+evaluated on a stratified sample of 300 questions (100 per level, fixed seed) from 93 videos, three repeats each; the
+1,414 multiple-choice questions are run once with options shuffled under a fixed seed. We use the metric suite of [2]:
+token F1, BLEU-4 [18], METEOR [19], ROUGE-1 [20] and MiniLM cosine similarity.</p>
+<p><b>Re-implementation of [2].</b> The code of [2] is not public. We rebuilt its pipeline from the paper with the
+values its Table 3 gives: semantic chunking, BGE-base embeddings, top-10 candidates above cosine 0.6, the temporal
+filter with a 3 s tolerance, merging of adjacent results, cross-encoder re-ranking and a temporally ordered context.
+Where the paper is silent the choices are ours: the re-rank pool and context sizes, the merge gap, the cross-encoder,
+and OCR in place of generated frame captions. Two points matter for the results. The paper does not say where the
+filter's query interval comes from at inference; we give it the question's annotated interval, the only interval the
+paper describes. It also does not say what happens when no chunk survives; our re-implementation then returns a fixed
+"no evidence" reply. Every mode is answered by the same model (gpt-5.4-mini, temperature 0) with the same prompt. The
+answering model of [2] is not named, so absolute scores are not comparable with its tables; differences between our
+rows are.</p>
+<p><b>MaViLS.</b> The benchmark [3] has 20 lectures with every spoken sentence labelled with a slide. We use the
+authors' scorer unchanged. The lectures were split once into 10 for tuning and 10 for testing; all weights and
+thresholds were set on the tuning half. The release contains no video for one test lecture, so test means cover nine
+lectures and are paired with the per-lecture figures published in [3].</p>
+<p><b>Statistics.</b> We report 95 % bootstrap intervals [21] from 10,000 resamples. Paired differences resample the
+sampled unit, whole videos or whole lectures, because questions on one video share a transcript. An interval that
+contains zero is reported as no measurable difference.</p>
+
+<h2>5. Results on LectQA-Vid</h2>
+
+<h3>5.1 The multiple-choice half</h3>
+<p>The correct option is option A in 1,484 of the 1,489 published multiple-choice questions and the unique longest
+option in 1,409. Shuffling removes the first confound but not the second (Table 1). Accuracy tracks the share of
+longest-option answers at each difficulty level, so this half measures neither the video nor retrieval, and we report
+no multiple-choice result.</p>
+<table>
+<caption><b>Table 1.</b> Multiple-choice accuracy (%) on LectQA-Vid, 1,414 questions, options shuffled.</caption>
+<tr class="h"><th>Method</th><th class="n">Simple</th><th class="n">Hard</th><th class="n">Very hard</th><th class="n">Overall</th></tr>
+<tr class="ref"><td>Temporal-Aware RAG, published [2]</td><td class="n">57.29</td><td class="n">52.34</td><td class="n">50.67</td><td class="n">53.43</td></tr>
+<tr><td>Longest option, no video</td><td class="n">88.2</td><td class="n">95.1</td><td class="n">100.0</td><td class="n">94.4</td></tr>
+<tr class="last"><td>Our answerer, full transcript</td><td class="n">90.11</td><td class="n">96.38</td><td class="n">99.57</td><td class="n">95.33</td></tr>
+</table>
+
+<h3>5.2 Open-ended answers</h3>
+<table>
+<caption><b>Table 2.</b> Open-ended answers on LectQA-Vid: token F1 (%) by difficulty and overall MiniLM similarity,
+mean over three repeats, 300 questions. The published row uses an unnamed answering model and a different question
+subset and is shown for reference only.</caption>
+<tr class="h"><th>Method</th><th class="n">Simple</th><th class="n">Hard</th><th class="n">Very hard</th><th class="n">Overall</th><th class="n">Sim.</th></tr>
+<tr class="ref"><td>Temporal-Aware RAG, published [2]</td><td class="n">29.47</td><td class="n">24.38</td><td class="n">16.72</td><td class="n">23.52</td><td class="n">74.42</td></tr>
+<tr class="ref"><td>Question echoed as the answer</td><td class="n">23.70</td><td class="n">22.62</td><td class="n">22.28</td><td class="n">22.87</td><td class="n">58.99</td></tr>
+<tr class="rule"><td>[2] re-implemented, temporal filter on</td><td class="n">41.34</td><td class="n">28.06</td><td class="n">24.28</td><td class="n">31.23</td><td class="n">57.32</td></tr>
+<tr><td>[2] re-implemented, temporal filter off</td><td class="n">43.39</td><td class="n">35.21</td><td class="n">25.48</td><td class="n">34.69</td><td class="n">63.03</td></tr>
+<tr><td>Ours: hybrid retrieval</td><td class="n">42.64</td><td class="n">34.66</td><td class="n">27.58</td><td class="n">34.96</td><td class="n">63.92</td></tr>
+<tr class="key"><td>Ours: hybrid retrieval + one re-query</td><td class="n">46.30</td><td class="n">36.26</td><td class="n">27.53</td><td class="n">36.70</td><td class="n">65.79</td></tr>
+<tr class="last"><td>Full transcript, no retrieval</td><td class="n">48.88</td><td class="n">38.39</td><td class="n">28.94</td><td class="n">38.74</td><td class="n">66.88</td></tr>
+</table>
+<p>Our retrieval with one re-query scores 2.00 F1 points above the re-implemented pipeline with its filter off
+(CI [+0.96, +3.11]). By difficulty the difference is +2.91 on simple questions, +1.05 on hard questions, where the
+interval contains zero, and +2.06 on very hard ones. Standard deviations across repeats are at most 0.51 points.
+Unsupported-claim rates under claim-level verification are 3.7 %, 3.1 % and 4.3 % for the re-implementation, our
+method and the full transcript, with one judge run per claim; the three are not distinguishable.</p>
+
+<h3>5.3 Where the difference comes from</h3>
+<table>
+<caption><b>Table 3.</b> From the re-implementation with its filter on to our method, one change at a time. Paired
+differences in token F1, 95 % CI over videos.</caption>
+<tr class="h"><th>Step</th><th class="n">F1 after</th><th class="n">Change</th></tr>
+<tr><td>[2] re-implemented, temporal filter on</td><td class="n">31.23</td><td class="n"></td></tr>
+<tr><td>Unfiltered answer where the filter left no context (34 questions)</td><td class="n">34.16</td><td class="n">+2.93 [+1.45, +4.56]</td></tr>
+<tr><td>Temporal filter off everywhere</td><td class="n">34.69</td><td class="n">+0.53 [−0.20, +1.30]</td></tr>
+<tr><td>Hybrid retrieval in place of the pipeline of [2]</td><td class="n">34.96</td><td class="n">+0.27 [−0.90, +1.48]</td></tr>
+<tr class="last"><td>One re-query [4]</td><td class="n">36.70</td><td class="n">+1.74 [+0.77, +2.75]</td></tr>
+</table>
+<p>Only two steps are measurable. The re-query, a technique from [4], accounts for most of our advantage; without it
+the two retrieval pipelines are level. The other measurable step is not a property of retrieval quality: it is the
+cost of answering "no evidence" when the temporal filter removes every candidate.</p>
+<p><b>The temporal filter.</b> In [2], removing the filter lowers F1 from 23.52 to 11.40, and a baseline without
+timestamps scores 14.80. We do not reproduce this. The filter applied to 160 of our 300 questions and left 34 of them
+(21 %) with no context. In all 34 a chunk inside the window existed and was removed earlier, by the similarity
+threshold (18) or the top-10 cut (16). Where the filter kept something, its effect is −0.53 [−1.30, +0.20]. On the 34
+empty-window questions our own retrieval overlaps the annotated interval for 32 %, against 87 % on the other 126, and
+a full-transcript answer cites a unit inside the interval for 28 % against 77 %. This suggests that those annotations
+point at the wrong part of the video, although we have not verified it by hand. Our reading is that a filter driven by
+an annotated interval is only as good as the annotation, and that the benefit reported in [2] depends on details of
+the interval source and the empty-result behaviour that the paper does not specify.</p>
+
+<h3>5.4 The benchmark cannot measure retrieval</h3>
+<p>Three observations bound what an open-ended score on LectQA-Vid means. First, the full transcript beats our best
+retrieval by 2.04 F1 [+1.08, +3.06] at every difficulty level. Transcripts run from about 140 to 1,544 tokens (median
+780), and all 95 together are 72,926 tokens, so any current model can read a whole video, or the whole corpus, at
+once; retrieval can only remove information. Second, answering each question with its own text scores 22.87 F1,
+because reference answers restate the question. The usable range is therefore about 23 to 39 F1, and the published
+overall score of 23.52 lies at its floor. Third, only 1,598 of the 2,832 annotated intervals pass basic format and
+range checks, which limits any timestamp-based evaluation.</p>
+<p>We recommend that results on LectQA-Vid be accompanied by a full-transcript row, a question-echo row and, for
+multiple choice, a longest-option row.</p>
+
+<h3>5.5 Localisation and a pooled-corpus stress test</h3>
+<p>Without an answerer, we scored whether a retrieved unit overlaps the annotated interval on the 1,598 questions
+with a checkable interval. Plain hybrid top-k reaches 45.6 % hit@1 and 85.1 % hit@8. Link-following with the
+complementarity reranker lowers hit@3 from 68.7 % to 63.7 % (−5.01 points [−7.60, −2.24]) and makes no measurable
+difference at hit@8. Recovering a slide deck from the video frames and linking it to the speech did not help: the
+alignment picks the slide on screen for only 22.5 % of speech segments, because spoken sentences and OCR text of
+animated frames share little vocabulary.</p>
+<p>As an exploratory stress test we pooled all 95 videos into one index and asked each question without its video.
+The interval hit rate at 8 falls from 85.1 % to 52.8 %, so this setting does separate retrieval methods. Plain top-k
+remains the best method: the full linked system is 6.88 points lower [−10.12, −4.03], and the links alone make no
+measurable difference (−0.38 [−1.13, +0.54]). Most questions refer to "the video" or "the speaker" (2,102 of 2,832),
+so this setting is not a substitute for a multi-source benchmark.</p>
+
+<h2>6. Results on MaViLS</h2>
+<table>
+<caption><b>Table 4.</b> Slide alignment on MaViLS: mean F1 over the nine held-out lectures with video, authors' scorer.
+Published figures are per-lecture values from [3] averaged over the same lectures.</caption>
+<tr class="h"><th>Method</th><th class="n">Mean F1</th></tr>
+<tr class="ref"><td>MaViLS, audio transcript only, published [3]</td><td class="n">0.47</td></tr>
+<tr class="ref"><td>MaViLS, all features, published [3]</td><td class="n">0.80</td></tr>
+<tr class="rule"><td>Ours, speech-to-slide text only</td><td class="n">0.483</td></tr>
+<tr><td>Ours, image only</td><td class="n">0.730</td></tr>
+<tr><td>Ours, frame OCR only</td><td class="n">0.818</td></tr>
+<tr><td>Ours, all three, row-wise argmax (no decoder)</td><td class="n">0.789</td></tr>
+<tr><td>Ours, all three, decoder of [3]</td><td class="n">0.849</td></tr>
+<tr class="key last"><td>Ours, all three, our decoder</td><td class="n">0.853</td></tr>
+</table>
+<p>For each sentence we take the video frame at its timestamp and score it against every slide by SwiftFormer image
+similarity and by BM25 between the frame's OCR text and the slide's; a third matrix scores the spoken sentence against
+slide text. The three are fused with weights chosen on the tuning half (0.25, 0.50, 0.25) and decoded by dynamic
+programming. A visibility gate neutralises the two frame channels when a frame shows no slide.</p>
+<p>The fused system reaches 0.853 against 0.80 for the all-features result of [3] on the same nine lectures: 5 wins,
+1 tie and 3 losses, a paired difference of +0.055 with CI [−0.050, +0.161]. The interval contains zero, so we report
+parity. An exploratory leave-one-lecture-out analysis over all 19 lectures with video gives +0.050 [+0.002, +0.103],
+with 9 wins, 2 ties and 8 losses; three lectures on which [3] scores between 0.53 and 0.65 carry the difference, and
+without them it is +0.006. The largest per-lecture gains are on Phonetics (0.99 against 0.65) and Solar resource (0.81
+against 0.53); the largest loss is on Short range (0.58 against 0.80).</p>
+<p><b>What produces the result.</b> The frames do. Frame OCR alone reaches 0.818, and removing the speech channel
+costs 0.011 [−0.034, +0.005], which is not measurable. This agrees with the feature ranking in [3], where OCR is the
+strongest single feature and audio the weakest. The decoder is not a differentiator: on our fused matrix the decoder
+of [3], run from the authors' code, and ours differ by −0.004 [−0.015, +0.007] over 19 lectures, and on the authors'
+own text similarity matrix the two score 0.513 and 0.520. A jump-penalised decoder of either kind adds about 0.06 over
+no decoder. Unlike LectQA-Vid, the benchmark has no trivial floor: mapping sentence position linearly onto the deck
+scores 0.21.</p>
+<p><b>Failure analysis.</b> On the tuning half, the four weakest lectures are camera-heavy. Between 47 % and 82 % of
+their errors fall on frames that show no slide, which make up 25 % to 52 % of their frames, and 73 % to 100 % of
+errors are within two slides of the correct one. Speaker shots, during which only the speech channel and the decoder
+decide, are the open problem for this task.</p>
+
+<h2>7. Discussion</h2>
+<p><b>Linking and set-level reranking.</b> Neither component of our design improved retrieval on either benchmark. On
+LectQA-Vid a question concerns one video with no separate deck or document, so cross-file links do not exist, and the
+temporal links available there add nothing that hybrid retrieval does not already find. MaViLS evaluates alignment,
+not question answering. The case the linking layer was designed for, evidence spread over several files that does not
+fit in the model's context, is not represented in either benchmark, so our result is that the components do not help
+on single-stream lecture video, not that they cannot help.</p>
+<p><b>A score-scale pitfall.</b> The complementarity reranker adds fixed bonuses (0.3 per new modality) and penalties
+(0.4 times redundancy) to relevance scores. Reciprocal rank fusion yields scores near 0.03, so on raw scores the
+bonuses decide the selection almost alone. An early measurement made this way showed a 13-point loss of hit@3; on
+rank-normalised scores the loss is about 5 points. Set-level objectives that mix relevance with structural terms
+should normalise relevance first, and ablations should check that all compared conditions see scores on one scale.</p>
+<p><b>What the comparison with [2] supports.</b> Our result is a comparison between two pipelines under one answerer,
+not an improvement over the numbers in [2], which we could not reproduce in absolute terms. The gain it shows belongs
+mostly to iterative re-querying.</p>
+
+<h2>8. Limitations</h2>
+<ul>
+<li>The pipeline of [2] is our re-implementation; several of its parameters and the source of its filter interval are
+our choices. With the authors' code or their evaluation subset the comparison could differ.</li>
+<li>Open-ended results cover 300 of the 1,418 open-ended questions, with one answering model.</li>
+<li>No annotated interval of LectQA-Vid was checked by hand; the evidence that some are misplaced is indirect.</li>
+<li>MaViLS test results rest on nine lectures, compared with published per-lecture figures rather than a re-run, and
+the test half was examined in several rounds, although no parameter was set on it.</li>
+<li>Faithfulness was judged once per claim by a single model.</li>
+</ul>
+
+<h2>9. Conclusion</h2>
+<p>Measured on its two target benchmarks, a link-centred lecture RAG system matches a published slide aligner and
+exceeds a re-implemented video-QA pipeline by two F1 points, and neither result is due to linking. The more durable
+findings concern the benchmarks. LectQA-Vid can be answered from the whole transcript, from option length, and nearly
+as well as its published system by repeating the question, so it cannot rank retrieval methods; MaViLS is sound but
+rewards frame-to-slide matching and leaves speaker shots unsolved. A benchmark that could test evidence linking needs
+questions whose evidence spans several sources and exceeds one context window. Building one is the next step.</p>
+
+<h2>References</h2>
+<ol class="refs">
+<li>P. Lewis, E. Perez, A. Piktus, et al. Retrieval-augmented generation for knowledge-intensive NLP tasks. In <i>Advances in Neural Information Processing Systems 33</i>, 2020.</li>
+<li>S. Shafiq, N. Ejaz, M. A. Shah, R. Kamal, A. Sohail, and S. Aslam. Intra-video temporal-aware RAG: A self-contained framework for video-based question answering. <i>Computers, Materials &amp; Continua</i>, 88(2):96, 2026. doi:10.32604/cmc.2026.081534.</li>
+<li>K. Anderer, A. Reich, and M. Wölfel. MaViLS, a benchmark dataset for video-to-slide alignment, assessing baseline accuracy with a multimodal alignment algorithm leveraging speech, OCR, and visual features. In <i>Proc. Interspeech 2024</i>, pp. 1375–1379, 2024. doi:10.21437/Interspeech.2024-978.</li>
+<li>C. Choi, W. Lee, J. Ko, and W. Rhee. Multimodal iterative RAG for knowledge visual question answering. arXiv:2509.00798, 2025.</li>
+<li>H. Wu, H. Zhai, Y. Li, et al. MARA: A multimodal adaptive retrieval-augmented framework for document question answering. In <i>Proc. 33rd ACM International Conference on Multimedia</i>, pp. 4329–4338, 2025. doi:10.1145/3746027.3755390.</li>
+<li>S. Al Farib, M. A. Meem, S. R. Islam, and M. T. Raihan. Evidence-grounded multimodal knowledge graph construction for multi-lecture educational reasoning. arXiv:2608.03161, 2026.</li>
+<li>X. Zhao, G. Wang, and Y. Lu. MDKAG: Retrieval-augmented educational QA powered by a multimodal disciplinary knowledge graph. <i>Applied Sciences</i>, 15(16):9095, 2025. doi:10.3390/app15169095.</li>
+<li><span class="todo">[Authors to be added.]</span> MultiHaystack: Benchmarking multimodal retrieval and reasoning over 40K images, videos, and documents. arXiv:2603.05697, 2026.</li>
+<li>D. W. Lee, C. Ahuja, P. P. Liang, S. Natu, and L.-P. Morency. Lecture presentations multimodal dataset: Towards understanding multimodality in educational videos. In <i>Proc. IEEE/CVF International Conference on Computer Vision</i>, pp. 20087–20098, 2023.</li>
+<li>A. Holmberg. Generating narrated lecture videos from slides with synchronized highlights. arXiv:2505.02966, 2025.</li>
+<li>S. Robertson and H. Zaragoza. The probabilistic relevance framework: BM25 and beyond. <i>Foundations and Trends in Information Retrieval</i>, 3(4):333–389, 2009.</li>
+<li>J. Chen, S. Xiao, P. Zhang, K. Luo, D. Lian, and Z. Liu. BGE M3-Embedding: Multi-lingual, multi-functionality, multi-granularity text embeddings through self-knowledge distillation. arXiv:2402.03216, 2024.</li>
+<li>G. V. Cormack, C. L. A. Clarke, and S. Büttcher. Reciprocal rank fusion outperforms Condorcet and individual rank learning methods. In <i>Proc. SIGIR</i>, pp. 758–759, 2009.</li>
+<li>A. Radford, J. W. Kim, T. Xu, G. Brockman, C. McLeavey, and I. Sutskever. Robust speech recognition via large-scale weak supervision. In <i>Proc. ICML</i>, 2023.</li>
+<li>N. Reimers and I. Gurevych. Sentence-BERT: Sentence embeddings using Siamese BERT-networks. In <i>Proc. EMNLP-IJCNLP</i>, 2019.</li>
+<li>A. Shaker, M. Maaz, H. Rasheed, S. Khan, M.-H. Yang, and F. S. Khan. SwiftFormer: Efficient additive attention for transformer-based real-time mobile vision applications. In <i>Proc. IEEE/CVF International Conference on Computer Vision</i>, 2023.</li>
+<li>J. Carbonell and J. Goldstein. The use of MMR, diversity-based reranking for reordering documents and producing summaries. In <i>Proc. SIGIR</i>, pp. 335–336, 1998.</li>
+<li>K. Papineni, S. Roukos, T. Ward, and W.-J. Zhu. BLEU: A method for automatic evaluation of machine translation. In <i>Proc. ACL</i>, pp. 311–318, 2002.</li>
+<li>S. Banerjee and A. Lavie. METEOR: An automatic metric for MT evaluation with improved correlation with human judgments. In <i>Proc. ACL Workshop on Intrinsic and Extrinsic Evaluation Measures for MT and/or Summarization</i>, pp. 65–72, 2005.</li>
+<li>C.-Y. Lin. ROUGE: A package for automatic evaluation of summaries. In <i>Text Summarization Branches Out</i>, pp. 74–81, 2004.</li>
+<li>B. Efron and R. J. Tibshirani. <i>An Introduction to the Bootstrap</i>. Chapman &amp; Hall, 1993.</li>
+</ol>
+
+</body>
+</html>

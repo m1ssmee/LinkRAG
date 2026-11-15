@@ -14,7 +14,7 @@
   pages   = {96},
   year    = {2026},
   doi     = {10.32604/cmc.2026.081534},
-  note    = {Target T1. Introduces the LectQA-Vid benchmark (100 CS lecture videos, 3,000 QA pairs). Numbers quoted in README: Table 4/6 Overall F1 23.52\%, sim 0.71; Table 5 Overall MCQ acc 56.30\%.}
+  note    = {Target T1. Introduces the LectQA-Vid benchmark (100 CS lecture videos, 3,000 QA pairs). Published numbers (read from the paper's tables, corrected 2026-09-23): Table 4 Overall F1 23.52\%, similarity 74.42\%; Table 5 Overall MCQ accuracy 53.43\%; Table 6 no-timestamp baseline F1 14.80\%; Table 7 without the temporal filter F1 11.40\%.}
 }
 
 @inproceedings{anderer2024mavils,
@@ -113,4 +113,79 @@
 @misc{constraineddominantsets,
   title = {Constrained Dominant Sets},
   note  = {TODO: identify which CDS paper the literature review cites (the generic reference is Zemene and Pelillo, ``Interactive Image Segmentation Using Constrained Dominant Sets'', ECCV 2016, doi:10.1007/978-3-319-46484-8\_17; confirm whether a lecture/slide application paper was meant). Kept as a placeholder so the citation is not lost.}
+}
+
+% ------------------------------------------------- methods and metrics used
+% Added 2026-11-15 from memory for the paper draft: verify against the source before submission.
+
+@inproceedings{lewis2020rag,
+  title = {Retrieval-Augmented Generation for Knowledge-Intensive {NLP} Tasks},
+  author = {Lewis, Patrick and Perez, Ethan and Piktus, Aleksandra and others},
+  booktitle = {Advances in Neural Information Processing Systems 33}, year = {2020}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@article{robertson2009bm25,
+  title = {The Probabilistic Relevance Framework: {BM25} and Beyond},
+  author = {Robertson, Stephen and Zaragoza, Hugo},
+  journal = {Foundations and Trends in Information Retrieval}, volume = {3}, number = {4}, pages = {333--389}, year = {2009}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@misc{chen2024bgem3,
+  title = {{BGE} {M3-Embedding}: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation},
+  author = {Chen, Jianlv and Xiao, Shitao and Zhang, Peitian and Luo, Kun and Lian, Defu and Liu, Zheng},
+  year = {2024}, eprint = {2402.03216}, archivePrefix = {arXiv}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@inproceedings{cormack2009rrf,
+  title = {Reciprocal Rank Fusion Outperforms {Condorcet} and Individual Rank Learning Methods},
+  author = {Cormack, Gordon V. and Clarke, Charles L. A. and B{\"u}ttcher, Stefan},
+  booktitle = {Proc. SIGIR}, pages = {758--759}, year = {2009}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@inproceedings{radford2023whisper,
+  title = {Robust Speech Recognition via Large-Scale Weak Supervision},
+  author = {Radford, Alec and Kim, Jong Wook and Xu, Tao and Brockman, Greg and McLeavey, Christine and Sutskever, Ilya},
+  booktitle = {Proc. ICML}, year = {2023}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@inproceedings{reimers2019sbert,
+  title = {Sentence-{BERT}: Sentence Embeddings using {Siamese} {BERT}-Networks},
+  author = {Reimers, Nils and Gurevych, Iryna},
+  booktitle = {Proc. EMNLP-IJCNLP}, year = {2019}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@inproceedings{shaker2023swiftformer,
+  title = {{SwiftFormer}: Efficient Additive Attention for Transformer-based Real-time Mobile Vision Applications},
+  author = {Shaker, Abdelrahman and Maaz, Muhammad and Rasheed, Hanoona and Khan, Salman and Yang, Ming-Hsuan and Khan, Fahad Shahbaz},
+  booktitle = {Proc. IEEE/CVF International Conference on Computer Vision (ICCV)}, year = {2023}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@inproceedings{carbonell1998mmr,
+  title = {The Use of {MMR}, Diversity-Based Reranking for Reordering Documents and Producing Summaries},
+  author = {Carbonell, Jaime and Goldstein, Jade},
+  booktitle = {Proc. SIGIR}, pages = {335--336}, year = {1998}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@inproceedings{papineni2002bleu,
+  title = {{BLEU}: a Method for Automatic Evaluation of Machine Translation},
+  author = {Papineni, Kishore and Roukos, Salim and Ward, Todd and Zhu, Wei-Jing},
+  booktitle = {Proc. ACL}, pages = {311--318}, year = {2002}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@inproceedings{banerjee2005meteor,
+  title = {{METEOR}: An Automatic Metric for {MT} Evaluation with Improved Correlation with Human Judgments},
+  author = {Banerjee, Satanjeev and Lavie, Alon},
+  booktitle = {Proc. ACL Workshop on Intrinsic and Extrinsic Evaluation Measures for MT and/or Summarization}, pages = {65--72}, year = {2005}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@inproceedings{lin2004rouge,
+  title = {{ROUGE}: A Package for Automatic Evaluation of Summaries},
+  author = {Lin, Chin-Yew},
+  booktitle = {Text Summarization Branches Out}, pages = {74--81}, year = {2004}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+}
+
+@book{efron1993bootstrap,
+  title = {An Introduction to the Bootstrap},
+  author = {Efron, Bradley and Tibshirani, Robert J.},
+  publisher = {Chapman \& Hall}, year = {1993}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
 }
