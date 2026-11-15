@@ -9,6 +9,7 @@ point; the steps live in `scripts/adapters/lectqa/`:
   localisation   hit@k / IoU against the gold interval; v2 segmentation ablation
   frameslides    frame-derived slide units and links
   pooled         every video in one corpus: retrieval when the video is not given (exploratory)
+  closedbook     the open-ended subset with no context vs the full transcript (paid)
   recheck        free re-checks of the stored results: by-video intervals, eq. 22 empties, echo floor
   mcq            MCQ with options shuffled under a recorded seed
   open_ended     T1 replica vs iterative vs full context; faithfulness
@@ -37,6 +38,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from lectqa.attribution import attribution, attribution_rerender  # noqa: E402
+from lectqa.closedbook import closed_book  # noqa: E402
 from lectqa.acquisition import coverage, fetch  # noqa: E402
 from lectqa.common import video_ids  # noqa: E402
 from lectqa.frameslides import frameslides  # noqa: E402
@@ -53,13 +55,15 @@ from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setu
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("step", choices=["fetch", "prepare", "run", "v2", "frameslides", "coverage", "audit", "mcq",
-                                     "open", "faith", "attribution", "pooled", "recheck"])
+                                     "open", "faith", "attribution", "pooled", "recheck", "closedbook"])
     ap.add_argument("--runs", type=int, default=3, help="faith: judge runs per check (majority)")
     ap.add_argument("--rest", type=int, default=None, help="open: how many non-subset questions (seeded order)")
     ap.add_argument("--report-only", action="store_true", help="open: re-render the report from the stored answers")
     ap.add_argument("--dry-run", action="store_true", help="mcq/open: build prompts and estimate cost only")
     ap.add_argument("--videos", type=int, default=None, help="first N video ids")
     ap.add_argument("--only", default=None, help="comma-separated video ids")
+    ap.add_argument("--answers-dir", default=None, help="closedbook: score answers written by agents (out_*.json) instead of calling a model")
+    ap.add_argument("--answerer", default="agents", help="closedbook --answers-dir: how the report names the answerer")
     ap.add_argument("--cells", default=None, help="pooled: recompute only these method labels, separated by ;")
     ap.add_argument("--config", default="configs/default.yaml")
     ap.add_argument("--modes", default="baseline,linkrag")
@@ -111,6 +115,12 @@ def main(argv: list[str] | None = None) -> int:
         return coverage(external / "lectqa_coverage.md")
     if args.step == "frameslides":
         return frameslides(ids, cfg, dcfg, external / "lectqa_frameslides.md")
+    if args.step == "closedbook" and args.answers_dir:
+        from lectqa.closedbook import from_agents
+        return from_agents(ids, cfg, external / "lectqa_closedbook.md", Path(args.answers_dir), args.answerer)
+    if args.step == "closedbook":
+        return closed_book(ids, cfg, external / "lectqa_closedbook.md", max_cost=args.max_cost, dry_run=args.dry_run,
+                           repeats=args.repeats)
     if args.step == "recheck":
         return recheck(ids, cfg, external)
     if args.step == "pooled":

@@ -104,7 +104,7 @@ FIGS = {
 }
 ANCHOR = {
  "fig1": "<p>Every stage runs in a baseline and a linked mode from the same code, so that each component is an ablation.</p>\n",
- "fig2": "<p>We recommend that results on LectQA-Vid be accompanied by a full-transcript row, a question-echo row and, for\nmultiple choice, a longest-option row.</p>\n",
+ "fig2": "<p>We recommend that results on LectQA-Vid be accompanied by a full-transcript row, a question-echo row, a\nclosed-book row and, for multiple choice, a longest-option row.</p>\n",
  "fig3": "against 0.53); the largest loss is on Short range (0.58 against 0.80).</p>\n",
 }
 p = "paper/paper.html"; t = open(p).read()
