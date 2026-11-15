@@ -193,7 +193,8 @@ def recheck(ids: list[str], cfg: dict, external: Path) -> int:
     rng = random.Random(SHEET_SEED)
     sheet = pool["empty window"] + rng.sample(pool["passes"], 16) + rng.sample(pool["ambiguous format"], 25)
     out_csv = external / "lectqa_timestamp_check.csv"
-    with out_csv.open("w", newline="") as f:
+    filled = out_csv.exists() and any(r["checker"] for r in csv.DictReader(out_csv.open()))
+    with (out_csv.with_suffix(".blank.csv") if filled else out_csv).open("w", newline="") as f:   # never erase a filled sheet
         w = csv.writer(f)
         w.writerow(["group", "video", "kind", "level", "question", "answer", "timestamp_start", "timestamp_end",
                     "parsed_start_s", "parsed_end_s", "transcript_at_stamp", "answer_is_at_stamp (y/n)",
@@ -213,5 +214,51 @@ def recheck(ids: list[str], cfg: dict, external: Path) -> int:
           "`lectqa_open_modes.jsonl`, `lectqa_attribution.jsonl`, `lectqa_pooled.jsonl` · embedder for the chunk "
           "check: T1 replica's (`open_ended.T1_EMBEDDER`)."]
     (external / "lectqa_recheck.md").write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 0
+
+
+def timestamp_summary(external: Path) -> int:
+    """Summarise the filled timestamp sheet into lectqa_timestamp_check.md. No model is called."""
+    rows = list(csv.DictReader((external / "lectqa_timestamp_check.csv").open()))
+    if not any(r["checker"] for r in rows):
+        raise SystemExit("the sheet is not filled in yet")
+    count = lambda g, f: sum(1 for r in rows if r["group"] == g and f(r))                      # noqa: E731
+    conf = lambda r: r["notes"].startswith("[high]")                                           # noqa: E731
+    hit, miss = (lambda r: r["answer_is_at_stamp (y/n)"] == "y"), (lambda r: r["answer_is_at_stamp (y/n)"] == "n")
+    gone = lambda r: r["answer_is_at_stamp (y/n)"] == "not spoken"                             # noqa: E731
+    L = ["# LectQA-Vid — timestamp check of 75 gold intervals", "",
+         "Each row's reference answer was located in the video's timestamped transcript, and the location was "
+         "compared with the annotated stamp ± 3 s. Rows and locations: `lectqa_timestamp_check.csv`.", "",
+         "## Caveats first", "",
+         "- **The checker is a language model, not a person.** Claude Sonnet agents located each answer in the transcript "
+         "without being shown the stamp; the comparison with the stamp is computed here. Each location carries the "
+         "agent's confidence. Three rows were spot-checked by reading the transcript; all three agreed.",
+         "- **Speech only.** An answer that describes something shown on screen but never said counts as not spoken, "
+         "even if the stamp points at the right frame.",
+         "- **Small samples:** 34, 16 and 25 rows. The control group (16 passing stamps) is the comparison for the 34.", "",
+         "## Stamps that pass the format and range checks", "",
+         "| group | rows | stamp points at the spoken answer | stamp misses it | answer never spoken |", "|---|---:|---:|---:|---:|"]
+    for g, name in (("empty window", "the 34 where eq. 22 left no context"), ("passes", "16 other passing stamps (control)")):
+        n = count(g, lambda r: True)
+        L.append(f"| {name} | {n} | {count(g, hit)} | {count(g, miss)} | {count(g, gone)} |")
+        L.append(f"| … high-confidence locations only | {count(g, lambda r: conf(r) and not gone(r))} | "
+                 f"{count(g, lambda r: hit(r) and conf(r))} | {count(g, lambda r: miss(r) and conf(r))} | — |")
+    amb = [r for r in rows if r["group"] == "ambiguous format"]
+    readings = collections.Counter(r["answer_is_at_stamp (y/n)"].replace("y, read as ", "") for r in amb)
+    L += ["", "## Stamps with an ambiguous format", "",
+          "For each of the 25, the stamp was read under every candidate convention (M:S with seconds above 59, "
+          "H:M:S with overflow, S:cc, M:S:cc) and compared with the located answer.", "",
+          "| reading that matches the spoken answer | rows |", "|---|---:|",
+          *[f"| {k} | {v} |" for k, v in readings.most_common()], "",
+          "## Reading", "",
+          f"On the empty-window questions the stamp misses the spoken answer or the answer is never said in "
+          f"{count('empty window', lambda r: miss(r) or gone(r))} of 34, against "
+          f"{count('passes', lambda r: miss(r) or gone(r))} of 16 among other passing stamps. So most of the 34 empty "
+          "windows point at a moment where the answer is not spoken: eq. 22 removed the evidence because of the interval, "
+          "not because retrieval failed. Where the answer is never said, it may be shown on screen; this check cannot tell. Ambiguous stamps follow no single convention: no reading recovers them all, which is why they are "
+          "excluded rather than guessed.", "",
+          "`python scripts/adapters/lectqa_vid.py tscheck --max-cost 0` rebuilds this file from the sheet."]
+    (external / "lectqa_timestamp_check.md").write_text("\n".join(L) + "\n")
     print("\n".join(L))
     return 0

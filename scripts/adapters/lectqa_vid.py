@@ -55,7 +55,7 @@ from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setu
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("step", choices=["fetch", "prepare", "run", "v2", "frameslides", "coverage", "audit", "mcq",
-                                     "open", "faith", "attribution", "pooled", "recheck", "closedbook"])
+                                     "open", "faith", "attribution", "pooled", "recheck", "closedbook", "tscheck"])
     ap.add_argument("--runs", type=int, default=3, help="faith: judge runs per check (majority)")
     ap.add_argument("--rest", type=int, default=None, help="open: how many non-subset questions (seeded order)")
     ap.add_argument("--report-only", action="store_true", help="open: re-render the report from the stored answers")
@@ -121,6 +121,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.step == "closedbook":
         return closed_book(ids, cfg, external / "lectqa_closedbook.md", max_cost=args.max_cost, dry_run=args.dry_run,
                            repeats=args.repeats)
+    if args.step == "tscheck":
+        from lectqa.recheck import timestamp_summary
+        return timestamp_summary(external)
     if args.step == "recheck":
         return recheck(ids, cfg, external)
     if args.step == "pooled":

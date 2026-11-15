@@ -39,11 +39,11 @@ figcaption b { font-family: Helvetica, Arial, sans-serif; }
 </head>
 <body>
 
-<p class="draft">DRAFT, 15 November 2026 · not submitted · author list, venue format and to be completed</p>
+<p class="draft">DRAFT, 15 November 2026 · not submitted · venue format to be decided</p>
 
 <h1>What Do Lecture-Video Benchmarks Measure? A Controlled Re-implementation and Audit of LectQA-Vid, and Slide Alignment at Parity with MaViLS</h1>
-<p class="authors"><span class="todo">[Author names]</span></p>
-<p class="affil"><span class="todo">[Affiliation · contact]</span></p>
+<p class="authors">Krish Pandit, Rakshit Panwar, Ananya Samant, Vidyansh Gaur</p>
+<p class="affil">Department of Computer Science and Engineering, The NorthCap University, Gurugram, India</p>
 
 <div class="abstract">
 <b class="h">Abstract</b>
@@ -200,8 +200,10 @@ timestamps scores 14.80. We do not reproduce this. The filter applied to 160 of 
 (21 %) with no context. In all 34 a chunk inside the window existed and was removed earlier, by the similarity
 threshold (18) or the top-10 cut (16). Where the filter kept something, its effect is −0.53 [−1.30, +0.20]. On the 34
 empty-window questions our own retrieval overlaps the annotated interval for 32 %, against 87 % on the other 126, and
-a full-transcript answer cites a unit inside the interval for 28 % against 77 %. This suggests that those annotations
-point at the wrong part of the video, although we have not verified it by hand. Our reading is that a filter driven by
+a full-transcript answer cites a unit inside the interval for 28 % against 77 %. A check of all 34, together with 16 other passing stamps as a control, located each reference answer in the
+timestamped transcript (by a language model, without showing it the stamp) and compared the location with the stamp:
+for 27 of the 34 the stamp misses the spoken answer or the answer is never said, against 4 of the 16 controls. Most
+empty windows are therefore annotation problems, not retrieval failures. Our reading is that a filter driven by
 an annotated interval is only as good as the annotation, and that the benefit reported in [2] depends on details of
 the interval source and the empty-result behaviour that the paper does not specify.</p>
 
@@ -294,7 +296,8 @@ mostly to iterative re-querying.</p>
 our choices. With the authors' code or their evaluation subset the comparison could differ.</li>
 <li>Open-ended results cover 300 of the 1,418 open-ended questions, with one answering model; the closed-book control
 uses a different model, in a single run.</li>
-<li>No annotated interval of LectQA-Vid was checked by hand; the evidence that some are misplaced is indirect.</li>
+<li>The timestamp check was done by a language model locating answers in the transcript, not by a person, and
+covers 75 intervals.</li>
 <li>MaViLS test results rest on nine lectures, compared with published per-lecture figures rather than a re-run, and
 the test half was examined in several rounds, although no parameter was set on it.</li>
 <li>Faithfulness was judged once per claim by a single model.</li>

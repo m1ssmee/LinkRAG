@@ -917,9 +917,11 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   bonuses decide almost everything. Found 2026-11-12 (`lectqa_pooled.md`); the reported rows
   that ran that way are retired (finding 8). Not fixed: normalising inside the reranker is a
   design change that needs a config switch and a real run, and none has been approved.
-- **(k) No LectQA-Vid gold timestamp has been checked by hand.** 1,598 pass the format and
-  range checks (issue (h)); a 75-row sheet for a second person is prepared
-  (`results/external/lectqa_timestamp_check.csv`) and not filled in.
+- **(k) No LectQA-Vid gold timestamp has been checked by a person.** 1,598 pass the format and
+  range checks (issue (h)). On 2026-11-15 the 75-row sheet was filled by an LLM check instead
+  (`lectqa_timestamp_check.md`): Sonnet agents located each answer in the transcript without
+  seeing the stamp. For 27 of the 34 empty eq. 22 windows the stamp misses the spoken answer or
+  the answer is never said, against 4 of 16 control stamps. A person's check is still open.
 - **(l) Decks and PDFs outside git are stale.** The four decks under `reports/presentation/`,
   the synopsis documents and the PDFs built from the study guide and the results draft still
   carry the claims corrected on 2026-11-12 (the +2.00 headline, "3.46 for eq. 22", the
