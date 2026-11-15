@@ -33,3 +33,10 @@ reports/LLL/
 reports/Weekly_progress_annexure1.*
 reports/LinkRAG_progress_report.pdf
 reports/llm_ledger.jsonl
+
+# Built documents: PDFs, decks and the university synopsis (names and roll numbers).
+# Sources are tracked: reports/pdf/, paper/paper.html, the study guide and results Markdown.
+reports/*.pdf
+paper/*.pdf
+reports/presentation/
+reports/synopsis/

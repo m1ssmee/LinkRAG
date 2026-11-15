@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Print an HTML report to an A4 PDF with Playwright's Chromium (requirements-ui.txt).
+"""Print an HTML report, or a Markdown file, to an A4 PDF with Playwright's Chromium (requirements-ui.txt).
 
     python scripts/render_pdf.py reports/pdf/results_detailed.html reports/LinkRAG_results_detailed.pdf
+    uv run --with markdown python scripts/render_pdf.py reports/study_guide/study_guide.md reports/LinkRAG_study_guide.pdf
+
+Markdown is converted with the `markdown` package and styled with reports/pdf/report.css.
 """
 
 from __future__ import annotations
@@ -15,7 +18,28 @@ FOOTER = ('<div style="font: 7pt Helvetica, Arial, sans-serif; color: #5b6270; w
           '<span class="pageNumber"></span> / <span class="totalPages"></span></div>')
 
 
+def markdown_page(src: Path) -> Path:
+    """The Markdown as a standalone HTML page next to it, so its relative image paths resolve."""
+    import markdown
+    css = (Path(__file__).resolve().parents[1] / "reports" / "pdf" / "report.css").read_text()
+    body = markdown.markdown(src.read_text(), extensions=["tables", "fenced_code", "sane_lists"])
+    page = src.with_name(f".{src.stem}.render.html")
+    page.write_text(f'<!doctype html><html lang="en"><head><meta charset="utf-8"><title>{src.stem}</title>'
+                    f'<style>{css} img {{ max-width: 100%; }} blockquote {{ margin: 2mm 0; padding-left: 4mm; '
+                    f'border-left: 2px solid var(--rule); color: var(--muted); }}</style></head><body>{body}</body></html>')
+    return page
+
+
 def render(src: Path, out: Path) -> None:
+    page = markdown_page(src) if src.suffix == ".md" else None
+    try:
+        _render(page or src, out)
+    finally:
+        if page:
+            page.unlink()
+
+
+def _render(src: Path, out: Path) -> None:
     with sync_playwright() as p:
         try:
             browser = p.chromium.launch()

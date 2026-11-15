@@ -922,17 +922,16 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   (`lectqa_timestamp_check.md`): Sonnet agents located each answer in the transcript without
   seeing the stamp. For 27 of the 34 empty eq. 22 windows the stamp misses the spoken answer or
   the answer is never said, against 4 of 16 control stamps. A person's check is still open.
-- **(l) Decks and PDFs outside git are stale.** The four decks under `reports/presentation/`,
-  the synopsis documents and the PDFs built from the study guide and the results draft still
-  carry the claims corrected on 2026-11-12 (the +2.00 headline, "3.46 for eq. 22", the
-  68.1 → 55.4 % reranker row, "usable" timestamps, "6 wins, 3 losses"). Their build path
-  and the study guide's `figures/` are not in the repository.
-  The two reports of 2026-11-12 (`reports/LinkRAG_results_detailed.pdf`,
-  `reports/LinkRAG_claims_vs_target_papers.pdf`) are current: their sources are in `reports/pdf/`
-  and `python scripts/render_pdf.py <html> <pdf>` builds them.
-  The paper draft of 2026-11-15 is `paper/paper.html`, built the same way into
-  `paper/LinkRAG_paper_draft.pdf`; author list and venue format are open, and one reference's volume and pages are unconfirmed
-  (`robertson2009bm25`).
+- **(l) Decks and PDFs outside git: corrected 2026-11-15.** The four decks under
+  `reports/presentation/` and the two synopsis documents were edited in place to the corrected
+  claims (the synopsis PDFs re-exported with LibreOffice, same page counts); the study guide and
+  results-comparison PDFs are rebuilt from their Markdown with `scripts/render_pdf.py` (needs
+  `uv run --with markdown`); `results_summary.pdf` was deleted as superseded by
+  `LinkRAG_results_detailed.pdf`. The study guide's figures are back in `reports/study_guide/figures/`,
+  recovered from the old PDF, without the attribution chart, which labelled the −3.46 bar as the time
+  filter. These built files are git-ignored. The paper draft is `paper/paper.html`, built the same
+  way into `paper/LinkRAG_paper_draft.pdf`; venue format is open, and one reference's volume and
+  pages are unconfirmed (`robertson2009bm25`).
 
 ## Environment decisions worth not re-litigating
 

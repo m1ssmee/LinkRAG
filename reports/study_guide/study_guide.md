@@ -451,8 +451,6 @@ The paired differences are what matter. **Paired** means we compare the two mode
 | our search in place of theirs | 34.96 | +0.27 [−0.90, +1.48], not measurable |
 | one re-query | 36.70 | +1.74 [+0.77, +2.75] |
 
-![The attribution as a picture: each bar is a 95 % interval. Blue is the headline comparison.](figures/attribution.png)
-
 **What it tells us, in plain words.**
 1. **In our rebuild, T1's time filter is given the annotated time stamps** at question time (on 160 of the 300 questions, where the stamp passes the format and range checks). With it on the replica is 3.46 F1 lower, and 2.93 of that comes from 34 questions it leaves with no context at all, where our rebuild gives a fixed "no evidence" reply. On those 34, the replica scores 1.73 F1 with the filter and 27.63 without it. Elsewhere the filter makes no measurable difference (−0.53, interval includes zero).
 2. **Without the filter, the two search pipelines are level overall** (+0.27, interval includes zero). On very hard questions ours is ahead: +2.10 [+0.48, +3.72].
