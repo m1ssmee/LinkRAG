@@ -33,13 +33,13 @@
 % --------------------------------------------------------------- components
 
 @misc{choi2025mirag,
-  title         = {Multimodal Iterative {RAG} for Knowledge Visual Question Answering},
+  title         = {Progressive Multimodal Search and Reasoning for Knowledge-Intensive Visual Question Answering},
   author        = {Choi, Changin and Lee, Wonseok and Ko, Jungmin and Rhee, Wonjong},
   year          = {2025},
   eprint        = {2509.00798},
   archivePrefix = {arXiv},
   primaryClass  = {cs.CV},
-  note          = {MI-RAG. v1 title as given; later versions retitled ``Progressive Multimodal Search and Reasoning for Knowledge-Intensive Visual Question Answering'' (PMSR). Cited in the project as ICLR 2026. Component: our \texttt{retrieve/iterative.py} approximates its re-querying loop.}
+  note          = {MI-RAG. Title of v7 as on arXiv on 2026-11-15; v1 was titled ``Multimodal Iterative RAG for Knowledge Visual Question Answering''. Earlier note: later versions retitled ``Progressive Multimodal Search and Reasoning for Knowledge-Intensive Visual Question Answering'' (PMSR). Cited in the project as ICLR 2026. Component: our \texttt{retrieve/iterative.py} approximates its re-querying loop.}
 }
 
 % ------------------------------------------------------------- related work
@@ -99,10 +99,11 @@
 
 @misc{multihaystack2026,
   title         = {{MultiHaystack}: Benchmarking Multimodal Retrieval and Reasoning over 40K Images, Videos, and Documents},
+  author        = {Xu, Dannong and Yang, Zhongyu and Chen, Jun and Yuan, Yingfang and Hu, Ming and Sun, Lei and Van Gool, Luc and Paudel, Danda Pani and Feng, Chun-Mei},
   year          = {2026},
   eprint        = {2603.05697},
   archivePrefix = {arXiv},
-  note          = {Related work. 46k+ candidates, 747 questions; E5-V 40.8\% R@1. TODO: add author list.}
+  note          = {Related work. 46k+ candidates, 747 questions; E5-V 40.8\% R@1. Authors from arXiv, 2026-11-15.}
 }
 
 @misc{scripttoslide,
@@ -116,76 +117,76 @@
 }
 
 % ------------------------------------------------- methods and metrics used
-% Added 2026-11-15 from memory for the paper draft: verify against the source before submission.
+% Checked against their sources on 2026-11-15; each entry's note says where. One is not confirmed: robertson2009bm25.
 
 @inproceedings{lewis2020rag,
   title = {Retrieval-Augmented Generation for Knowledge-Intensive {NLP} Tasks},
   author = {Lewis, Patrick and Perez, Ethan and Piktus, Aleksandra and others},
-  booktitle = {Advances in Neural Information Processing Systems 33}, year = {2020}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  booktitle = {Advances in Neural Information Processing Systems 33}, year = {2020}, note = {Checked 2026-11-15 against arXiv 2005.11401 (title, authors).}
 }
 
 @article{robertson2009bm25,
   title = {The Probabilistic Relevance Framework: {BM25} and Beyond},
   author = {Robertson, Stephen and Zaragoza, Hugo},
-  journal = {Foundations and Trends in Information Retrieval}, volume = {3}, number = {4}, pages = {333--389}, year = {2009}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  journal = {Foundations and Trends in Information Retrieval}, volume = {3}, number = {4}, pages = {333--389}, year = {2009}, note = {NOT CONFIRMED 2026-11-15: title and authors match Crossref (doi:10.1561/1500000019), but Crossref lists volume 4(1-2), pages 1-174, against the usual citation 3(4):333-389 given here. Check the publisher's page before submission.}
 }
 
 @misc{chen2024bgem3,
-  title = {{BGE} {M3-Embedding}: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation},
+  title = {{M3-Embedding}: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation},
   author = {Chen, Jianlv and Xiao, Shitao and Zhang, Peitian and Luo, Kun and Lian, Defu and Liu, Zheng},
-  year = {2024}, eprint = {2402.03216}, archivePrefix = {arXiv}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  year = {2024}, eprint = {2402.03216}, archivePrefix = {arXiv}, note = {Checked 2026-11-15 against arXiv 2402.03216.}
 }
 
 @inproceedings{cormack2009rrf,
   title = {Reciprocal Rank Fusion Outperforms {Condorcet} and Individual Rank Learning Methods},
   author = {Cormack, Gordon V. and Clarke, Charles L. A. and B{\"u}ttcher, Stefan},
-  booktitle = {Proc. SIGIR}, pages = {758--759}, year = {2009}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  booktitle = {Proc. SIGIR}, pages = {758--759}, year = {2009}, note = {Checked 2026-11-15 against Crossref, doi:10.1145/1571941.1572114.}
 }
 
 @inproceedings{radford2023whisper,
   title = {Robust Speech Recognition via Large-Scale Weak Supervision},
   author = {Radford, Alec and Kim, Jong Wook and Xu, Tao and Brockman, Greg and McLeavey, Christine and Sutskever, Ilya},
-  booktitle = {Proc. ICML}, year = {2023}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  booktitle = {Proc. ICML}, year = {2023}, note = {Checked 2026-11-15 against arXiv 2212.04356 (title, authors; the ICML 2023 venue is from memory).}
 }
 
 @inproceedings{reimers2019sbert,
   title = {Sentence-{BERT}: Sentence Embeddings using {Siamese} {BERT}-Networks},
   author = {Reimers, Nils and Gurevych, Iryna},
-  booktitle = {Proc. EMNLP-IJCNLP}, year = {2019}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  booktitle = {Proc. EMNLP-IJCNLP}, year = {2019}, note = {Checked 2026-11-15 against the ACL Anthology, D19-1410.}
 }
 
 @inproceedings{shaker2023swiftformer,
   title = {{SwiftFormer}: Efficient Additive Attention for Transformer-based Real-time Mobile Vision Applications},
   author = {Shaker, Abdelrahman and Maaz, Muhammad and Rasheed, Hanoona and Khan, Salman and Yang, Ming-Hsuan and Khan, Fahad Shahbaz},
-  booktitle = {Proc. IEEE/CVF International Conference on Computer Vision (ICCV)}, year = {2023}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  booktitle = {Proc. IEEE/CVF International Conference on Computer Vision (ICCV)}, year = {2023}, note = {Checked 2026-11-15 against arXiv 2303.15446 (title, authors; the ICCV 2023 venue is from memory).}
 }
 
 @inproceedings{carbonell1998mmr,
   title = {The Use of {MMR}, Diversity-Based Reranking for Reordering Documents and Producing Summaries},
   author = {Carbonell, Jaime and Goldstein, Jade},
-  booktitle = {Proc. SIGIR}, pages = {335--336}, year = {1998}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  booktitle = {Proc. SIGIR}, pages = {335--336}, year = {1998}, note = {Checked 2026-11-15 against Crossref, doi:10.1145/290941.291025.}
 }
 
 @inproceedings{papineni2002bleu,
   title = {{BLEU}: a Method for Automatic Evaluation of Machine Translation},
   author = {Papineni, Kishore and Roukos, Salim and Ward, Todd and Zhu, Wei-Jing},
-  booktitle = {Proc. ACL}, pages = {311--318}, year = {2002}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  booktitle = {Proc. ACL}, pages = {311--318}, year = {2002}, note = {Checked 2026-11-15 against the ACL Anthology, P02-1040.}
 }
 
 @inproceedings{banerjee2005meteor,
   title = {{METEOR}: An Automatic Metric for {MT} Evaluation with Improved Correlation with Human Judgments},
   author = {Banerjee, Satanjeev and Lavie, Alon},
-  booktitle = {Proc. ACL Workshop on Intrinsic and Extrinsic Evaluation Measures for MT and/or Summarization}, pages = {65--72}, year = {2005}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  booktitle = {Proc. ACL Workshop on Intrinsic and Extrinsic Evaluation Measures for MT and/or Summarization}, pages = {65--72}, year = {2005}, note = {Checked 2026-11-15 against the ACL Anthology, W05-0909.}
 }
 
 @inproceedings{lin2004rouge,
   title = {{ROUGE}: A Package for Automatic Evaluation of Summaries},
   author = {Lin, Chin-Yew},
-  booktitle = {Text Summarization Branches Out}, pages = {74--81}, year = {2004}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  booktitle = {Text Summarization Branches Out}, pages = {74--81}, year = {2004}, note = {Checked 2026-11-15 against the ACL Anthology, W04-1013.}
 }
 
 @book{efron1993bootstrap,
   title = {An Introduction to the Bootstrap},
   author = {Efron, Bradley and Tibshirani, Robert J.},
-  publisher = {Chapman \& Hall}, year = {1993}, note = {Added 2026-11-15 from memory for the paper draft: verify against the source before submission.}
+  publisher = {Chapman \& Hall}, year = {1993}, note = {Checked 2026-11-15 against Crossref (Springer US / Chapman and Hall, 1993).}
 }

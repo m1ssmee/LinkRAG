@@ -925,7 +925,8 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   `reports/LinkRAG_claims_vs_target_papers.pdf`) are current: their sources are in `reports/pdf/`
   and `python scripts/render_pdf.py <html> <pdf>` builds them.
   The paper draft of 2026-11-15 is `paper/paper.html`, built the same way into
-  `paper/LinkRAG_paper_draft.pdf`; author list, venue format and one reference are open.
+  `paper/LinkRAG_paper_draft.pdf`; author list and venue format are open, and one reference's volume and pages are unconfirmed
+  (`robertson2009bm25`).
 
 ## Environment decisions worth not re-litigating
 
