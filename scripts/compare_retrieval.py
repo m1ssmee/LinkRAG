@@ -45,6 +45,16 @@ BUCKETS = {
 }
 
 
+def rerank_graph(mode: str, graph):
+    """The link graph the reranker may see: only the link-following modes get it.
+
+    Before 2026-11-17 every mode got the graph, so complementarity's edge bonus (beta) was
+    on in the baseline and iterative rows too. "baseline + complementarity" was therefore
+    not a no-links control. ask.py, the UI and lectqa pooled.py already gated it by mode.
+    """
+    return graph if mode.startswith("linkrag") else None
+
+
 def buckets_of(qtype: str) -> list[str]:
     return [b for b, members in BUCKETS.items() if qtype in members]
 
@@ -165,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
                 calls_q.setdefault((row["qid"], mode), []).append(calls)
                 latencies.append(secs)
                 for method in methods:
-                    picked = rerank(results, k, method=method, index=index, graph=graph,
+                    picked = rerank(results, k, method=method, index=index, graph=rerank_graph(mode, graph),
                                     alpha=rcfg["alpha"], beta=rcfg["beta"],
                                     gamma=rcfg["gamma"], mmr_lambda=rcfg["mmr_lambda"],
                                     question=row["question"],

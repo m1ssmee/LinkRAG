@@ -57,3 +57,10 @@ def test_model_run_writes_ledger_and_report(tmp_path, monkeypatch, stub_encoder)
         ("scripts/compare_retrieval.py", "gpt-5.4-mini-2026-03-17", complete.usage["calls"])]
     report = out.read_text()
     assert "| iterative | complementarity |" in report and "LLM cost (this run):" in report
+
+
+def test_only_link_modes_hand_the_graph_to_the_reranker() -> None:
+    # baseline / iterative + complementarity must be a no-links control (2026-11-17 fix)
+    g = object()
+    assert [compare_retrieval.rerank_graph(m, g) is g for m in compare_retrieval.MODES] == [
+        False, False, True, True]
