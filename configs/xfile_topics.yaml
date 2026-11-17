@@ -1,0 +1,72 @@
+# XFile corpus: one MaViLS lecture (shipped word-level transcript + slide deck) plus one
+# separately authored notes/textbook/paper source per topic. Read by
+# scripts/adapters/xfile.py. Pages are 1-based PDF page numbers, inclusive.
+# Sources are fetched by hand into data/raw/xfile/_sources/ and are never committed.
+#
+# Chosen 2026-11-17 from the 20 MaViLS lectures, keeping only those with a freely available
+# second source on the same material. Not used: computer_vision_2_2 (Szeliski's PDF sits
+# behind a licence page), deeplearning_goodfellow (book is HTML only), and the rest (no
+# matching open source found yet).
+
+# Sources: fetch each into data/raw/xfile/_sources/ and check its sha256 (`shasum -a 256`).
+# Byte-identical sources + MaViLS at the pinned commit reproduce corpus manifest
+# a086ca1c22dc1d93, so cached subagent replies (results/xfile/reply_cache.tar.gz) still match.
+mavils_commit: b3c55a869a24a8f3f3881aa3e89fea9b1c81c0ad   # github.com/andererka/MaViLS
+sources:
+  sutton_barto_2020.pdf:    {url: "http://incompleteideas.net/book/RLbook2020.pdf", sha256: 2dd0d71d9ee883fbeb99f9b888c65ac3255fae2512203d11b18e838befffe9a6}
+  gpml_ch8.pdf:             {url: "http://www.gaussianprocess.org/gpml/chapters/RW8.pdf", sha256: 661f6fe27ff5a8bee7c4f5e90afdd244f01ff1ad124049e0894b24320cf4fd59}
+  erickson_models.pdf:      {url: "https://jeffe.cs.illinois.edu/teaching/algorithms/models/04-nfa.pdf", sha256: c6f40dd0c64dc64f55b8ab2a4f84f886f369929329f48d34db4155d14a92c571}
+  mimic3_sdata2016.pdf:     {url: "https://www.nature.com/articles/sdata201635.pdf", sha256: ce403ce97a75b5ba4b9edbf1094ae589fe8af3f7eaecb175d16cf7fc26046cc3}
+  openstax_psych2e.pdf:     {url: "https://assets.openstax.org/oscms-prodcms/media/documents/Psychology2e_WEB.pdf", sha256: 2f08113c78127bc684922ad6a819db22bd4705ce9fcf28a07f36a2041b1474e2}
+  lightning_paper.pdf:      {url: "https://lightning.network/lightning-network-paper.pdf", sha256: 12e5094fa9c8342b9575e4c029c4cdf13aa33350b7c4a77472ec7a1b1a2b3fb8}
+
+topics:
+  rl_mdp:
+    srt: reinforcement_learning_silver.srt
+    slides: reinforcement_learning.pdf          # Silver, UCL RL Lecture 2: MDPs
+    notes:
+      file: sutton_barto_2020.pdf               # Sutton & Barto, RL 2nd ed., incompleteideas.net (author-hosted, free)
+      pages: [69, 94]                           # ch. 3 Finite Markov Decision Processes
+  gp_scaling:
+    srt: numerics_hennig.srt
+    slides: numerics.pdf                        # Numerics of ML L03, scaling GPs (Tübingen)
+    notes:
+      file: gpml_ch8.pdf                        # Rasmussen & Williams, GPML ch. 8, gaussianprocess.org (free)
+  nfa_closure:
+    srt: theory_of_computation_MIT.srt
+    slides: theory_of_computation.pdf           # Sipser, MIT 18.404 Lecture 2 (OCW, CC BY-NC-SA)
+    notes:
+      file: erickson_models.pdf                 # Erickson, Models of Computation L4 Nondeterministic Automata (CC BY 4.0)
+  mimic_data:
+    srt: ML_for_health_MIT.srt
+    slides: ML_for_health_care_MIT.pdf          # MIT HST.956/6.S897 "Deep dive into clinical data" (OCW)
+    notes:
+      file: mimic3_sdata2016.pdf                # Johnson et al., MIMIC-III, Scientific Data 2016 (CC BY 4.0)
+  psych_methods:
+    srt: psychology_MIT.srt
+    slides: psychology.pdf                      # MIT 9.00 Research Methods, Lecture 2 (OCW)
+    notes:
+      file: openstax_psych2e.pdf                # OpenStax Psychology 2e (CC BY 4.0)
+      pages: [47, 67]                           # ch. 2 Psychological Research, 2.1-2.3
+  visual_system:
+    srt: visual_system_MIT.srt
+    slides: sensory_systems.pdf                 # MIT 9.04 visual system layout and retina (OCW)
+    notes:
+      file: openstax_psych2e.pdf
+      pages: [157, 172]                         # ch. 5 Sensation and Perception, 5.1-5.3 Vision
+  lightning:
+    srt: cryptocurrency.srt
+    slides: cryptocurrency.pdf                  # MIT MAS.S62 L14 Lightning network and cross-chain swaps (OCW)
+    notes:
+      file: lightning_paper.pdf                 # Poon & Dryja, The Bitcoin Lightning Network (2016)
+      pages: [1, 48]                            # through "The Bitcoin Lightning Network"; risks and appendix cut
+  # med_imgproc: dropped 2026-11-17. Its deck is one scanned image per page; with no text layer
+  # and every page's figure box identical, the template filter drops them all (2 units from 21
+  # pages), and ingest has no OCR fallback for text-less deck pages. It was also the least
+  # independent topic (textbook by the lecturer's group).
+  # med_imgproc:
+  #   srt: image_processing_high_res.srt
+  #   slides: image_processing.pdf                # FAU Medical Engineering, 2D image processing (image-only deck: OCR)
+  #   notes:
+  #     file: maier_medical_imaging.pdf           # Maier et al., Medical Imaging Systems, Springer 2018 (CC BY 4.0)
+  #     pages: [41, 59]                           # ch. 3 Image Processing. Same lecturer's group: least independent topic

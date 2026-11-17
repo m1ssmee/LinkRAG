@@ -131,3 +131,27 @@ def test_parse_json_ignores_trailing_content_but_still_rejects_malformed():
     assert parse_json('{"verdict": }') == {}                           # genuinely malformed
     assert parse_json("no json here") == {}
     assert parse_json('[{"verdict": "yes"}]') == {"verdict": "yes"}   # the first object, as before the fix
+
+
+def test_topic_scopes_source_contexts_in_a_pooled_corpus():
+    """XFile: a question with `topic` is answered from that topic's files only."""
+    def u(uid, src, text, **loc):
+        return EvidenceUnit(id=uid, modality="audio" if src.endswith(".wav") else "text", content=text,
+                            source_file=f"data/raw/xfile/{src}", location=Location(**loc),
+                            metadata={"slide_deck": src.endswith("_slides.pdf")})
+    units = [u("a:a0", "alpha_talk.wav", "alpha talk fact", start_s=0.0, end_s=5.0),
+             u("a:p1", "alpha_slides.pdf", "alpha slide fact", page=1),
+             u("b:a0", "beta_talk.wav", "beta talk fact", start_s=0.0, end_s=5.0)]
+    seen = []
+
+    def model(system, prompt):
+        if prompt.startswith("Context ("):
+            seen.append(prompt)
+            return "NOT ANSWERABLE"
+        return json.dumps({"facts": [], "verdict": "FAIL" if "Candidate" in prompt else "no", "reason": "r"})
+
+    row = {"qid": "T1", "topic": "alpha", "type": "audio_only", "question": "q?", "expected_answer": "x",
+           "gold_units": [{"source": "alpha_talk.wav", "start_s": 0.0, "end_s": 5.0}]}
+    verify_gold([row], units, model, judge=model, deck_files={"alpha_slides.pdf"}, runs=1, workers=1)
+    assert seen and all("beta" not in p for p in seen)
+    assert any("alpha talk fact" in p for p in seen) and any("alpha slide fact" in p for p in seen)

@@ -1,0 +1,442 @@
+# XFile corpus (DESIGN.md priority (vi)): configs/default.yaml with every per-corpus path moved
+# under data/processed/xfile/ and citation media off (talk audio is a zero-byte stub; words come
+# from frozen MaViLS transcripts). Regenerate from default.yaml rather than editing by hand:
+# only the lines marked "xfile:" differ.
+# LinkRAG default config. Every stage reads this; override per-experiment by
+# copying to configs/<name>.yaml and passing --config.
+
+mode: linkrag            # linkrag | baseline  -- global default, per-stage overridable
+device: cpu              # cpu | cuda | mps    -- CPU-first; GPU is optional
+
+models:
+  embedding: BAAI/bge-m3         # shared text/figure-caption embedder
+  whisper: small                 # faster-whisper size: tiny|base|small|medium|large-v3
+  whisper_compute_type: int8     # int8 on CPU, float16 on GPU
+  llm:
+    # Ollama speaks the OpenAI /v1/chat/completions shape, so both providers use
+    # one code path; `provider` only picks a default base_url.
+    provider: openai             # ollama | openai | any OpenAI-compatible server
+    # Batch answerer: cheap tier (dataset policy, 2026-09-23). It must differ from the
+    # judge (gpt-4.1-mini, DESIGN.md "Separate judge"). Dated snapshot, verified against
+    # this account's GET /v1/models on 2026-09-23.
+    # The strong model gpt-5.4-2026-03-05 answered every stored pilot01 run; batch
+    # scripts refuse it unless allow_strong_in_batch is true (reference row / demo only).
+    # gpt-5.5 was rejected: it only accepts its default temperature (1), and a
+    # non-deterministic baseline is not usable as a paper comparison point.
+    model: gpt-5.4-mini-2026-03-17
+    allow_strong_in_batch: false
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY  # read from the environment; never commit the key
+    temperature: 0.0             # deterministic: this is an eval harness (null = omit)
+    seed: 20260910               # best-effort reproducibility; NOT a guarantee
+    max_tokens: 1024
+    timeout_s: 120
+    # Active backend: "default" = the block above (OpenAI, the working backend).
+    # Set to a key of llm_backends below, or export LINKRAG_LLM_BACKEND=<key>.
+    backend: default
+
+  # Cheap tier: models a batch run may use without allow_strong_in_batch (prefix match,
+  # so dated snapshots count). Free backends (billing: free) are always allowed.
+  cheap_tier: [gpt-4.1-mini, gpt-4.1-nano, gpt-5-mini, gpt-5-nano, gpt-5.4-mini, gpt-5.4-nano]
+
+  # Alternative answerer backends, same OpenAI-compatible code path. Selecting one
+  # overlays its keys onto models.llm (see core.load_config).
+  llm_backends:
+    # Zero-cost backends. All speak /v1/chat/completions, so they share one code
+    # path. `billing: free` declares a free-tier / self-hosted key: the spend guard
+    # lets it through at a $0 budget. A paid key on the same service must say
+    # `billing: metered` and have a pricing row, or it is refused.
+    # `rate_limit_rpm` / `rate_limit_tpm` are enforced client-side (one minute,
+    # shared across threads) so a batch waits instead of 429-storming.
+
+    # An open model served from a Colab GPU behind a cloudflared tunnel -- answerer and,
+    # once its agreement is measured (scripts/eval/judge_agreement.py), judge. Start
+    # notebooks/colab_serve.ipynb, then `export LINKRAG_COLAB_BASE_URL=<url>/v1` and select
+    # it with LINKRAG_LLM_BACKEND=colab / LINKRAG_JUDGE_BACKEND=colab. The URL is read at
+    # run time (it changes every session); unset -> one-line failure, never a fallback.
+    colab: &colab
+      provider: openai_compatible
+      model: qwen2.5:7b-instruct   # Ollama tag; the notebook documents the 14B q4 option
+      base_url_env: LINKRAG_COLAB_BASE_URL
+      billing: free                # no API key: Ollama needs none
+      rate_limit_rpm: 60           # one GPU; more only queues. Raise for vLLM batching.
+      rate_limit_tpm: null
+      temperature: 0.0
+      seed: 20260910
+      max_tokens: 1024
+      timeout_s: 300               # cold GPU + long context; the tunnel adds latency
+    colab_ollama: *colab           # kept: older names for the same backend
+    colab_openai_compatible: *colab
+    colab_vllm:                    # vLLM instead of Ollama: needs its --api-key
+      <<: *colab
+      model: Qwen/Qwen2.5-7B-Instruct   # the --model vLLM was started with
+      api_key_env: COLAB_LLM_KEY
+      rate_limit_rpm: 120          # vLLM batches concurrent requests
+    # Groq free tier (read 2026-09-23): 30 req/min, 8,000 tokens/min, 1,000 req/day
+    # per model. Llama 3.x was removed from free accounts on 2026-08-16; gpt-oss
+    # and Qwen remain. Daily cap: a 25-question matrix with 3 repeats fits; a full
+    # gold verification (~900 calls) does not in one day.
+    groq:
+      provider: openai_compatible
+      model: openai/gpt-oss-120b
+      base_url: https://api.groq.com/openai/v1
+      api_key_env: GROQ_API_KEY
+      billing: free
+      rate_limit_rpm: 28           # 30 minus headroom
+      rate_limit_tpm: 7500         # 8,000 minus headroom
+      temperature: 0.0
+      seed: 20260910
+      max_tokens: 1024
+      timeout_s: 120
+    # Google AI Studio free tier via the OpenAI-compatibility endpoint. Free-tier
+    # limits vary by model and change often; 10 RPM is a conservative floor.
+    # Free-tier prompts may be used by Google to improve products -- fine for public
+    # lecture material, not for anything private.
+    google_ai_studio:
+      provider: openai_compatible
+      model: gemini-2.5-flash
+      base_url: https://generativelanguage.googleapis.com/v1beta/openai
+      api_key_env: GEMINI_API_KEY
+      billing: free
+      rate_limit_rpm: 10
+      temperature: 0.0
+      max_tokens: 1024
+      timeout_s: 120
+
+    # Claude subagents through the reply cache (linkrag.agent_queue): prompts are queued,
+    # answered out of process, imported into the cache, then replayed. $0 metered; uses the
+    # Claude plan. Haiku answers, Sonnet judges (separate judge). Added 2026-11-17 for XFile.
+    claude_agents:
+      provider: agent_queue
+      model: claude-haiku-5-5
+      billing: free
+      max_tokens: 1024
+    claude_agents_judge:
+      provider: agent_queue
+      model: claude-sonnet-5-5
+      billing: free
+      max_tokens: 1024
+
+  # USD per 1M tokens, longest model-prefix match (linkrag.costs.price_for).
+  # Consulted only for `billing: metered` backends; a metered model with no row is
+  # refused at a $0 budget rather than assumed free.
+  # Source: developers.openai.com/api/docs/pricing, read 2026-09-21. A model with
+  # no row is reported as "price unknown", never silently as $0.
+  pricing:
+    gpt-5.4-mini: {input_per_m: 0.75, output_per_m: 4.50}
+    gpt-5.4:      {input_per_m: 2.50, output_per_m: 15.00}
+    gpt-5-mini:   {input_per_m: 0.25, output_per_m: 2.00}
+    gpt-5:        {input_per_m: 1.25, output_per_m: 10.00}
+    gpt-4.1-mini: {input_per_m: 0.40, output_per_m: 1.60}
+    gpt-4.1:      {input_per_m: 2.00, output_per_m: 8.00}
+    whisper-1:    {per_minute: 0.006}                      # audio, priced by duration not tokens
+    # Free-tier / self-hosted backends (billing: free): $0, so the ledger says $0, not "unknown".
+    openai/gpt-oss-120b: {input_per_m: 0, output_per_m: 0}   # groq free tier
+    gemini-2.5-flash:    {input_per_m: 0, output_per_m: 0}   # google_ai_studio free tier
+    qwen2.5:7b-instruct: {input_per_m: 0, output_per_m: 0}   # colab ollama
+    Qwen/Qwen2.5-7B-Instruct: {input_per_m: 0, output_per_m: 0}  # colab vllm
+    qwen2.5:      {input_per_m: 0.0, output_per_m: 0.0}   # self-hosted on Colab: no per-token price
+    llama3.1:     {input_per_m: 0.0, output_per_m: 0.0}
+
+ingest:
+  chunk_tokens: 300              # text chunk target
+  chunk_overlap_tokens: 60
+  audio_segment_seconds: 30      # window for audio EvidenceUnits
+  # sentence: merge whole whisper segments up to the window (never splits one).
+  # fixed: equal-time windows, what the baseline papers do -- cut 70% of
+  # boundaries mid-sentence on pilot01. Kept as an ablation axis.
+  audio_segmentation: sentence   # sentence | fixed
+  min_figure_area_px: 10000      # ignore rules, bullets, logos
+  figures_dir: data/processed/xfile/figures   # xfile:
+  # Slide decks caption nothing: 13/18 pilot01 figures had empty content because
+  # find_caption looks below the image (a paper convention). OCR the image itself.
+  ocr_figures: true
+  # A deck is landscape, a paper is portrait. Per-file entries override the
+  # heuristic: {my_odd_file.pdf: true}
+  slide_deck_landscape_ratio: 0.6
+  slide_deck_files:   # xfile: decided by role, not page shape
+    rl_mdp_slides.pdf: true
+    rl_mdp_notes.pdf: false
+    gp_scaling_slides.pdf: true
+    gp_scaling_notes.pdf: false
+    nfa_closure_slides.pdf: true
+    nfa_closure_notes.pdf: false
+    mimic_data_slides.pdf: true
+    mimic_data_notes.pdf: false
+    psych_methods_slides.pdf: true
+    psych_methods_notes.pdf: false
+    visual_system_slides.pdf: true
+    visual_system_notes.pdf: false
+    lightning_slides.pdf: true
+    lightning_notes.pdf: false
+  # Papers draw figures as vector graphics, which page.get_images() cannot see --
+  # the Focus paper has 13 captioned figures and yielded 2 raster fragments. When
+  # null, this is enabled for non-decks and disabled for decks.
+  figures_from_captions: null
+  # Deck figures are clustered from vector drawing ops + raster boxes, because a
+  # deck draws plots as vectors and page.get_images() sees nothing. New parameters,
+  # not retuned thresholds; see src/linkrag/ingest/pdf.py.
+  cluster_deck_figures: true
+  # Optional VLM figure descriptions via a local Ollama vision model. OFF by
+  # default: a 7B VLM on CPU is tens of seconds per image. Results are cached by
+  # image content hash, so enabling it costs the full pass exactly once.
+  vlm_captions:
+    enabled: false
+    model: llava:7b            # or qwen2-vl:7b
+    base_url: http://localhost:11434
+    max_words: 60
+    cache_dir: data/processed/xfile/vlm_captions   # xfile:
+    timeout_s: 300
+  # ASR backend. `local` = faster-whisper on the CPU (free, ~3x realtime, the frozen
+  # pilot01 transcript). `openai` = whisper-1 with word timestamps; inputs over 25 MB
+  # are split at silence points, transcribed, and the timestamps re-offset. Both write
+  # the same frozen-transcript JSON, so the sentence-split path is unchanged.
+  asr_backend: local
+  asr_openai:
+    model: whisper-1
+    max_upload_mb: 20          # API limit is 25; leave room for container overhead
+    chunk_search_s: 30         # look this far around a target cut for the quietest moment
+    timeout_s: 600
+  # Prime whisper with vocabulary mined from the slide deck. Untuned, whisper
+  # transcribed *ingest* as "interest" throughout pilot01 -- the talk's central
+  # term, which BM25 then cannot match. Documents are always ingested first.
+  asr_vocab_from_slides: true
+  # If <stem>.frozen.json exists here, it is used verbatim and whisper never runs.
+  # pilot01 is frozen on the guided-v2 transcript; see DESIGN.md measurement rules.
+  frozen_transcript_dir: data/processed/xfile/transcripts   # xfile:
+
+index:
+  backend: numpy                 # exact inner-product search; see Index docstring for the ceiling
+  normalize_embeddings: true
+  store_dir: data/processed/xfile/index   # xfile:
+
+link:
+  # --- audio-to-slide alignment (Phase 2, novel component 1) ---
+  align:
+    method: monotonic          # monotonic | naive ("naive" == P2-style local argmax)
+    weights:                   # S = w_dense*cos + w_bm25*BM25norm + w_keyword*IDF-overlap
+      dense: 0.6
+      bm25: 0.25
+      keyword: 0.15
+    jump_penalty: 0.05         # lambda: charged per slide when advancing by >1
+    skip_penalty: 0.02         # sigma: charged per slide never assigned (incl. head/tail)
+    back_penalty: 0.15         # beta: charged per slide when going backwards
+    max_back: 2                # B: 0 == strictly monotonic
+    start_prior_mu: 0.02       # mu: extra pull of segment 1 toward slide 1;
+                               # 0.0 reproduces every pre-existing measurement
+    # MaViLS held-out study (2026-09-22). Both OFF here: no parameter changes on
+    # the full set or on pilot01. Values chosen on the MaViLS tune half live in
+    # results/external/mavils_tuned.json and are applied only to its test half.
+    flatness_scaling: 0.0      # sigma_i = sigma*(1-f + f*contrast_i/mean contrast); 0 = constant
+    min_segment_sim: null      # per-segment abstention (-1) when max row similarity < this
+    # File-pair relatedness gate (2026-09-23). The DP path score (mean S along the
+    # path) must beat the mean of 5 shuffled-slide-order alignments by this many
+    # shuffled std devs, else NO audio_slide links are emitted and the pair is recorded
+    # as unrelated in links.jsonl _meta. Same z gates cross-document semantic
+    # figure_text links (word-shuffle null). null disables. False-rejection rate at
+    # 2.0 measured on MaViLS: reports/relatedness_gate.md
+    # Set from results/external/mavils_gate_v2.md: the smallest z with <=5% false
+    # acceptance on 380 unrelated MaViLS audio x deck pairs (4.7%), at 15% false
+    # rejection on the 20 related pairs, 30-second windows, 30-shuffle null.
+    relatedness_z: 1.27
+    null_shuffles: 30          # shuffled slide orders in the null (5 was too few: std unstable)
+    null_std_floor: 0.002      # lower bound on the shuffled std before z
+    # Similarity features. MaViLS decomposition (reports/mavils_final.md): the gap to
+    # their audio-only number is in the similarity features, not the decoder.
+    #   ours           bge-m3 + BM25 + IDF-overlap hybrid (every recorded number)
+    #   theirs         distiluse-base-multilingual-cased cosine (MaViLS)
+    #   fused_max      cellwise max of the two, each min-max scaled
+    #   fused_weighted fusion_weight*theirs + (1-fusion_weight)*ours
+    #   visual         segment x page matrix from the video frames (linkrag.link.visual); align() needs it passed in
+    #   visual+text    fusion_weight*visual + (1-fusion_weight)*ours;  visual+theirs the same with theirs
+    similarity: ours
+    # Video frames for the visual channels (MaViLS): representative = one per dHash segment, 320 px;
+    # sentence_time = the frame at each sentence timestamp, native resolution (MaViLS's own choice).
+    frame_source: representative
+    fusion_weight: 0.5         # tuned quantity; MaViLS tune-half value in results/external/mavils_tuned.json
+    min_score: 0.0             # drop links scoring below this
+    links_path: data/processed/xfile/links.jsonl   # xfile:
+
+  # --- figure <-> paragraph (Phase 3) ---
+  figure_text:
+    weights:                   # F = w_r*ref + w_l*layout + w_p*page + w_d*cos + w_o*overlap
+      reference: 0.30          # "Figure 3" / "Table 2", or "the diagram below"
+      layout: 0.15             # same page, vertical whitespace between bboxes
+      page: 0.15
+      dense: 0.25
+      overlap: 0.15
+    page_decay: 2.0            # tau in exp(-|dp|/tau); a prior, never a filter
+    layout_max_gap_pt: 220.0   # beyond this vertical gap, layout contributes nothing
+    reference_page_window: 1   # "Figure 3" matches only this page or an adjacent one
+    # Cache of the document-pair gate's raw statistics (keyed by inputs, model and library
+    # versions; output byte-identical). null disables. ~77 % of build_links time is this gate.
+    gate_cache_dir: data/processed/gate_cache
+
+  # --- figure <-> its own slide's text (Phase 3) ---
+  same_slide:
+    enabled: true              # ablatable: false emits none
+    score: 1.0                 # co-location on a deck page is certain, not scored
+
+  # --- deictic speech <-> visual element (Phase 3) ---
+  deictic:
+    weights:              # D = w_s*on_slide + w_c*cue + w_d*cos + w_o*keyword_overlap
+      slide: 0.45
+      cue: 0.15
+      dense: 0.20
+      overlap: 0.20       # IDF keyword overlap vs figure OCR/caption -- the
+                          # tie-break when a slide carries several figures
+    # Object deixis is generated as determiner x noun x direction rather than
+    # listed by hand, so coverage stays uniform ("this arrow here", "the box
+    # on the right", "that step below").
+    object_nouns: [arrow, box, step, line, circle, node, column, row, bar, point,
+                   block, region, curve, axis]
+    directions: [above, below, "on the left", "on the right", here, there]
+    determiners: [the, this, that]
+    # Cue tiers: 1 = explicit object deixis ("this arrow here"), 2 = bare pronoun
+    # with a visual word in the same sentence, 3 = bare pronoun alone. The weight
+    # multiplies `weights.cue`, so tier changes ranking without moving thresholds.
+    tier_weights: {1: 1.0, 2: 0.6, 3: 0.3}
+    visual_terms: [see, seen, show, shows, showing, shown, look, looking, plot,
+                   plotted, screen, slide, figure, graph, diagram, arrow, chart,
+                   picture, image, axis, curve, table, box, column, row, highlight,
+                   highlighted, display, displayed, draw, drawn, point, pointing]
+
+  # --- relatedness gate (priority ii, 2026-09-21) ---
+  # scripts/gate_links.py judges every link with eval.judge and flags failures in
+  # links.jsonl. `enabled` is what retrieval, the UI and the plots pass to
+  # load_links(gated=...): true drops them, false keeps every link. gate_links.py,
+  # negative_control.py and the UI's verdict read always load raw (gated=False).
+  # It only changes a corpus that was judged. Report: reports/relatedness_<corpus>.md
+  relatedness:
+    enabled: true
+    runs: 3
+
+  # Thresholds are per link_type; tune on the dev set, don't hardcode one global.
+  figure_text_threshold: 0.50
+  deictic_threshold: 0.45
+  deictic_cues: ["here", "this", "that", "that one", "this one", "shown",
+                 "on the left", "on the right", "this slide", "as you can see",
+                 "as you see", "look at this", "over here", "right here"]
+  max_links_per_unit: 8
+
+retrieve:
+  top_k: 8                       # units handed to the LLM
+  candidates: 50                 # pulled from each ranker before fusion
+  rrf_k: 60                      # reciprocal rank fusion constant (Cormack 2009)
+  # Design change 2026-09-21 (verified-gold result, reports/regression.md):
+  #   additive -- retrieve k_final seeds, ADD their 1-hop link neighbours to the
+  #               candidate pool, and let the selection step (reranker, or score when
+  #               rerank=none) pick k_final. Expansion never evicts a seed on its own.
+  #   evict    -- the Phase-4 behaviour: k_seed (< k_final) seeds, expansions fill the
+  #               remaining slots unconditionally. Evicted gold ranked 6-8 on the
+  #               verified set (A1 100% -> 0%). Kept only as the recorded ablation.
+  expansion: additive            # additive | evict
+
+  # --- link-following retrieval (Phase 4, novel component 2) ---
+  linkrag:
+    k_seed: 5                    # seeds from the hybrid retriever
+    k_final: 8                   # units handed to the generator
+    hops: 1
+    link_types: [audio_slide, figure_text, deictic]
+    min_link_score: 0.0
+    decay: 0.5                   # expanded score = seed_score * link_score * decay
+    # Rank-normalise seed scores to (0,1]. Raw RRF is ~0.03 against link weights of
+    # ~0.6-1.0, so seed x link x decay is two orders below any seed. Under additive
+    # expansion "select by score" is meaningless without this, so it is on as part
+    # of the same design change; false reproduces every number recorded before
+    # 2026-09-07 (with expansion: evict).
+    normalise_seeds: true
+
+  # --- complementarity-aware reranking (Phase 5, novel component 3) ---
+  rerank:
+    method: complementarity      # none (plain top-k) | mmr | complementarity
+    alpha: 0.3                   # bonus per newly represented modality
+    beta: 0.2                    # bonus per link edge into the selected set
+    gamma: 0.4                   # penalty on same-modality cosine redundancy
+    mmr_lambda: 0.5              # only used by method: mmr
+    cross_encoder: null          # e.g. BAAI/bge-reranker-base; null = retrieval scores
+    pool: 20                     # candidates retrieved before reranking down to k
+    # Modality-need gate (2026-09-23, design item): when the pool's evidence is
+    # concentrated in one modality (top-8 share >= 0.75 or score margin >= 0.5), run
+    # complementarity with alpha = 0 -- beta and gamma unchanged. Rule fixed once,
+    # not tuned on any reported set. OFF until evaluated; see reports/modality_gate.md.
+    modality_gate: false
+
+  # --- iterative re-querying, our P1 (MI-RAG) approximation ---
+  iterative:
+    rounds: 2                    # total retrievals, including the first
+    k_per_round: 8
+
+datasets:
+  # Target benchmarks (scripts/adapters/). Dataset-specific settings live here so
+  # they are recorded, not hidden in a script. LectQA-Vid videos are 2-5 minutes:
+  # 30-second windows would give ~6 units per video and make top-8 trivial.
+  lectqa_vid:
+    audio_segment_seconds: 15
+    frame_interval_s: 5
+    top_k: 4
+
+cost:
+  # Cost policy (DESIGN.md, 2026-09-23): the budget for every LLM call defaults to $0,
+  # and batch scripts require an explicit --max-cost. Free backends (`billing: free`),
+  # cache replays and local NLI always run; anything that would bill past the budget is
+  # refused before the request is sent.
+  max_usd: 0.0
+
+generation:
+  # Phase 6. JSON answers (answer + claims with cited unit ids), claim-level
+  # entailment against the cited units (same prompt and 3-run majority as gold
+  # verification), and citations a reader can open.
+  structured: true             # false = the Phase-1 prose answer with [id] citations
+  verify: true                 # run claim-level entailment (judge = eval.judge)
+  strict: false                # true: drop unsupported claims; abstain if none survive
+  verify_runs: 3               # majority over this many judge calls per claim
+  citations:
+    media: false   # xfile: no audio to cut
+    dir: data/processed/xfile/citations   # xfile:
+
+dataset:
+  # Extended-dataset intake (scripts/dataset/candidate.py). A candidate lecture is
+  # kept only if the speaker does NOT simply narrate the deck. pilot01 measured
+  # deck->transcript 0.942; the bar is well below it.
+  intake:
+    max_deck_to_transcript: 0.65
+    redundancy_k: 8
+    redundancy_runs: 3
+    # Sampled redundancy: sentences per direction, stratified by position (0 = census).
+    # A sampled deck->transcript decides only if its Wilson 95% CI clears the
+    # threshold; otherwise the verdict is BORDERLINE (exit 3) and the census decides.
+    redundancy_sample: 0
+    sample_seed: 20260923
+
+eval:
+  # Judge for gold verification, answer grading and the redundancy metric. Must be a
+  # DIFFERENT model from models.llm (the answerer): self-grading is lenient. Preferred
+  # default is a local model (e.g. provider: ollama, model: llama3.1:8b, with
+  # models.llm on qwen2.5:7b); this machine (8 GB, no Ollama runtime) cannot host one,
+  # so the judge is a different hosted family instead. Same OpenAI-compatible shape.
+  # Entailment decisions (gold verification, claim verification, redundancy).
+  #   llm -- the judge below, `runs` calls, majority, quotable span. DEFAULT: the
+  #          verifier for gold and the intake gate (DESIGN.md finding 11).
+  #   nli -- cross-encoder/nli-deberta-v3-base on the CPU: free, deterministic.
+  #          ABLATION ONLY -- kappa 0.31/0.36 vs the LLM judges, which agree at 0.85
+  #          (results/nli_vs_llm_pilot01.md). Select with --entailment nli.
+  entailment:
+    backend: llm
+    device: cpu              # nli backend only
+  # Judge: the cheap OpenAI tier, gpt-4.1-mini -- the model the stored pilot01 verdicts
+  # came from (dataset policy, 2026-09-23). eval.judge.backend / LINKRAG_JUDGE_BACKEND
+  # can select a free backend (groq, colab) instead, but only after
+  # scripts/eval/judge_agreement.py has measured it against the stored verdicts.
+  # A selected backend with a missing key/URL stops with one line; no fallback.
+  judge:
+    backend: default
+    provider: openai
+    billing: metered
+    model: gpt-4.1-mini-2025-04-14   # gpt-4.1 has a 30k TPM cap on this account
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.0
+    seed: 20260921
+    max_tokens: 1024
+    timeout_s: 120

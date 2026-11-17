@@ -120,6 +120,9 @@ def http_completer(llm_cfg: dict[str, Any], pricing: dict[str, Any] | None = Non
     from linkrag.costs import RateLimiter, SpendGuard
 
     provider = llm_cfg.get("provider", "ollama")
+    if provider == "agent_queue":       # subagents answer through the reply cache; nothing is sent
+        from linkrag.agent_queue import queue_completer
+        return queue_completer(llm_cfg)
     backend = str(llm_cfg.get("backend") or provider)
     url_env = llm_cfg.get("base_url_env")
     if url_env:                       # e.g. colab: the tunnel URL changes every session

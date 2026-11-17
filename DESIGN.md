@@ -91,6 +91,16 @@ Mentor's rule: **results are reported only on the datasets of the papers being i
 - **pilot01 is a development lecture only.** It is used to build and debug, and it never
   appears in a reported table.
 
+**Amended 2026-11-17: own benchmark for the novelty (XFile).** The comparison phase against
+T1 and T2 is closed and its results stand as reported. The rule above was for that
+comparison; it still governs every T1/T2 table. Neither benchmark can test the Evidence
+Linking Layer, since neither has evidence that spans files. So the project now builds one
+own-collected benchmark, **XFile**: MaViLS lectures (transcript and slide deck) plus a
+separately authored notes or textbook source per topic, with questions that need two or more
+files. XFile results are reported in their own tables, never mixed into a T1/T2 row. The
+"extended cross-file dataset plan … dropped" line above is **superseded** for XFile only.
+NPTEL and M3AV stay dropped. Plan: `results/xfile/PLAN.md`.
+
 ## Priority order (binding from 2026-09-23)
 
 Work is done in this order. Nothing outside this list is started without an
@@ -114,6 +124,11 @@ explicit instruction.
 4. **(iv) Verification / faithfulness on LectQA-Vid.** Claim-level entailment and
    citation checks on its answers.
 5. **(v) MaViLS alignment rows.** As already done (finding 6); no new work planned.
+6. **(vi) XFile, the cross-file benchmark (added 2026-11-17, on explicit instruction).**
+   Corpus, intake gate, drafted and human-checked questions, `verify_gold`, then retrieval and
+   answer scoring, split by topic into tune and test halves. All $0: free backends once
+   `judge_agreement.py` has measured them, otherwise Claude subagents (direction only, like
+   the closed-book run). Steps and files are in `results/xfile/PLAN.md`.
 
 *Outside this list, on explicit instruction (2026-11-12), all $0:* the free re-checks of the
 stored results on both targets (`results/external/lectqa_recheck.md`, `mavils_recheck.md`),
@@ -932,6 +947,12 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   filter. These built files are git-ignored. The paper draft is `paper/paper.html`, built the same
   way into `paper/LinkRAG_paper_draft.pdf`; venue format is open, and one reference's volume and
   pages are unconfirmed (`robertson2009bm25`).
+- **(m) Image-only decks lose their pages (found 2026-11-17, XFile).** When every page of a
+  deck is one scanned image with no text layer, `ingest_pdf` emits no text units. Each page's
+  figure cluster is the whole page, and the template filter drops geometry that repeats on many
+  pages. MaViLS `image_processing.pdf` gave 2 units from 21 pages. There is no OCR fallback for
+  text-less deck pages; the MaViLS adapter OCRs separately (`--slide-text ocr`). XFile dropped
+  that topic rather than change ingest for frozen corpora.
 
 ## Environment decisions worth not re-litigating
 

@@ -102,6 +102,10 @@ def cached_completer(inner: Completer, cache_dir: Path, *, cache_only: bool = Fa
             return text
         if cache_only:
             raise CacheMiss(f"no cached reply for this prompt ({base[:12]}…); cache-only mode makes no calls")
+        if getattr(inner, "deferred", False):
+            # agent_queue backend: record the prompt for an out-of-process answerer and hand
+            # back a placeholder that is never cached (linkrag.agent_queue).
+            return inner.defer(cache_dir, stem, system, user)   # type: ignore[attr-defined]
         text = inner(system, user)
         last = getattr(inner, "last_usage", None) or {}
         path.write_text(text)

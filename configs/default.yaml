@@ -99,6 +99,20 @@ models:
       max_tokens: 1024
       timeout_s: 120
 
+    # Claude subagents through the reply cache (linkrag.agent_queue): prompts are queued,
+    # answered out of process, imported into the cache, then replayed. $0 metered; uses the
+    # Claude plan. Haiku answers, Sonnet judges (separate judge). Added 2026-11-17 for XFile.
+    claude_agents:
+      provider: agent_queue
+      model: claude-haiku-5-5
+      billing: free
+      max_tokens: 1024
+    claude_agents_judge:
+      provider: agent_queue
+      model: claude-sonnet-5-5
+      billing: free
+      max_tokens: 1024
+
   # USD per 1M tokens, longest model-prefix match (linkrag.costs.price_for).
   # Consulted only for `billing: metered` backends; a metered model with no row is
   # refused at a $0 budget rather than assumed free.

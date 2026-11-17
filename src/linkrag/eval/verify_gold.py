@@ -192,6 +192,11 @@ def source_of(unit: EvidenceUnit, deck_files: set[str]) -> str:
     return "deck" if Path(unit.source_file).name in deck_files else "paper"
 
 
+def topic_units(units: Sequence[EvidenceUnit], topic: str) -> list[EvidenceUnit]:
+    """Units of one topic in a pooled corpus, whose files are named `<topic>_<role>.<ext>`."""
+    return [u for u in units if Path(u.source_file).name.startswith(f"{topic}_")]
+
+
 def full_contexts(units: Sequence[EvidenceUnit], deck_files: set[str]) -> dict[str, str]:
     """One string per source in reading order, plus 'all' = the three concatenated."""
     groups: dict[str, list[EvidenceUnit]] = {s: [] for s in SOURCES}
@@ -383,9 +388,21 @@ def verify_gold(rows: Sequence[dict[str, Any]], units: Sequence[EvidenceUnit],
     """`complete` answers (models.llm); `judge` grades and checks entailment
     (eval.judge). Pass the same callable for both only in a test."""
     contexts = full_contexts(units, deck_files)
+    scoped: dict[str, tuple[list[EvidenceUnit], dict[str, str]]] = {}
     out = []
     for row in rows:
-        v = verify_question(row, units, contexts, complete, runs=runs, workers=workers,
+        q_units, q_contexts = units, contexts
+        if row.get("topic"):
+            # A pooled corpus (XFile): "the whole transcript" means this topic's transcript,
+            # not every lecture's. Units are scoped by the `<topic>_` basename prefix.
+            t = row["topic"]
+            if t not in scoped:
+                tu = topic_units(units, t)
+                if not tu:
+                    raise ValueError(f"{row['qid']}: no units for topic {t!r}")
+                scoped[t] = (tu, full_contexts(tu, deck_files))
+            q_units, q_contexts = scoped[t]
+        v = verify_question(row, q_units, q_contexts, complete, runs=runs, workers=workers,
                             judge=judge, backend=backend, device=device)
         if progress:
             kept = sum(u.kept for u in v.units)

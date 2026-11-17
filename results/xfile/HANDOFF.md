@@ -1,0 +1,119 @@
+# XFile: handoff (2026-11-17)
+
+From Rakshit's session to m1ssmee. The plan is [PLAN.md](PLAN.md), and the policy change is
+recorded in `DESIGN.md` (*Dataset policy*, amended 2026-11-17, and priority (vi)).
+
+To save usage, this first pass took the **shortcuts listed under "Undo these shortcuts"**.
+Redo them before reporting any number.
+
+## Where things stand
+
+| Step | State |
+|---|---|
+| 0. Policy note | Done: `DESIGN.md`, plus known issue (m). |
+| 1. Corpus | Done. 7 topics × (MaViLS transcript, MaViLS deck, separate notes PDF) = 21 files, 2,210 units, manifest **`a086ca1c22dc1d93`**. `med_imgproc` was dropped (image-only deck, issue (m)). |
+| 1b. Links | `build_links.py` was still running at handoff (49 talk × deck alignments, about 2 h on CPU). Not committed; rebuild it. |
+| 2. Judge | Sonnet subagent judge vs the stored pilot01 verdicts: unit κ **0.80** vs gpt-4.1-mini (bar 0.70, set before the run), 0.92 vs gpt-5.4; grades 98/100; types 24/25. **1 run per prompt.** See `results/judge_agreement_offline_claude_agents_judge.md`. |
+| 2b. Redundancy gate | **Skipped.** |
+| 3. Questions | 98 drafted by Opus subagents (`tests/regression/xfile_drafts.jsonl`). `verify_gold` kept 97: **64 verified cross-file** (54 split + 10 deictic), 33 single-source controls, 1 dropped (LN12). **1 run.** See `gold_check_1run.md` / `.json`. |
+| 3b. Human review | Sheet ready: `reports/xfile_review.csv`. It holds a per-question `kind` (bridge / conjunction / deictic / control), Claude's recommendation (8 reject, 6 check) and the gold-check result. **No decisions entered yet.** |
+| 4. Evaluation | Not started. |
+| 5. Report | Not started. |
+
+## How the LLM calls are made (no API keys)
+
+`provider: agent_queue` backends (`claude_agents` = Haiku answerer, `claude_agents_judge` =
+Sonnet judge, in `configs/*.yaml`) answer through the reply cache. See
+`src/linkrag/agent_queue.py` and `scripts/agent_queue.py`. One round:
+
+```bash
+export LINKRAG_LLM_BACKEND=claude_agents LINKRAG_JUDGE_BACKEND=claude_agents_judge
+export LINKRAG_AGENT_QUEUE=data/processed/agent_queue/<run>.jsonl
+<script> ...                                   # collect: misses are queued, output is NOT a result
+python scripts/agent_queue.py status
+python scripts/agent_queue.py batches --out data/processed/agent_queue/<run>_r1
+#  -> one subagent per batch folder (prompt templates below), haiku for claude-haiku-5-5
+#     batches, sonnet for claude-sonnet-5-5 batches
+python scripts/agent_queue.py import --batches data/processed/agent_queue/<run>_r1
+<script> ...                                   # repeat until `status` shows 0 pending
+<script> ... --answerer-cache-only --judge-cache-only   # final, clean replay = the result
+```
+
+Stages that depend on earlier replies (answer, then grade) take one round each. A `c*` batch
+holds one shared long context: its user message is `context.txt` + `N.question.txt`.
+
+Subagent prompt for a `b*` batch:
+
+> You are acting as the LLM behind an evaluation harness. Folder: `<abs path>`. For each N in
+> manifest.json there is N.system.txt and N.user.txt. For EVERY N write to replies/N.txt exactly
+> the raw reply the model should return, following the system prompt and its output format to the
+> letter (JSON only where asked, no code fences, no commentary). Treat each prompt independently;
+> use only the text in the prompt; do your own reasoning, no scripts; quoted spans copied exactly;
+> don't modify other files.
+
+For a `c*` batch, also say: *read system.txt, then ALL of context.txt in offset/limit chunks;
+the user message of item N is context.txt followed by N.question.txt; answer ONLY from the
+context, else exactly NOT ANSWERABLE.*
+
+## Rebuild on a new machine
+
+```bash
+make setup && brew install tesseract
+git clone https://github.com/andererka/MaViLS data/raw/mavils && git -C data/raw/mavils checkout b3c55a869a24a8f3f3881aa3e89fea9b1c81c0ad
+# download configs/xfile_topics.yaml `sources` into data/raw/xfile/_sources/, check each sha256
+python scripts/adapters/xfile.py prepare
+python scripts/ingest.py $(python scripts/adapters/xfile.py files) --config configs/xfile.yaml --mode linkrag --max-cost 0
+# expect "corpus manifest a086ca1c22dc1d93". If it differs, the cached replies below won't hit.
+tar -xzf results/xfile/reply_cache.tar.gz       # restores data/processed/verify_cache + judge_cache_offline
+python scripts/build_links.py --config configs/xfile.yaml --link-mode linkrag
+```
+
+## Undo these shortcuts (in this order)
+
+1. **Judge agreement at 3 runs.**
+   `LINKRAG_JUDGE_BACKEND=claude_agents_judge python scripts/eval/judge_agreement_offline.py --runs 3`.
+   Run 0 is cached; runs 1 and 2 are new prompts.
+2. **Redundancy intake gate (Step 2).** For each topic, `scripts/dataset/redundancy.py --index
+   data/processed/xfile/index ...` with the Sonnet judge. Record KEEP/REJECT in
+   `scripts/dataset/README.md`. It was skipped; it decides whether a topic's deck mostly repeats
+   its talk.
+3. **Human review.** Fill `reports/xfile_review.csv` (decision column; the sheet splits topics
+   between you two). Check RL09/RL10 against the slide images, since their answers come from
+   OCR. Then run `python scripts/adapters/xfile.py apply-review`, which writes
+   `tests/regression/xfile_proposed.jsonl`.
+4. **Gold check at 3 runs, on the reviewed set**: `scripts/eval/verify_gold.py --config
+   configs/xfile.yaml --corpus xfile --proposed tests/regression/xfile_proposed.jsonl --out
+   tests/regression/xfile_questions.jsonl --runs 3 --entailment llm --max-cost 0`. Run-0 answers
+   and verdicts are cached. Edited questions are new prompts.
+5. **Human audit**: `scripts/eval/audit_sample.py` (10%, at least 5 per type). Fill the sheet
+   (DESIGN.md known issue (d)).
+6. *Optional:* re-answer the whole-source runs with `--share-max-items 1`, so each question is
+   answered in a context of its own. In the shared-context batches a subagent saw ~14 questions
+   on the same context.
+
+## Step 4: code still needed before the evaluation
+
+- `scripts/compare_retrieval.py` builds `http_completer(llm)` and `judge_completer(...)` **without
+  `cached_completer`**. The agent_queue backend refuses to run that way. Wrap both in
+  `cached_completer(..., Path("data/processed/verify_cache") / mhash / model)` first, as
+  `verify_gold.py` does.
+- **Answer correctness** is not scored yet. Score each answer against `expected_answer` with
+  `linkrag.eval.verify_gold.grade` (same judge, 3 runs). Report it by `kind` (bridge /
+  conjunction / deictic / control). Bridge questions are where links should help; conjunction
+  questions mostly test retrieving two things.
+- Split by topic into tune and test halves **before any run**, and write the split into PLAN.md.
+  Knobs are set on tune only (DESIGN.md *Reporting convention*).
+- Headline comparison: `linkrag + complementarity` vs the no-links control `baseline +
+  complementarity`. The control was fixed this session: `rerank_graph()` in compare_retrieval.py
+  no longer hands the graph to non-link modes. Run 3 repeats, with a paired bootstrap over
+  **topics**.
+
+## Caveats to carry into any report
+
+- Subagent runs can be re-scored but not re-generated. Haiku is both the answerer and the drafter's
+  model family. Label results accordingly.
+- Drafts came from Claude, and the drafter checked fact exclusivity with grep. That is why
+  64/70 cross-file drafts survived, against 4/16 on pilot01. A human review is what makes them gold.
+- Answer replies sometimes give "the part the context supports + NOT ANSWERABLE for the rest".
+  The grader correctly fails those. One batch (b025) used a bare NOT ANSWERABLE instead; the
+  outcome is the same.
