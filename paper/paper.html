@@ -12,6 +12,7 @@ h1 { font-size: 16.5pt; line-height: 1.22; text-align: center; margin: 0 0 3mm; 
 .affil { text-align: center; color: #444; font-size: 9pt; margin: 0 0 5mm; }
 .draft { text-align: center; color: #8a1c1c; font: 600 8.6pt Helvetica, Arial, sans-serif; margin: 0 0 4mm; }
 .abstract { margin: 0 9mm 5mm; font-size: 9.4pt; }
+.keywords { margin: -2mm 9mm 5mm; font-size: 9.4pt; }
 .abstract b.h { display: block; text-align: center; margin-bottom: 1mm; }
 h2 { font-size: 11.6pt; margin: 5.5mm 0 1.5mm; break-after: avoid; text-align: left; }
 h3 { font-size: 10.2pt; margin: 3.5mm 0 1mm; break-after: avoid; text-align: left; font-style: italic; }
@@ -39,7 +40,6 @@ figcaption b { font-family: Helvetica, Arial, sans-serif; }
 </head>
 <body>
 
-<p class="draft">DRAFT, 15 November 2026 · not submitted · venue format to be decided</p>
 
 <h1>What Do Lecture-Video Benchmarks Measure? A Controlled Re-implementation and Audit of LectQA-Vid, and Slide Alignment at Parity with MaViLS</h1>
 <p class="authors">Krish Pandit, Rakshit Panwar, Ananya Samant, Vidyansh Gaur</p>
@@ -62,29 +62,58 @@ difference (+0.055, CI [−0.050, +0.161]) is parity, and the video frames, not 
 The linking and set-level reranking components of our own system show no measured benefit on either benchmark, and we
 report that as a negative result. We release the code, the stored answers and the scripts that reproduce every number.
 </div>
+<p class="keywords"><b>Keywords:</b> retrieval-augmented generation; lecture video question answering; multimodal retrieval; speech-to-slide alignment; benchmark audit; reproducibility</p>
 
 <h2>1. Introduction</h2>
+<h3>1.1 Background</h3>
 <p>Lecture recordings are a natural target for retrieval-augmented generation (RAG) [1]: the content is long, it is
 spread over speech, slides and written notes, and a student's question is usually answered by a specific moment or
 slide. Two recent lines of work address parts of this problem. Intra-Video Temporal-Aware RAG [2] answers questions
 about a single lecture video by restricting retrieval to a temporal window, and introduces the LectQA-Vid benchmark.
 MaViLS [3] aligns each spoken sentence of a lecture with the slide on screen, and provides a hand-labelled benchmark
 for that task.</p>
+<h3>1.2 Significance of the study</h3>
+<p>Recorded lectures are a common study resource, and they are slow to search: the answer to a question may be one
+sentence in an hour of speech, a slide shown for half a minute, or a paragraph in a handout. A system that answers
+with the moment and the slide it relied on lets a student check the answer rather than trust it. Whether such systems
+work is decided on benchmarks, so a benchmark that cannot tell good retrieval from none misdirects the field: methods
+are tuned to scores that the retrieval step does not move.</p>
+<h3>1.3 Problem statement</h3>
+<p>The evidence for a lecture question is spread over speech, slides and documents, yet published lecture RAG
+systems retrieve from one stream at a time, and their gains are reported on benchmarks whose ability to detect better
+retrieval has not been tested. Two questions follow. Does linking evidence across speech, slides and documents
+improve retrieval for lecture questions? And can the existing benchmarks show it if it does?</p>
+<h3>1.4 Research objectives</h3>
 <p>We set out to improve on both with LinkRAG, a system whose design centres on an evidence linking layer: typed,
 scored links between speech segments, slides and figures are built at indexing time, retrieval follows them, and a
 reranker selects an evidence set for coverage rather than scoring each unit alone. To make any gain attributable, we
-measured the system only on the two target papers' own benchmarks, with their metrics.</p>
+measured the system only on the two target papers' own benchmarks, with their metrics. The objectives were:</p>
+<ol>
+<li>to build a lecture RAG system in which linking, link-following retrieval and set-level reranking can each be
+switched off, so that every component is an ablation (§4);</li>
+<li>to compare it with Temporal-Aware RAG on LectQA-Vid under one answering model, and attribute any difference to
+its components (§6);</li>
+<li>to compare its slide alignment with MaViLS on the MaViLS benchmark, with the authors' scorer and a held-out
+split (§7);</li>
+<li>to test whether each benchmark can measure the value of retrieval at all (§6.1, §6.4).</li>
+</ol>
+<h3>1.5 Research contributions</h3>
 <p>The outcome is not the one we designed for, and we report it as it is. Our contributions are:</p>
 <ol>
 <li><b>A controlled re-implementation of Temporal-Aware RAG on LectQA-Vid</b> with one answering model for every
-method, and an attribution of the observed gap to its parts (§5.2–5.3).</li>
+method, and an attribution of the observed gap to its parts (§6.2–6.3).</li>
 <li><b>An audit of LectQA-Vid</b> showing that neither its multiple-choice nor its open-ended half can measure the
-value of retrieval, with three simple baselines that any future use of the benchmark should report (§5.1, §5.4).</li>
+value of retrieval, with three simple baselines that any future use of the benchmark should report (§6.1, §6.4).</li>
 <li><b>A multi-feature slide alignment at parity with MaViLS</b>, with a decomposition showing which features and
-which decoder produce the result (§6).</li>
+which decoder produce the result (§7).</li>
 <li><b>A negative result for link-following retrieval and set-level reranking</b> on single-stream benchmarks, and a
-score-scale defect in complementarity reranking that inflated an earlier estimate of its cost (§7).</li>
+score-scale defect in complementarity reranking that inflated an earlier estimate of its cost (§8).</li>
 </ol>
+<h3>1.6 Organization of the paper</h3>
+<p>Section 2 reviews related work and Section 3 states the gap this work addresses. Section 4 describes the method:
+the system architecture, data collection, preprocessing, the proposed approach and its implementation. Section 5
+gives the experimental setup: datasets, baselines and metrics. Sections 6 and 7 report results on LectQA-Vid and
+MaViLS, Section 8 discusses them, Section 9 states the limitations, and Section 10 concludes with future work.</p>
 
 <h2>2. Related Work</h2>
 <p><b>RAG over video and lectures.</b> Temporal-Aware RAG [2] segments a transcript and frame captions into
@@ -103,10 +132,59 @@ slide figures, and narrated-lecture generation [10] aligns narration with slide 
 Whisper speech recognition [14], Sentence-BERT models [15] for the similarity metric that [2] defines, SwiftFormer
 [16] image features as in [3], and maximal marginal relevance [17] as a reranking ablation.</p>
 
-<h2>3. System</h2>
-<p><b>Ingestion and indexing.</b> Documents, slide decks, images and audio become evidence units with a modality and a
-location (page and box, or start and end time). Speech is transcribed locally with word timestamps and packed into
-sentence-aligned segments. Units are embedded with BGE-M3 and indexed for exact dense search and BM25.</p>
+<h2>3. Research Gap Analysis</h2>
+<p><b>Evidence from one stream.</b> Temporal-Aware RAG [2] retrieves from one video's transcript and frame
+captions, and MaViLS [3] aligns one recording with one deck. Neither connects a recording to the documents that
+accompany it. The knowledge-graph systems that do connect educational sources [6, 7] need a language model to extract
+entities and relations first. We found no system that builds structural links (time, layout, spoken pointing) across
+recordings, decks and documents and follows them at retrieval time.</p>
+<p><b>Benchmarks without controls.</b> LectQA-Vid reports system scores without the rows that would show whether
+retrieval matters: no full-transcript row, no row that answers without the video, and no statistics on where the
+correct multiple-choice option sits. Its transcripts fit in one context window (§6.4), so retrieval is not needed to
+answer. MaViLS is a sound alignment benchmark, but it scores alignment, not question answering.</p>
+<p><b>Comparisons that cannot be reproduced.</b> The code of [2] and its evaluation subset are not public, and its
+answering model is not named, so its numbers cannot be set against another system's without re-implementing it under
+one answering model.</p>
+<table>
+<caption><b>Table 1.</b> What the two target systems and this work cover.</caption>
+<thead><tr><th>Requirement</th><th>Temporal-Aware RAG [2]</th><th>MaViLS [3]</th><th>LinkRAG (this work)</th></tr></thead>
+<tbody>
+<tr><td>Evidence across recording, slides and documents</td><td>one video (transcript, frames)</td><td>one recording, one deck</td><td>linked across files</td></tr>
+<tr><td>Answers cite their evidence, and the citations are checked</td><td>not reported</td><td>not applicable (alignment)</td><td>claims cited and judged</td></tr>
+<tr><td>Controls showing that retrieval matters</td><td>not reported</td><td>not applicable</td><td>full transcript, question echo, option position</td></tr>
+<tr class="last"><td>Code public</td><td>no</td><td>yes</td><td>yes</td></tr>
+</tbody></table>
+<p>This work addresses the first gap with an evidence linking layer, the second with an audit, and the third with a
+controlled re-implementation. The case the linking layer targets, evidence spread over several files that does not fit
+in one context window, still has no benchmark (§8, §10).</p>
+
+<h2>4. Proposed Methodology</h2>
+<h3>4.1 System architecture</h3>
+<p>Figure 1 shows the pipeline. At indexing time, each source becomes evidence units, the units are indexed for
+dense and sparse search, and the linking layer connects them. At question time, hybrid retrieval finds seed units,
+link expansion adds their neighbours, a set reranker chooses the evidence, the answerer writes cited claims, and a
+verifier checks each claim against the text it cites.</p>
+<figure id="fig1"><svg viewBox="0 0 640 200" width="100%" xmlns="http://www.w3.org/2000/svg" role="img"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111"/></marker></defs><text x="0" y="12" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#555" font-weight="600" font-style="normal">Indexing time</text><rect x="0" y="20" width="145" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="72.5" y="35.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Sources</text><text x="72.5" y="46.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">recording, slides,</text><text x="72.5" y="57.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">documents</text><rect x="165" y="20" width="145" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="237.5" y="35.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Evidence units</text><text x="237.5" y="46.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">modality + page</text><text x="237.5" y="57.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">or time span</text><line x1="145" y1="43.0" x2="164" y2="43.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="330" y="20" width="145" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="402.5" y="35.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Index</text><text x="402.5" y="46.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">BGE-M3 dense</text><text x="402.5" y="57.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">+ BM25</text><line x1="310" y1="43.0" x2="329" y2="43.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="495" y="20" width="145" height="46" rx="4" fill="#f3f6fb" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/><text x="567.5" y="35.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Linking layer</text><text x="567.5" y="46.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">audio–slide, figure–text,</text><text x="567.5" y="57.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">deictic, same-slide</text><line x1="475" y1="43.0" x2="494" y2="43.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><text x="0" y="110" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#555" font-weight="600" font-style="normal">Question time</text><rect x="0" y="118" width="62" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="31.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Question</text><rect x="84" y="118" width="98" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="133.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Hybrid retrieval</text><text x="133.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">reciprocal rank</text><text x="133.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">fusion</text><line x1="62" y1="141.0" x2="83" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="204" y="118" width="92" height="46" rx="4" fill="#f3f6fb" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/><text x="250.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Link expansion</text><text x="250.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">one hop</text><text x="250.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">along links</text><line x1="182" y1="141.0" x2="203" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="318" y="118" width="104" height="46" rx="4" fill="#f3f6fb" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/><text x="370.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Set reranker</text><text x="370.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">coverage,</text><text x="370.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">links, redundancy</text><line x1="296" y1="141.0" x2="317" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="444" y="118" width="86" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="487.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Answerer</text><text x="487.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">claims with</text><text x="487.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">citations</text><line x1="422" y1="141.0" x2="443" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="552" y="118" width="88" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="596.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Verifier</text><text x="596.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">each claim vs</text><text x="596.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">cited text</text><line x1="530" y1="141.0" x2="551" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><path d="M 402.5 66 L 402.5 96 L 133.0 96 L 133.0 117" fill="none" stroke="#111" stroke-width="1" marker-end="url(#a)"/><path d="M 567.5 66 L 567.5 104 L 250.0 104 L 250.0 117" fill="none" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a)"/><path d="M 487.0 164 L 487.0 182 L 133.0 182 L 133.0 165" fill="none" stroke="#111" stroke-width="1" marker-end="url(#a)"/><text x="310.0" y="194" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">one follow-up query written by the answering model</text></svg><figcaption><b>Figure 1.</b> The LinkRAG pipeline. Dashed boxes are the link-centred components; they are the ones for which neither benchmark shows a benefit (§8). The baseline path is hybrid retrieval, the answerer and the verifier.</figcaption></figure>
+<h3>4.2 Data collection</h3>
+<p>LectQA-Vid [2] distributes question–answer pairs and YouTube links; videos, keyframes and transcripts are not
+provided. We fetched each video with yt-dlp as two streams, the audio (m4a) and a video-only stream of at most 360p,
+and 95 of the 100 links were still available. MaViLS [3] provides, in its public repository and dataset archive, the
+slide decks and every transcript sentence with its ground-truth slide label; the archive has video for 19 of the 20
+lectures.</p>
+<h3>4.3 Data preprocessing</h3>
+<p><b>Speech.</b> Audio is transcribed on the CPU with Whisper small [14] (faster-whisper, int8) with word
+timestamps, and the words are packed into sentence-aligned segments of at most 15 s that never split a Whisper
+segment. Each transcript is computed once and frozen, so every method reads the same text.</p>
+<p><b>Frames.</b> For LectQA-Vid a frame is sampled every 5 s and kept only if it differs from the last kept frame
+(mean absolute difference above 0.08 on a 64×36 greyscale thumbnail); kept frames are read with Tesseract OCR and
+become units that last until the next kept frame. [2] used generated frame captions instead (§5.2). For MaViLS we
+take the frame at each sentence's midpoint, as the authors' code does.</p>
+<p><b>Documents and slides.</b> PDFs are read with PyMuPDF as text blocks with their page and box, and figures are
+extracted as images and read with OCR. A PDF whose pages are mostly landscape is treated as a slide deck. Every unit
+records its source file and location, and its identifier is the citation the answerer uses.</p>
+<h3>4.4 Proposed approach</h3>
+<p><b>Indexing.</b> Documents, slide decks, images and audio become evidence units with a modality and a location
+(page and box, or start and end time). Units are embedded with BGE-M3 and indexed for exact dense search and BM25.</p>
 <p><b>Evidence linking layer.</b> Four link types are built at indexing time: <i>audio–slide</i>, from a monotone
 dynamic-programming alignment of speech segments to slides over a hybrid similarity; <i>figure–text</i>, between a
 figure and the paragraph that explains it; <i>deictic</i>, between a spoken pointing phrase and the visual element on
@@ -119,15 +197,30 @@ within-modality redundancy. Iterative retrieval issues one follow-up query writt
 <p><b>Answering and verification.</b> The answerer returns an answer as a list of claims, each citing evidence units.
 A separate judge model checks every claim against the text it cites and must quote a supporting span.</p>
 <p>Every stage runs in a baseline and a linked mode from the same code, so that each component is an ablation.</p>
-<figure id="fig1"><svg viewBox="0 0 640 200" width="100%" xmlns="http://www.w3.org/2000/svg" role="img"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111"/></marker></defs><text x="0" y="12" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#555" font-weight="600" font-style="normal">Indexing time</text><rect x="0" y="20" width="145" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="72.5" y="35.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Sources</text><text x="72.5" y="46.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">recording, slides,</text><text x="72.5" y="57.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">documents</text><rect x="165" y="20" width="145" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="237.5" y="35.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Evidence units</text><text x="237.5" y="46.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">modality + page</text><text x="237.5" y="57.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">or time span</text><line x1="145" y1="43.0" x2="164" y2="43.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="330" y="20" width="145" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="402.5" y="35.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Index</text><text x="402.5" y="46.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">BGE-M3 dense</text><text x="402.5" y="57.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">+ BM25</text><line x1="310" y1="43.0" x2="329" y2="43.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="495" y="20" width="145" height="46" rx="4" fill="#f3f6fb" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/><text x="567.5" y="35.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Linking layer</text><text x="567.5" y="46.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">audio–slide, figure–text,</text><text x="567.5" y="57.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">deictic, same-slide</text><line x1="475" y1="43.0" x2="494" y2="43.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><text x="0" y="110" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#555" font-weight="600" font-style="normal">Question time</text><rect x="0" y="118" width="62" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="31.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Question</text><rect x="84" y="118" width="98" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="133.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Hybrid retrieval</text><text x="133.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">reciprocal rank</text><text x="133.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">fusion</text><line x1="62" y1="141.0" x2="83" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="204" y="118" width="92" height="46" rx="4" fill="#f3f6fb" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/><text x="250.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Link expansion</text><text x="250.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">one hop</text><text x="250.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">along links</text><line x1="182" y1="141.0" x2="203" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="318" y="118" width="104" height="46" rx="4" fill="#f3f6fb" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/><text x="370.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Set reranker</text><text x="370.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">coverage,</text><text x="370.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">links, redundancy</text><line x1="296" y1="141.0" x2="317" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="444" y="118" width="86" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="487.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Answerer</text><text x="487.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">claims with</text><text x="487.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">citations</text><line x1="422" y1="141.0" x2="443" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><rect x="552" y="118" width="88" height="46" rx="4" fill="#fff" stroke="#111" stroke-width="1"/><text x="596.0" y="133.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#111" font-weight="600" font-style="normal">Verifier</text><text x="596.0" y="144.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">each claim vs</text><text x="596.0" y="155.2" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">cited text</text><line x1="530" y1="141.0" x2="551" y2="141.0" stroke="#111" stroke-width="1" marker-end="url(#a)"/><path d="M 402.5 66 L 402.5 96 L 133.0 96 L 133.0 117" fill="none" stroke="#111" stroke-width="1" marker-end="url(#a)"/><path d="M 567.5 66 L 567.5 104 L 250.0 104 L 250.0 117" fill="none" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a)"/><path d="M 487.0 164 L 487.0 182 L 133.0 182 L 133.0 165" fill="none" stroke="#111" stroke-width="1" marker-end="url(#a)"/><text x="310.0" y="194" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">one follow-up query written by the answering model</text></svg><figcaption><b>Figure 1.</b> The LinkRAG pipeline. Dashed boxes are the link-centred components; they are the ones for which neither benchmark shows a benefit (§7). The baseline path is hybrid retrieval, the answerer and the verifier.</figcaption></figure>
+<h3>4.5 Implementation details</h3>
+<p>LinkRAG is written in Python 3.11. BGE-M3 runs through sentence-transformers 6.0 on PyTorch 2.14; dense search
+is an exact inner product in NumPy and sparse search uses rank-bm25. PDFs are parsed with PyMuPDF, OCR is Tesseract
+through pytesseract, speech recognition is faster-whisper 1.2, and the link graph is held in NetworkX. Every stage
+runs on a CPU, an Apple M2 with 8 GB of memory; transcription is the slow
+step, at roughly three times real time. Language-model calls go to the OpenAI API at temperature 0: gpt-5.4-mini
+answers and gpt-4.1-mini judges. Each call is written to a cost ledger and refused once a set budget is reached; the
+ledger records US$23.21 for all priced calls in the project, development included. Responses are cached by their full
+request, so a re-run replays the stored answers at no cost. BLEU-4 and METEOR use NLTK, and the MaViLS F1 uses the
+authors' scikit-learn scorer.</p>
 
-<h2>4. Experimental Setup</h2>
+
+<h2>5. Experimental Setup</h2>
+<h3>5.1 Datasets</h3>
 <p><b>LectQA-Vid.</b> The benchmark [2] has 100 computer-science lecture videos of 2–5 minutes and 3,000 question–answer
 pairs, half multiple choice and half open-ended, at three difficulty levels. 95 videos were still available, with
 2,832 pairs. The published split and 1,000-pair evaluation subset are not released, so open-ended answers are
 evaluated on a stratified sample of 300 questions (100 per level, fixed seed) from 93 videos, three repeats each; the
-1,414 multiple-choice questions are run once with options shuffled under a fixed seed. We use the metric suite of [2]:
-token F1, BLEU-4 [18], METEOR [19], ROUGE-1 [20] and MiniLM cosine similarity.</p>
+1,414 multiple-choice questions are run once with options shuffled under a fixed seed.</p>
+<p><b>MaViLS.</b> The benchmark [3] has 20 lectures with every spoken sentence labelled with a slide. We use the
+authors' scorer unchanged. The lectures were split once into 10 for tuning and 10 for testing; all weights and
+thresholds were set on the tuning half. The release contains no video for one test lecture, so test means cover nine
+lectures and are paired with the per-lecture figures published in [3].</p>
+<h3>5.2 Baseline methods</h3>
 <p><b>Re-implementation of [2].</b> The code of [2] is not public. We rebuilt its pipeline from the paper with the
 values its Table 3 gives: semantic chunking, BGE-base embeddings, top-10 candidates above cosine 0.6, the temporal
 filter with a 3 s tolerance, merging of adjacent results, cross-encoder re-ranking and a temporally ordered context.
@@ -138,32 +231,38 @@ paper describes. It also does not say what happens when no chunk survives; our r
 "no evidence" reply. Every mode is answered by the same model (gpt-5.4-mini, temperature 0) with the same prompt. The
 answering model of [2] is not named, so absolute scores are not comparable with its tables; differences between our
 rows are.</p>
-<p><b>MaViLS.</b> The benchmark [3] has 20 lectures with every spoken sentence labelled with a slide. We use the
-authors' scorer unchanged. The lectures were split once into 10 for tuning and 10 for testing; all weights and
-thresholds were set on the tuning half. The release contains no video for one test lecture, so test means cover nine
-lectures and are paired with the per-lecture figures published in [3].</p>
+<p><b>Reference rows.</b> On LectQA-Vid we add rows that need no retrieval: the full transcript given to the same
+answering model, the question itself returned as the answer, and, for the multiple-choice half, the share of questions
+whose correct option is the first or the longest. On MaViLS the baselines are the per-lecture results published in [3]
+for each feature and for the combined system.</p>
+<h3>5.3 Evaluation metrics</h3>
+<p>LectQA-Vid uses the metric suite of [2]: token F1, BLEU-4 [18], METEOR [19], ROUGE-1 [20] and MiniLM cosine
+similarity for open-ended answers, and accuracy for multiple choice. MaViLS uses the authors' F1 per lecture over
+sentences that have a slide label, averaged over lectures. Faithfulness is the share of claims the judge finds
+supported by the text they cite.</p>
+
 <p><b>Statistics.</b> We report 95 % bootstrap intervals [21] from 10,000 resamples. Paired differences resample the
 sampled unit, whole videos or whole lectures, because questions on one video share a transcript. An interval that
 contains zero is reported as no measurable difference.</p>
 
-<h2>5. Results on LectQA-Vid</h2>
+<h2>6. Results on LectQA-Vid</h2>
 
-<h3>5.1 The multiple-choice half</h3>
+<h3>6.1 The multiple-choice half</h3>
 <p>The correct option is option A in 1,484 of the 1,489 published multiple-choice questions and the unique longest
-option in 1,409. Shuffling removes the first confound but not the second (Table 1). Accuracy tracks the share of
+option in 1,409. Shuffling removes the first confound but not the second (Table 2). Accuracy tracks the share of
 longest-option answers at each difficulty level, so this half measures neither the video nor retrieval, and we report
 no multiple-choice result.</p>
 <table>
-<caption><b>Table 1.</b> Multiple-choice accuracy (%) on LectQA-Vid, 1,414 questions, options shuffled.</caption>
+<caption><b>Table 2.</b> Multiple-choice accuracy (%) on LectQA-Vid, 1,414 questions, options shuffled.</caption>
 <tr class="h"><th>Method</th><th class="n">Simple</th><th class="n">Hard</th><th class="n">Very hard</th><th class="n">Overall</th></tr>
 <tr class="ref"><td>Temporal-Aware RAG, published [2]</td><td class="n">57.29</td><td class="n">52.34</td><td class="n">50.67</td><td class="n">53.43</td></tr>
 <tr><td>Longest option, no video</td><td class="n">88.2</td><td class="n">95.1</td><td class="n">100.0</td><td class="n">94.4</td></tr>
 <tr class="last"><td>Our answerer, full transcript</td><td class="n">90.11</td><td class="n">96.38</td><td class="n">99.57</td><td class="n">95.33</td></tr>
 </table>
 
-<h3>5.2 Open-ended answers</h3>
+<h3>6.2 Open-ended answers</h3>
 <table>
-<caption><b>Table 2.</b> Open-ended answers on LectQA-Vid: token F1 (%) by difficulty and overall MiniLM similarity,
+<caption><b>Table 3.</b> Open-ended answers on LectQA-Vid: token F1 (%) by difficulty and overall MiniLM similarity,
 mean over three repeats, 300 questions. The published row uses an unnamed answering model and a different question
 subset and is shown for reference only.</caption>
 <tr class="h"><th>Method</th><th class="n">Simple</th><th class="n">Hard</th><th class="n">Very hard</th><th class="n">Overall</th><th class="n">Sim.</th></tr>
@@ -181,9 +280,9 @@ interval contains zero, and +2.06 on very hard ones. Standard deviations across 
 Unsupported-claim rates under claim-level verification are 3.7 %, 3.1 % and 4.3 % for the re-implementation, our
 method and the full transcript, with one judge run per claim; the three are not distinguishable.</p>
 
-<h3>5.3 Where the difference comes from</h3>
+<h3>6.3 Where the difference comes from</h3>
 <table>
-<caption><b>Table 3.</b> From the re-implementation with its filter on to our method, one change at a time. Paired
+<caption><b>Table 4.</b> From the re-implementation with its filter on to our method, one change at a time. Paired
 differences in token F1, 95 % CI over videos.</caption>
 <tr class="h"><th>Step</th><th class="n">F1 after</th><th class="n">Change</th></tr>
 <tr><td>[2] re-implemented, temporal filter on</td><td class="n">31.23</td><td class="n"></td></tr>
@@ -207,7 +306,7 @@ empty windows are therefore annotation problems, not retrieval failures. Our rea
 an annotated interval is only as good as the annotation, and that the benefit reported in [2] depends on details of
 the interval source and the empty-result behaviour that the paper does not specify.</p>
 
-<h3>5.4 The benchmark cannot measure retrieval</h3>
+<h3>6.4 The benchmark cannot measure retrieval</h3>
 <p>Three observations bound what an open-ended score on LectQA-Vid means. First, the full transcript beats our best
 retrieval by 2.04 F1 [+1.08, +3.06] at every difficulty level. Transcripts run from about 140 to 1,544 tokens (median
 780), and all 95 together are 72,926 tokens, so any current model can read a whole video, or the whole corpus, at
@@ -224,7 +323,7 @@ the 37.55 it reaches with the transcript. The video adds 9.48 points [+7.91, +11
 closed-book row and, for multiple choice, a longest-option row.</p>
 <figure id="fig2"><svg viewBox="0 0 640 208" width="100%" xmlns="http://www.w3.org/2000/svg" role="img"><line x1="205.0" y1="18" x2="205.0" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="205.0" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">0</text><line x1="248.88888888888889" y1="18" x2="248.88888888888889" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="248.88888888888889" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">5</text><line x1="292.77777777777777" y1="18" x2="292.77777777777777" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="292.77777777777777" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">10</text><line x1="336.66666666666663" y1="18" x2="336.66666666666663" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="336.66666666666663" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">15</text><line x1="380.55555555555554" y1="18" x2="380.55555555555554" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="380.55555555555554" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">20</text><line x1="424.44444444444446" y1="18" x2="424.44444444444446" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="424.44444444444446" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">25</text><line x1="468.3333333333333" y1="18" x2="468.3333333333333" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="468.3333333333333" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">30</text><line x1="512.2222222222222" y1="18" x2="512.2222222222222" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="512.2222222222222" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">35</text><line x1="556.1111111111111" y1="18" x2="556.1111111111111" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="556.1111111111111" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">40</text><line x1="600.0" y1="18" x2="600.0" y2="176" stroke="#bbb" stroke-width="0.5"/><text x="600.0" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">45</text><text x="197" y="35" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="end" fill="#555" font-weight="normal" font-style="italic">Question echoed as the answer</text><path d="M 205 26 H 402.74777777777774 a 3 3 0 0 1 3 3 v 6 a 3 3 0 0 1 -3 3 H 205 z" fill="#9a9a9a"/><rect x="407.74777777777774" y="26" width="30" height="12" fill="#fff"/><text x="410.74777777777774" y="35" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#111" font-weight="600" font-style="normal">22.87</text><text x="197" y="57" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="end" fill="#555" font-weight="normal" font-style="italic">Temporal-Aware RAG, published [2]</text><path d="M 205 48 H 408.4533333333333 a 3 3 0 0 1 3 3 v 6 a 3 3 0 0 1 -3 3 H 205 z" fill="#9a9a9a"/><rect x="413.4533333333333" y="48" width="30" height="12" fill="#fff"/><text x="416.4533333333333" y="57" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#111" font-weight="600" font-style="normal">23.52</text><text x="197" y="79" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="end" fill="#111" font-weight="normal" font-style="normal">[2] re-implemented, filter on</text><path d="M 205 70 H 476.13 a 3 3 0 0 1 3 3 v 6 a 3 3 0 0 1 -3 3 H 205 z" fill="#2a78d6"/><rect x="481.13" y="70" width="30" height="12" fill="#fff"/><text x="484.13" y="79" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#111" font-weight="600" font-style="normal">31.23</text><text x="197" y="101" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="end" fill="#111" font-weight="normal" font-style="normal">[2] re-implemented, filter off</text><path d="M 205 92 H 506.5011111111111 a 3 3 0 0 1 3 3 v 6 a 3 3 0 0 1 -3 3 H 205 z" fill="#2a78d6"/><rect x="511.5011111111111" y="92" width="30" height="12" fill="#fff"/><text x="514.5011111111111" y="101" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#111" font-weight="600" font-style="normal">34.69</text><text x="197" y="123" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="end" fill="#111" font-weight="normal" font-style="normal">Ours: hybrid retrieval</text><path d="M 205 114 H 508.87111111111113 a 3 3 0 0 1 3 3 v 6 a 3 3 0 0 1 -3 3 H 205 z" fill="#2a78d6"/><rect x="513.8711111111111" y="114" width="30" height="12" fill="#fff"/><text x="516.8711111111111" y="123" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#111" font-weight="600" font-style="normal">34.96</text><text x="197" y="145" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="end" fill="#111" font-weight="normal" font-style="normal">Ours: hybrid + one re-query</text><path d="M 205 136 H 524.1444444444445 a 3 3 0 0 1 3 3 v 6 a 3 3 0 0 1 -3 3 H 205 z" fill="#2a78d6"/><rect x="529.1444444444445" y="136" width="30" height="12" fill="#fff"/><text x="532.1444444444445" y="145" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#111" font-weight="600" font-style="normal">36.70</text><text x="197" y="167" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="end" fill="#111" font-weight="normal" font-style="normal">Full transcript, no retrieval</text><path d="M 205 158 H 542.0511111111111 a 3 3 0 0 1 3 3 v 6 a 3 3 0 0 1 -3 3 H 205 z" fill="#2a78d6"/><rect x="547.0511111111111" y="158" width="30" height="12" fill="#fff"/><text x="550.0511111111111" y="167" font-family="Helvetica, Arial, sans-serif" font-size="9" text-anchor="start" fill="#111" font-weight="600" font-style="normal">38.74</text><text x="402.5" y="203" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#555" font-weight="normal" font-style="normal">Overall token F1 (%)</text></svg><figcaption><b>Figure 2.</b> Overall token F1 on LectQA-Vid open-ended questions. Grey rows are references: a floor that needs no system, and the published score, which used an unnamed answering model. Every retrieval method lies between the echo floor and the full transcript.</figcaption></figure>
 
-<h3>5.5 Localisation and a pooled-corpus stress test</h3>
+<h3>6.5 Localisation and a pooled-corpus stress test</h3>
 <p>Without an answerer, we scored whether a retrieved unit overlaps the annotated interval on the 1,598 questions
 with a checkable interval. Plain hybrid top-k reaches 45.6 % hit@1 and 85.1 % hit@8. Link-following with the
 complementarity reranker lowers hit@3 from 68.7 % to 63.7 % (−5.01 points [−7.60, −2.24]) and makes no measurable
@@ -237,9 +336,9 @@ remains the best method: the full linked system is 6.88 points lower [−10.12, 
 measurable difference (−0.38 [−1.13, +0.54]). Most questions refer to "the video" or "the speaker" (2,102 of 2,832),
 so this setting is not a substitute for a multi-source benchmark.</p>
 
-<h2>6. Results on MaViLS</h2>
+<h2>7. Results on MaViLS</h2>
 <table>
-<caption><b>Table 4.</b> Slide alignment on MaViLS: mean F1 over the nine held-out lectures with video, authors' scorer.
+<caption><b>Table 5.</b> Slide alignment on MaViLS: mean F1 over the nine held-out lectures with video, authors' scorer.
 Published figures are per-lecture values from [3] averaged over the same lectures.</caption>
 <tr class="h"><th>Method</th><th class="n">Mean F1</th></tr>
 <tr class="ref"><td>MaViLS, audio transcript only, published [3]</td><td class="n">0.47</td></tr>
@@ -274,7 +373,7 @@ their errors fall on frames that show no slide, which make up 25 % to 52 % of th
 errors are within two slides of the correct one. Speaker shots, during which only the speech channel and the decoder
 decide, are the open problem for this task.</p>
 
-<h2>7. Discussion</h2>
+<h2>8. Discussion</h2>
 <p><b>Linking and set-level reranking.</b> Neither component of our design improved retrieval on either benchmark. On
 LectQA-Vid a question concerns one video with no separate deck or document, so cross-file links do not exist, and the
 temporal links available there add nothing that hybrid retrieval does not already find. MaViLS evaluates alignment,
@@ -290,7 +389,7 @@ should normalise relevance first, and ablations should check that all compared c
 not an improvement over the numbers in [2], which we could not reproduce in absolute terms. The gain it shows belongs
 mostly to iterative re-querying.</p>
 
-<h2>8. Limitations</h2>
+<h2>9. Limitations</h2>
 <ul>
 <li>The pipeline of [2] is our re-implementation; several of its parameters and the source of its filter interval are
 our choices. With the authors' code or their evaluation subset the comparison could differ.</li>
@@ -303,13 +402,27 @@ the test half was examined in several rounds, although no parameter was set on i
 <li>Faithfulness was judged once per claim by a single model.</li>
 </ul>
 
-<h2>9. Conclusion</h2>
+<h2>10. Conclusion and Future Work</h2>
 <p>Measured on its two target benchmarks, a link-centred lecture RAG system matches a published slide aligner and
 exceeds a re-implemented video-QA pipeline by two F1 points, and neither result is due to linking. The more durable
 findings concern the benchmarks. LectQA-Vid can be answered from the whole transcript, from option length, and nearly
 as well as its published system by repeating the question, so it cannot rank retrieval methods; MaViLS is sound but
 rewards frame-to-slide matching and leaves speaker shots unsolved. A benchmark that could test evidence linking needs
 questions whose evidence spans several sources and exceeds one context window. Building one is the next step.</p>
+<p><b>Future work.</b> Four directions follow from the results and the limitations.</p>
+<ol>
+<li><b>A multi-source lecture benchmark.</b> Questions whose evidence spans a recording, its slides and its
+documents and does not fit in one context window, each with evidence verified per source. A pilot on one lecture
+shows the difficulty: of 25 questions written to need several sources, 4 still did after each source was tested
+alone.</li>
+<li><b>Speaker shots in slide alignment.</b> On the weakest MaViLS lectures most errors fall on frames that show
+the speaker rather than a slide, where only the speech channel and the decoder decide (§7). Better use of speech
+there is the open problem.</li>
+<li><b>A reproduction with the original code of [2].</b> If its code or evaluation subset is released, the
+comparison in §6 should be repeated on them.</li>
+<li><b>Human faithfulness judgments.</b> Claims were judged once by one model; a sampled human audit would bound
+that judge's errors.</li>
+</ol>
 
 <h2>References</h2>
 <ol class="refs">
