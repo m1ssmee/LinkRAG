@@ -74,10 +74,11 @@ evidence linking; cross-file benchmark; speech-to-slide alignment</p>
 <h3>1.1 Problem statement</h3>
 <p>A university course leaves its knowledge in several files: the recording of each lecture, the slide deck shown
 during it, and the textbook chapter or paper that the lecture follows. A student's question rarely respects these
-boundaries. In a lecture on Markov decision processes, the speaker may point at "this red state here" and give its
-value aloud, while the value of a neighbouring state appears only on the slide and the formal definition only in the
-textbook. A correct answer then needs a sentence of speech, a region of a slide and a paragraph of a book, and it
-needs them together.</p>
+boundaries. In a lecture on clinical data, the speaker points at a table of the most common prescriptions and asks
+"why is there this D5W and that D5W?". The drug codes and counts of the two rows appear only on the slide, and the
+explanation, a probable data-entry error, is given only in speech. Other questions also need the paper that describes
+the dataset. A correct answer then needs a sentence of speech, a region of a slide and often a paragraph of a
+document, and it needs them together.</p>
 <p>Retrieval-augmented generation (RAG) [1] answers questions from retrieved evidence, but standard retrievers score
 every unit independently against the question. A spoken sentence that says "this state" shares few words with the
 question, and the slide it refers to shares few words with the speech, so the pieces that belong together are
