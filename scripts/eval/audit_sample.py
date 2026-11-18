@@ -19,7 +19,7 @@ import random
 from collections import defaultdict
 from pathlib import Path
 
-FIELDS = ["sample_id", "qid", "type", "verdict", "question", "expected_answer", "unit_id",
+FIELDS = ["sample_id", "auditor", "qid", "type", "verdict", "question", "expected_answer", "unit_id",
           "location", "unit_text", "judge_span_or_reason", "agree", "auditor_note"]
 
 
@@ -36,6 +36,20 @@ def stratified_sample(rows: list[dict], *, fraction: float, minimum: int, seed: 
     return out
 
 
+def top_up(sample: list[dict], rows: list[dict], *, prefixes: list[str], minimum: int, seed: int) -> list[dict]:
+    """Add rows until each qid prefix (topic) has at least `minimum` in the sample -- for topics
+    whose human review took Claude's recommendation unread, so the audit reaches them."""
+    rng = random.Random(seed)
+    taken = {id(r) for r in sample}
+    for pre in prefixes:
+        have = sum(r["qid"].startswith(pre) for r in sample)
+        pool = [r for r in rows if r["qid"].startswith(pre) and id(r) not in taken]
+        extra = rng.sample(pool, min(len(pool), max(0, minimum - have)))
+        taken |= {id(r) for r in extra}
+        sample = sample + extra
+    return sample
+
+
 def unit_rows(verdicts: list[dict]) -> list[dict]:
     rows = []
     for v in verdicts:
@@ -48,7 +62,7 @@ def unit_rows(verdicts: list[dict]) -> list[dict]:
                 "unit_id": u["unit_id"], "location": u["location"],
                 "unit_text": " ".join(u["text"].split()),
                 "judge_span_or_reason": u["span"] if u["kept"] else u["reason"],
-                "agree": "", "auditor_note": "",
+                "auditor": "", "agree": "", "auditor_note": "",
             })
     return rows
 
@@ -85,6 +99,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--min-per-type", type=int, default=5)
     ap.add_argument("--seed", type=int, default=20260920)
     ap.add_argument("--score", action="store_true")
+    ap.add_argument("--min-per-prefix", default="",
+                    help="'GP,NF,MD:5' -- at least 5 sampled rows from each of these qid prefixes")
+    ap.add_argument("--assign", default="",
+                    help="'alice:RL,GP;bob:PS' -- fill the auditor column by qid prefix")
     args = ap.parse_args(argv)
 
     if args.score:
@@ -93,6 +111,13 @@ def main(argv: list[str] | None = None) -> int:
     verdicts = json.loads(Path(args.verdicts).read_text())
     rows = unit_rows(verdicts)
     sample = stratified_sample(rows, fraction=args.fraction, minimum=args.min_per_type, seed=args.seed)
+    if args.min_per_prefix:
+        pres, n = args.min_per_prefix.rsplit(":", 1)
+        sample = top_up(sample, rows, prefixes=pres.split(","), minimum=int(n), seed=args.seed)
+    who = {pre: name for part in filter(None, args.assign.split(";"))
+           for name, pres in [part.split(":")] for pre in pres.split(",")}
+    for r in sample:
+        r["auditor"] = next((n for pre, n in who.items() if r["qid"].startswith(pre)), "")
     for i, r in enumerate(sample, 1):
         r["sample_id"] = f"S{i:03d}"
     out = Path(args.out)

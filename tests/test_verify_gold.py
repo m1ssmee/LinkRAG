@@ -99,6 +99,10 @@ def test_audit_sampler_stratifies_with_minimum():
     from collections import Counter
     c = Counter(r["type"] for r in s)
     assert c == {"a": 10, "b": 3}
+    pool = [{"type": "a", "qid": f"GP{i:02d}"} for i in range(20)] + [{"type": "a", "qid": f"RL{i:02d}"} for i in range(20)]
+    topped = mod.top_up([r for r in pool if r["qid"].startswith("RL")][:5], pool, prefixes=["GP"], minimum=5, seed=1)
+    assert sum(r["qid"].startswith("GP") for r in topped) == 5 and len(topped) == 10
+    assert len({id(r) for r in topped}) == 10                              # no row sampled twice
 
 
 def test_nli_is_an_ablation_that_cannot_write_gold_or_stored_reports(tmp_path, monkeypatch):

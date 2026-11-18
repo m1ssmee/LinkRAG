@@ -101,7 +101,13 @@ cp results/xfile/links.jsonl data/processed/xfile/links.jsonl   # don't rebuild 
    configs/xfile.yaml --corpus xfile --proposed tests/regression/xfile_proposed.jsonl --out
    tests/regression/xfile_questions.jsonl --runs 3 --entailment llm --max-cost 0`. Run-0 answers
    and verdicts are cached. Edited questions are new prompts.
-5. **Human audit**: `scripts/eval/audit_sample.py` (10%, at least 5 per type). Fill the sheet
+5. 🔶 *(sheet ready 2026-11-18, to be filled by hand)* `reports/xfile_audit_sheet.csv`: 50 unit verdicts
+   (10 %, min 5 per type, plus at least 5 rows from each of GP, NF, MD, PS, VS, LN, the topics whose review
+   took Claude's recommendation unread). Each person audits the **other's** topics (`auditor` column):
+   m1ssmee RL/GP/NF/MD (26 rows), Rakshit PS/VS/LN (24 rows). Fill `agree` with y/n (and `auditor_note`
+   on n), never by Claude, then `python scripts/eval/audit_sample.py --out reports/xfile_audit_sheet.csv --score`.
+   Built with `--verdicts results/xfile/gold_check_3runs.json --min-per-prefix GP,NF,MD,PS,VS,LN:5
+   --assign "m1ssmee:RL,GP,NF,MD;Rakshit:PS,VS,LN"`. Original item: **Human audit**: `scripts/eval/audit_sample.py` (10%, at least 5 per type). Fill the sheet
    (DESIGN.md known issue (d)).
 6. ✅ *(done 2026-11-18, before 4)* *Optional:* re-answer the whole-source runs with `--share-max-items 1`, so each question is
    answered in a context of its own. In the shared-context batches a subagent saw ~14 questions
