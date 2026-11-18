@@ -80,8 +80,8 @@ explanation, a probable data-entry error, is given only in speech. Other questio
 the dataset. A correct answer then needs a sentence of speech, a region of a slide and often a paragraph of a
 document, and it needs them together.</p>
 <p>Retrieval-augmented generation (RAG) [1] answers questions from retrieved evidence, but standard retrievers score
-every unit independently against the question. A spoken sentence that says "this state" shares few words with the
-question, and the slide it refers to shares few words with the speech, so the pieces that belong together are
+every unit independently against the question. A spoken sentence that says "this D5W and that D5W" shares few words
+with a question about drug codes, and the slide it refers to shares few words with the speech, so the pieces that belong together are
 retrieved separately or not at all. The top-ranked set is often several paraphrases from one source. Published
 lecture systems work within one stream: Temporal-Aware RAG [2] retrieves from a single video, and MaViLS [3] aligns
 one recording with one deck. The benchmarks that accompany them contain no question whose evidence spans several
