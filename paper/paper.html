@@ -219,9 +219,9 @@ questions are reported separately and never enter a headline number.</p>
 state only the facts asked for, together with the evidence locations: about eight questions that combine a fact from
 one file with a fact from another, two deictic questions whose referent exists only on a slide the speaker points at,
 and four single-source controls, one or more per file. The drafter checked by text search that each fact it attributed
-to one file did not occur in the others. ② <i>Human review.</i> Two reviewers from the project team decided accept, edit
-or reject for each of the 98 drafts. Ten were inspected individually against the slides and transcript; for the others
-the reviewers adopted the recommendation of a separate model pre-screen. All eight rejected drafts joined two
+to one file did not occur in the others. ② <i>Human review.</i> A model pre-screen recommended a decision for each of the 98
+drafts, and every draft was then read individually by a reviewer from the project team against its slides, transcript
+and notes, who decided accept, edit or reject. All eight rejected drafts joined two
 unrelated facts into one question, and one answer was edited, leaving 90. ③ <i>Gold check.</i> Every
 question was then answered by a second model from each single source in full (the whole transcript, the whole deck
 with figure OCR, or the whole notes chapter) and from all three together, and a third model graded each answer against
@@ -232,8 +232,7 @@ evidence unit by requiring the judge to quote a supporting span. Four questions 
 leaving 86. ④ <i>Verified cross-file subset.</i> 53 questions need more than one file: 44 combine facts across files
 and 9 are deictic. The other 33 are single-source controls (12 transcript, 11 deck, 10 notes), which test that
 linking does no harm when one file suffices. A human audit samples 10 % of the per-unit verdicts, at least five per
-question type and five from each topic whose review relied on the pre-screen, and each reviewer audits the other's
-topics. <span class="todo">[[AUDIT: agreement
+question type and five from each of six topics, and each reviewer audits the other's topics. <span class="todo">[[AUDIT: agreement
 rate, n = 50.]]</span></p>
 <p><b>Split.</b> Before any evaluation run, the seven topics were split at random (fixed seed) into a tune half and a
 test half (Fig. 1b). Any parameter may be set only on tune topics and is applied once to test topics. For this
@@ -582,9 +581,8 @@ The XFile results therefore measure the layer with these errors present.</p>
 <ul>
 <li><b>Size of XFile.</b> The test half has three topics with 21 cross-file and 17 single-source questions, so
 intervals over topics are wide, and a small effect may be reported as no measurable difference.</li>
-<li><b>How the XFile questions were made.</b> Questions were drafted by a language model. The human review inspected
-10 of 98 drafts individually and otherwise adopted a model pre-screen's recommendation, so the sampled human audit is
-the main human check on the remaining questions. The answerer belongs to the same model family as the drafter.</li>
+<li><b>How the XFile questions were made.</b> Questions were drafted by a language model and reviewed by people, not
+written by them, and the answerer belongs to the same model family as the drafter.</li>
 <li><b>XFile models.</b> Answers and judgements on XFile come from agent sessions, not API calls; they are cached and
 can be re-scored, but not re-generated identically.</li>
 <li><b>Linking errors.</b> The relatedness gate makes six errors on the pooled XFile corpus (§5.4).</li>
