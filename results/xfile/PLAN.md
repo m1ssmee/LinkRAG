@@ -170,3 +170,20 @@ computed: the tune run stopped at the usage limit with grading incomplete. The o
 before this point are the exploratory retrieval-only ones (`retrieval_exploratory.md`, all topics,
 default knobs), which the frozen defaults do not depend on. The report states that no tuning was
 done.
+
+## When the plain top-k comparison was added (confirmed 2026-11-18)
+
+Asked in the paper review; confirmed by m1ssmee's session and checked against git by Rakshit's.
+No test-topic answer score existed when the plain top-k comparison was added:
+
+| Time (18 Nov, IST) | Event | Evidence |
+|---|---|---|
+| 10:54 | Exploratory retrieval-only comparison, all topics, unreviewed gold, no answer scores | 247a4c8 |
+| 18:16 | Knobs frozen at defaults | bf53fd7 |
+| 19:33 | Paper Table 3 includes plain top-k (`baseline|none`) as a row | fa96adb, `paper/xfile_fill.py` |
+| 21:05 | Tune check commits the rule: read the test headline against plain top-8 as well | 30a30d4, `eval_tune.md` |
+| 21:08 | First test-topic prompt queued (file time on m1ssmee's machine) | `test1.jsonl` |
+| 22:40 | Test results and paired rows, including LinkRAG vs plain top-8 | fbf75a0 |
+
+The only test-topic numbers before 21:05 are the exploratory retrieval-only ones (247a4c8); the paper
+discloses them in §3.1.1.

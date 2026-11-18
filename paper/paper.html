@@ -239,7 +239,9 @@ question type and five from each of six topics, and each reviewer audits the oth
 missed small axis labels that the slide image shows.</p>
 <p><b>Split.</b> Before any evaluation run, the seven topics were split at random (fixed seed) into a tune half and a
 test half (Fig. 1b). Any parameter may be set only on tune topics and is applied once to test topics. For this
-evaluation all parameters were frozen at their defaults before any tune result existed, so no tuning took place. The
+evaluation all parameters were frozen at their defaults before any tune result existed, so no tuning took place. One
+earlier exploratory comparison measured retrieval only, on all seven topics, with the questions not yet reviewed and no
+answers scored; no parameter was set from it. The
 test half is gp_scaling, mimic_data and rl_mdp, with 21 cross-file and 17 single-source questions.</p>
 
 <h4>3.1.2 LectQA-Vid</h4>
