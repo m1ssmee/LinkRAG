@@ -3,15 +3,17 @@
 > **m1ssmee, 2026-11-18 (latest).** Rebuilt on m1ssmee's machine. `prepare` is not byte-reproducible
 > (PyMuPDF writes a fresh document ID and timestamp into each cut notes PDF), so a fresh `prepare` gives
 > manifest `26ddfe58a5a8f021`. With Rakshit's four cut notes PDFs (checked against `SHA256SUMS.txt`) and
-> **no** re-run of `prepare`, ingest gives `a086ca1c22dc1d93`. A cache-only replay of the 1-run gold
-> check reproduced every verdict with 0 misses; `make test` 404 passed. `apply-review` ran: 89 accept,
-> 1 edit, 8 reject -> 90 questions in `tests/regression/xfile_proposed.jsonl`.
-> In progress: shortcut 6 before 4. The 392 whole-source answers from shared-context batches were moved
-> to `data/processed/xfile/haiku_answers_shared_ctx_backup/` and are being re-answered one question per
-> subagent (`--share-max-items 1`; the 37 short-context items were also split to one per folder), so the
-> 3-run gold check grades the new answers only. Queue `data/processed/agent_queue/gold3_answers.jsonl`,
-> batches `gold3_r1/`. Making `cut_pages` deterministic is planned after the report (its own commit,
-> then a re-stamp as a separate correction).
+> **no** re-run of `prepare`, ingest gives `a086ca1c22dc1d93`; `make test` passed.
+> **Done since:** apply-review (89 accept, 1 edit, 8 reject -> 90 questions); shortcut 6 (all 360
+> whole-source answers re-made one question per subagent); shortcut 4 (gold check at 3 runs on the
+> reviewed set): **86 kept, 4 dropped, 6 relabelled; 53 cross-file (44 split + 9 deictic)**, below the
+> PLAN target of 60. Test half: 21 cross-file + 17 single-source; tune 23 + 13; lightning 9 + 3.
+> Result: `results/xfile/gold_check_3runs.md`/`.json`, gold `tests/regression/xfile_questions.jsonl`.
+> Before trusting it, a transcript audit found 133 Haiku answers made without reading the whole
+> context; they were redone (DESIGN.md (o), `scripts/agent_read_audit.py`). **Run that audit on every
+> answer round before `import`.** Old shared-context answers: `data/processed/xfile/haiku_answers_shared_ctx_backup/`.
+> Next: shortcut 5 (human audit sheet), then Step 4. Making `cut_pages` deterministic comes after the
+> report (its own commit, then a re-stamp as a separate correction).
 
 
 From Rakshit's session to m1ssmee. The plan is [PLAN.md](PLAN.md), and the policy change is
@@ -95,13 +97,13 @@ cp results/xfile/links.jsonl data/processed/xfile/links.jsonl   # don't rebuild 
    between you two). Check RL09/RL10 against the slide images, since their answers come from
    OCR. Then run `python scripts/adapters/xfile.py apply-review`, which writes
    `tests/regression/xfile_proposed.jsonl`.
-4. **Gold check at 3 runs, on the reviewed set**: `scripts/eval/verify_gold.py --config
+4. ✅ *(done 2026-11-18, `gold_check_3runs.md`)* **Gold check at 3 runs, on the reviewed set**: `scripts/eval/verify_gold.py --config
    configs/xfile.yaml --corpus xfile --proposed tests/regression/xfile_proposed.jsonl --out
    tests/regression/xfile_questions.jsonl --runs 3 --entailment llm --max-cost 0`. Run-0 answers
    and verdicts are cached. Edited questions are new prompts.
 5. **Human audit**: `scripts/eval/audit_sample.py` (10%, at least 5 per type). Fill the sheet
    (DESIGN.md known issue (d)).
-6. *Optional:* re-answer the whole-source runs with `--share-max-items 1`, so each question is
+6. ✅ *(done 2026-11-18, before 4)* *Optional:* re-answer the whole-source runs with `--share-max-items 1`, so each question is
    answered in a context of its own. In the shared-context batches a subagent saw ~14 questions
    on the same context.
 
