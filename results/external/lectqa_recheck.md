@@ -112,4 +112,4 @@ Frames corpus, questions whose gold interval passes the format and range checks,
 
 ## Provenance
 
-`python scripts/adapters/lectqa_vid.py recheck --max-cost 0` · commit `348507c` · inputs `lectqa_open_modes.jsonl`, `lectqa_attribution.jsonl`, `lectqa_pooled.jsonl` · embedder for the chunk check: T1 replica's (`open_ended.T1_EMBEDDER`).
+`python scripts/adapters/lectqa_vid.py recheck --max-cost 0` · commit `83396c0` · inputs `lectqa_open_modes.jsonl`, `lectqa_attribution.jsonl`, `lectqa_pooled.jsonl` · embedder for the chunk check: T1 replica's (`open_ended.T1_EMBEDDER`).

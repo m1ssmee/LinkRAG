@@ -1,7 +1,7 @@
 # XFile evaluation, tune half (check only)
 
 Tune topics: nfa_closure, psych_methods, visual_system (36 questions: 23 cross-file, 13 single-source).
-Default knobs (`configs/xfile.yaml`), frozen before any tune answer score existed (PLAN.md, bf53fd7);
+Default knobs (`configs/xfile.yaml`), frozen before any tune answer score existed (PLAN.md, e6f0cbf);
 **nothing here changed any setting.** Corpus `a086ca1c22dc1d93`. Answerer `claude-haiku-5-5`, judge
 `claude-sonnet-5-5`, both Claude Code subagents through the reply cache (one answer prompt per subagent,
 read coverage audited, DESIGN.md (o)). 3 runs per cell; each answer graded 3 times (majority).

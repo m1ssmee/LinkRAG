@@ -129,5 +129,5 @@ n = 2832 questions for video@k, 1598 for interval@k, in every row.
 
 - Dataset: LectQA-Vid (T1), 95 of 100 videos, MCQ and open-ended questions together (question text only, no options).
 - Embedder `BAAI/bge-m3`; retrieval RRF of dense + BM25, candidates 50; reranker alpha 0.3, beta 0.2, gamma 0.4.
-- Config hash (retrieve, link, index) `aee9d9be8eb94a46`; commit `348507c` with uncommitted changes.
+- Config hash (retrieve, link, index) `aee9d9be8eb94a46`; commit `83396c0` with uncommitted changes.
 - Rows: `lectqa_pooled.jsonl`. Reproduce: `python scripts/adapters/lectqa_vid.py pooled --max-cost 0`.

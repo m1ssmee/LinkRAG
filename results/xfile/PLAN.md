@@ -178,12 +178,16 @@ No test-topic answer score existed when the plain top-k comparison was added:
 
 | Time (18 Nov, IST) | Event | Evidence |
 |---|---|---|
-| 10:54 | Exploratory retrieval-only comparison, all topics, unreviewed gold, no answer scores | 247a4c8 |
-| 18:16 | Knobs frozen at defaults | bf53fd7 |
-| 19:33 | Paper Table 3 includes plain top-k (`baseline|none`) as a row | fa96adb, `paper/xfile_fill.py` |
-| 21:05 | Tune check commits the rule: read the test headline against plain top-8 as well | 30a30d4, `eval_tune.md` |
+| 10:54 | Exploratory retrieval-only comparison, all topics, unreviewed gold, no answer scores | a94c1a9 |
+| 18:16 | Knobs frozen at defaults | e6f0cbf |
+| 19:33 | Paper Table 3 includes plain top-k (`baseline|none`) as a row | 17e5de4, `paper/xfile_fill.py` |
+| 21:05 | Tune check commits the rule: read the test headline against plain top-8 as well | a8e520a, `eval_tune.md` |
 | 21:08 | First test-topic prompt queued (file time on m1ssmee's machine) | `test1.jsonl` |
-| 22:40 | Test results and paired rows, including LinkRAG vs plain top-8 | fbf75a0 |
+| 22:40 | Test results and paired rows, including LinkRAG vs plain top-8 | 703adef |
 
-The only test-topic numbers before 21:05 are the exploratory retrieval-only ones (247a4c8); the paper
+The only test-topic numbers before 21:05 are the exploratory retrieval-only ones (a94c1a9); the paper
 discloses them in §3.1.1.
+
+*Hashes:* `main` was rewritten on 18 Nov at about 23:17 IST to drop Claude co-author lines (content and author
+dates unchanged; the tip's file tree is identical). Hashes in this file and in the XFile results refer to the
+rewritten history; for example, the freeze commit, formerly `bf53fd7`, is now `e6f0cbf`.

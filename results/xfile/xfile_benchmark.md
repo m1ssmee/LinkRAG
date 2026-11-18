@@ -10,7 +10,7 @@ into a T1/T2 table. Corpus manifest **`a086ca1c22dc1d93`** (2,210 units, one poo
   drafted by Claude Opus subagents. Subagent runs can be re-scored but not re-generated. Treat every
   number as **direction only**.
 - **No tuning.** Every setting is the `configs/xfile.yaml` default, frozen before any tune answer score
-  existed (PLAN.md, bf53fd7). The tune topics were run as a check only.
+  existed (PLAN.md, e6f0cbf). The tune topics were run as a check only.
 - **The default complementarity reranker is unstable as a control** (known issue (j)). On the tune topics
   it halved the no-links control (63.9 % -> 33.3 % correct); on the test topics it did not (55.3 % ->
   58.8 %). The headline is therefore also shown against plain top-8 retrieval.
