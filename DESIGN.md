@@ -966,6 +966,20 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   with a config switch. figure_text: 128 of 156 document pairs judged unrelated, 39 of 527
   links cross-topic. Also: `build_links.py`'s optional `.graphml` export crashes on a control
   character in unit text (lxml), after `links.jsonl` is written.
+- **(o) Agent-queue subagents did not always read their whole context (found 2026-11-18,
+  XFile).** Re-answering the 360 whole-source gold-check prompts one question per subagent, a
+  transcript audit showed 133 of 360 Haiku subagents had not seen every line. Three causes:
+  context files end without a newline, so `wc -l` is one short and agents that trusted it
+  stopped before the last line (RL08's answer sits in that line); `Read` calls over 25k tokens
+  fail and some agents moved on without re-reading that range; and two agents read with `sed`
+  to the `wc -l` count. Those 133 were re-answered with the exact line count, ≤200-line chunks
+  and a retry rule, and `scripts/agent_read_audit.py` then confirmed 355/360 from the
+  transcripts; the other 5 are short prompts (<10k characters) read whole with `cat`, which the
+  audit cannot see. Two Sonnet grading batches that skipped prompts or used a shell helper were
+  redone (their verdicts agreed 50/50 with the discarded ones). **Rule from here:** run the
+  audit on every Haiku answer round before `import`. The shared-context answers behind
+  `gold_check_1run.md` were never audited and probably have the same gaps; they are superseded
+  by the 3-run check, not corrected.
 
 ## Environment decisions worth not re-litigating
 
