@@ -80,7 +80,7 @@ git clone https://github.com/andererka/MaViLS data/raw/mavils && git -C data/raw
 python scripts/adapters/xfile.py prepare
 python scripts/ingest.py $(python scripts/adapters/xfile.py files) --config configs/xfile.yaml --mode linkrag --max-cost 0
 # expect "corpus manifest a086ca1c22dc1d93". If it differs, the cached replies below won't hit.
-tar -xzf results/xfile/reply_cache.tar.gz       # restores data/processed/verify_cache + judge_cache_offline
+tar -xzf results/xfile/reply_cache.tar.gz       # restores verify_cache + judge_cache_offline (+ the superseded shared-context answers)
 cp results/xfile/links.jsonl data/processed/xfile/links.jsonl   # don't rebuild (~4 h CPU)
 ```
 
