@@ -20,7 +20,7 @@
 > complementarity, cross-file 38.1 vs 47.6 %, -9.5 [-16.7, +0.0]; all -3.5 [-9.1, +5.1]; linkrag +
 > complementarity equals plain top-8 exactly. Report: `results/xfile/xfile_benchmark.md`; README
 > contribution 5 and Limitation updated. `reply_cache.tar.gz` refreshed (every reply behind both halves).
-> **Not done:** lightning row (deadline); m1ssmee's 26 audit rows; `cut_pages` reproducibility (then a
+> Human audit complete: 50/50 agree (`audit_score.md`). **Not done:** lightning row (deadline); `cut_pages` reproducibility (then a
 > re-ingest and re-stamp as a separate correction); the 3 informational redundancy directions. To replay
 > any table: rebuild as above, `tar -xzf results/xfile/reply_cache.tar.gz`, and run the command in the
 > report header with `--answerer-cache-only --judge-cache-only`.

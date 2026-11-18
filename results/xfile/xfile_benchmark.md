@@ -22,8 +22,10 @@ into a T1/T2 table. Corpus manifest **`a086ca1c22dc1d93`** (2,210 units, one poo
   layer as configured.
 - **Gold.** The gold check ran 3 times on the reviewed set (`gold_check_3runs.md`); 53 cross-file
   questions survived, below the plan's target of 60. Review: Rakshit read all 98 rows individually;
-  m1ssmee's half was first a blanket acceptance of Claude's recommendations. The human audit sheet
-  (`reports/xfile_audit_sheet.csv`, 50 unit verdicts) is filled for PS/VS/LN (24/24 agree).
+  m1ssmee's half was first a blanket acceptance of Claude's recommendations. Human audit of the judge's unit verdicts
+  (`reports/xfile_audit_sheet.csv`, 50 rows, 10 % per type, at least 5 per topic, each person auditing
+  the other's topics): **50/50 agree** (`audit_score.md`). Three rows were borderline (S018, S027,
+  S031); 8 rows belong to questions the gold check dropped.
 - **Read coverage.** 133 of 360 gold-check answers were first made by subagents that had not read their
   whole context (DESIGN.md (o)); they were redone, and every evaluation answer round was audited from the
   subagent transcripts before import.
@@ -251,4 +253,3 @@ table above. Its separate row was not run (deadline).
 - No knob tuning; no change to the audio↔slide gate (known issue (n)).
 - Lightning row not run. `cut_pages` reproducibility and the 3 informational redundancy directions are
   left for later (HANDOFF.md).
-- m1ssmee's 26 rows of the human audit sheet are not yet filled.
