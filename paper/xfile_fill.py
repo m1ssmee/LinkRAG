@@ -1,12 +1,12 @@
-"""Fill the paper's XFile results (Table 3 and Figure 5) from compare_retrieval's per-question results.
+"""Fill the paper's XFile results (Table 3 and Figure 8) from compare_retrieval's per-question results.
 
     python paper/xfile_fill.py results/xfile/<test-half>.questions.json      # writes Table 3 + paper/xfile_results.json
-    python paper/figures.py                                                  # draws Figure 5 from paper/xfile_results.json
+    python paper/figures.py                                                  # draws Figure 8 from paper/xfile_results.json
 
 Input is the `<out>.questions.json` that `compare_retrieval.py --correctness --out <out>` writes for
 the test half (gp_scaling, mimic_data, rl_mdp). Paired differences and their 95 % intervals come from
 `scripts/adapters/xfile.py paired` (topics resampled), so the paper and the benchmark report use one
-computation. Only Table 3 and Figure 5 are generated; the sentences around them are written by hand.
+computation. Only Table 3 and Figure 8 are generated; the sentences around them are written by hand.
 """
 from __future__ import annotations
 
