@@ -14,18 +14,16 @@
 > answer round before `import`.** Old shared-context answers: `data/processed/xfile/haiku_answers_shared_ctx_backup/`.
 > Next: shortcut 5 (human audit sheet), then Step 4.
 >
-> **Step 4 (m1ssmee, 2026-11-18).** Tune half done with the frozen defaults (check only,
-> `results/xfile/eval_tune.md`, cache-only replay): the default complementarity weights break the no-links
-> control (baseline 63.9 % -> 33.3 % correct), so the headline must be read against plain top-8 too. No
-> setting changed. Test half next: `compare_retrieval.py --config configs/xfile.yaml --correctness
-> --repeats 3 --topics gp_scaling,mimic_data,rl_mdp --out results/xfile/eval_test.md`; split each queue by
-> model (Haiku `batches --max-items 1`, Sonnet default), `scripts/agent_read_audit.py` before every Haiku
-> import, collect until 0 pending, then a cache-only replay and `xfile.py paired`.
-> Test half progress: rounds 1 (`test1_h`, 1,032) and 2 (`test2_h` 674 Haiku, `test2_s` 57 Sonnet
-> batches) answered, audited and imported. Round 3 running: `test3_s` (1,467 grades, 60 Sonnet batches).
-> If it stops: re-run every `test3_s` folder whose `replies/` is short of its manifest, import
-> (`LINKRAG_AGENT_QUEUE=data/processed/agent_queue/test3.jsonl`), collect again (`test4.jsonl`) until 0
-> pending, then the cache-only replay into `results/xfile/eval_test.md`.
+> **Steps 4 and 5 done (m1ssmee, 2026-11-18).** Frozen default knobs, no tuning. Tune half: check only
+> (`eval_tune.md`). Test half (gp_scaling, mimic_data, rl_mdp; 38 questions; cache-only replay;
+> `eval_test.md`): **no measurable gain from links**. Headline linkrag + complementarity vs baseline +
+> complementarity, cross-file 38.1 vs 47.6 %, -9.5 [-16.7, +0.0]; all -3.5 [-9.1, +5.1]; linkrag +
+> complementarity equals plain top-8 exactly. Report: `results/xfile/xfile_benchmark.md`; README
+> contribution 5 and Limitation updated. `reply_cache.tar.gz` refreshed (every reply behind both halves).
+> **Not done:** lightning row (deadline); m1ssmee's 26 audit rows; `cut_pages` reproducibility (then a
+> re-ingest and re-stamp as a separate correction); the 3 informational redundancy directions. To replay
+> any table: rebuild as above, `tar -xzf results/xfile/reply_cache.tar.gz`, and run the command in the
+> report header with `--answerer-cache-only --judge-cache-only`.
 
 
 From Rakshit's session to m1ssmee. The plan is [PLAN.md](PLAN.md), and the policy change is
@@ -45,8 +43,8 @@ Redo them before reporting any number.
 | 2b. Redundancy gate | Done (deck→transcript, the gate pair): 6 KEEP, **lightning REJECT** (census 67.3 %); psych_methods KEEP by census (57.1 %). Decision log in `scripts/dataset/README.md`. The 3 informational directions are only partly answered. |
 | 3. Questions | 98 drafted by Opus subagents (`tests/regression/xfile_drafts.jsonl`). `verify_gold` kept 97: **64 verified cross-file** (54 split + 10 deictic), 33 single-source controls, 1 dropped (LN12). **1 run.** See `gold_check_1run.md` / `.json`. |
 | 3b. Human review | Sheet ready: `reports/xfile_review.csv`. It holds a per-question `kind` (bridge / conjunction / deictic / control), Claude's recommendation (8 reject, 6 check) and the gold-check result. **Rakshit's half (RL, GP, NF, MD) is decided:** 50 accept, 1 edit (GP10), 5 reject. RL01–RL10 were looked at row by row first (RL09/RL10 against the slide images); the rest first took Claude's recommendation. m1ssmee's half (PS, VS, LN) is decided: 39 accept, 3 reject (PS07, VS01, LN02), first by applying Claude's recommendation (LN08 'check' resolved as accept). **Update 2026-11-18:** Rakshit then read all 98 rows individually against their evidence; no decision changed (`reviewer_note` records both steps). |
-| 4. Evaluation | Code ready: `compare_retrieval.py` goes through the reply cache, `--correctness` grades answers (by type and kind), `--topics` selects tune/test halves. Not run yet. |
-| 5. Report | Not started. **Paper:** `paper/paper.html` is restructured around LinkRAG + XFile; §4.1 waits for results. After the test-half run, `python paper/xfile_fill.py <test-half out>.questions.json && python paper/figures.py` fills Table 3 and Figure 5 (same topic bootstrap as `xfile.py paired`). The `[[XFILE]]` sentences are written by hand. |
+| 4. Evaluation | **Done 2026-11-18** (`eval_test.md`, `eval_tune.md`). Code ready: `compare_retrieval.py` goes through the reply cache, `--correctness` grades answers (by type and kind), `--topics` selects tune/test halves. Not run yet. |
+| 5. Report | **Done 2026-11-18** (`xfile_benchmark.md`, README). **Paper:** `paper/paper.html` is restructured around LinkRAG + XFile; §4.1 waits for results. After the test-half run, `python paper/xfile_fill.py <test-half out>.questions.json && python paper/figures.py` fills Table 3 and Figure 5 (same topic bootstrap as `xfile.py paired`). The `[[XFILE]]` sentences are written by hand. |
 
 ## How the LLM calls are made (no API keys)
 
