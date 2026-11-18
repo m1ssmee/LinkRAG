@@ -11,8 +11,9 @@ here") to the visual element it points at. Retrieval then *follows* those links 
 from its top-k seeds instead of stopping at them, and a complementarity-aware reranker
 scores the resulting evidence **set** for coverage rather than scoring each chunk in
 isolation. The design aim is an answer grounded jointly in what was said, what was
-shown, and what was written, with a citation for each; no reported benchmark measures
-that aim yet (see below). Everything runs CPU-first; a GPU only makes it faster.
+shown, and what was written, with a citation for each. Our own cross-file benchmark, XFile,
+tests that aim; on its test topics links gave no measurable gain (see below). Everything runs
+CPU-first; a GPU only makes it faster.
 
 ## Contributions (what the reported results support)
 
@@ -38,11 +39,25 @@ that aim yet (see below). Everything runs CPU-first; a GPU only makes it faster.
 4. **Claim-level verification**: each claim checked against the units it cites; on LectQA-Vid
    the context modes' unsupported-claim rates are 3.7 / 3.1 / 4.3 %, one judge run, direction
    only (`lectqa_faithfulness.md`).
+5. **XFile, a cross-file benchmark, and a null result for the Evidence Linking Layer.** Seven MaViLS
+   lectures, each with its slide deck and a separately authored notes source, in one pooled index
+   (21 files, 2,210 units); 86 human-reviewed questions that passed a 3-run gold check, 53 of them
+   needing two or more files. On the three test topics (38 questions, default settings, no tuning,
+   3 runs, Claude Haiku answering and Claude Sonnet grading, direction only), links plus the
+   complementarity reranker against the same reranker without links: cross-file answer correctness
+   38.1 vs 47.6 %, −9.5 points [−16.7, +0.0] (topics resampled), **no measurable difference**; all
+   38 questions −3.5 [−9.1, +5.1]. Links raised recall@8 by +4.3 points [+1.5, +7.3] without raising
+   correct answers (`results/xfile/xfile_benchmark.md`).
 
 **Limitation.** The Evidence Linking Layer, link-following retrieval and complementarity reranking
-are system components, not results: no link variant measurably improved localisation on LectQA-Vid,
-and cross-file links cannot be tested on LectQA-Vid or MaViLS, because neither has evidence that
-spans files (`DESIGN.md` → *Contributions*).
+are system components, not results. On LectQA-Vid no link variant measurably improved localisation, and
+LectQA-Vid and MaViLS cannot test cross-file links. On XFile, which can, links gave no measurable gain
+on the test topics: link expansion alone scored identically to plain retrieval on every question, and
+links with the reranker answered exactly as well as plain top-8. The XFile test half is three
+topics (38 questions), so its intervals are coarse; answers and grades come from one model family; and
+the default complementarity weights behave inconsistently as a control (they halved the no-links
+control on the tune topics but not on the test topics, known issue (j)). Linking cross-lecture pairs
+is also leaky (known issue (n)). See `DESIGN.md` → *Contributions*.
 
 ## How this differs from existing work
 
