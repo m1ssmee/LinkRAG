@@ -71,7 +71,7 @@ def table(path: Path, d: dict) -> tuple[str, dict]:
            f'mean over three repeats; n = {n["Overall"]} questions ({n["Cross-file"]} cross-file, of which {n_deictic} deictic; '
            f'{n["Single-source"]} single-source). '
            'The last two rows are paired differences of LinkRAG against the pre-registered no-links control and against plain '
-           'top-k retrieval, with 95 % intervals from resampling the three topics.</caption>',
+           'top-k retrieval; with three topics, each 95 % interval is the range of the per-topic differences (§3.4).</caption>',
            f'<tr class="h"><th>Method</th>{head}</tr>']
     stats = {}
     for name, cell in ROWS:
