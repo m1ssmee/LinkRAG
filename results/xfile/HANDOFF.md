@@ -1,4 +1,4 @@
-# XFile: handoff (2026-11-17)
+# XFile: handoff (2026-11-17, updated 2026-11-18)
 
 From Rakshit's session to m1ssmee. The plan is [PLAN.md](PLAN.md), and the policy change is
 recorded in `DESIGN.md` (*Dataset policy*, amended 2026-11-17, and priority (vi)).
@@ -12,12 +12,12 @@ Redo them before reporting any number.
 |---|---|
 | 0. Policy note | Done: `DESIGN.md`, plus known issue (m). |
 | 1. Corpus | Done. 7 topics × (MaViLS transcript, MaViLS deck, separate notes PDF) = 21 files, 2,210 units, manifest **`a086ca1c22dc1d93`**. `med_imgproc` was dropped (image-only deck, issue (m)). |
-| 1b. Links | `build_links.py` was still running at handoff (49 talk × deck alignments, about 2 h on CPU). Not committed; rebuild it. |
-| 2. Judge | Sonnet subagent judge vs the stored pilot01 verdicts: unit κ **0.80** vs gpt-4.1-mini (bar 0.70, set before the run), 0.92 vs gpt-5.4; grades 98/100; types 24/25. **1 run per prompt.** See `results/judge_agreement_offline_claude_agents_judge.md`. |
-| 2b. Redundancy gate | **Skipped.** |
+| 1b. Links | Done: `results/xfile/links.jsonl` (2,222 links, stamped `a086ca1c22dc1d93`; unit ids and scores only). Copy it into place; don't rebuild (~4 h CPU). **The audio↔slide gate leaks cross-lecture links**: 9/49 pairs kept, 5 true + 4 false, and mimic_data and visual_system failed against their own decks. See DESIGN.md known issue (n). |
+| 2. Judge | Done at **3 runs**: unit κ **0.81** vs gpt-4.1-mini (bar 0.70), 0.93 vs gpt-5.4; grades 98/100; types 24/25. See `results/judge_agreement_offline_claude_agents_judge_3runs.md`. The 1-run report is kept beside it. |
+| 2b. Redundancy gate | **Partly done.** 4,200 judge prompts collected (7 topics × 4 directions × 50 sampled sentences × 3 runs) in `data/processed/agent_queue/redundancy.jsonl`. About 23 of 108 batches answered before the usage limit; the replies sit in `data/processed/agent_queue/redundancy_r1/*/replies/` on Rakshit's machine. See "Finish the redundancy gate" below. |
 | 3. Questions | 98 drafted by Opus subagents (`tests/regression/xfile_drafts.jsonl`). `verify_gold` kept 97: **64 verified cross-file** (54 split + 10 deictic), 33 single-source controls, 1 dropped (LN12). **1 run.** See `gold_check_1run.md` / `.json`. |
 | 3b. Human review | Sheet ready: `reports/xfile_review.csv`. It holds a per-question `kind` (bridge / conjunction / deictic / control), Claude's recommendation (8 reject, 6 check) and the gold-check result. **No decisions entered yet.** |
-| 4. Evaluation | Not started. |
+| 4. Evaluation | Code ready: `compare_retrieval.py` goes through the reply cache, `--correctness` grades answers (by type and kind), `--topics` selects tune/test halves. Not run yet. |
 | 5. Report | Not started. |
 
 ## How the LLM calls are made (no API keys)
@@ -65,7 +65,7 @@ python scripts/adapters/xfile.py prepare
 python scripts/ingest.py $(python scripts/adapters/xfile.py files) --config configs/xfile.yaml --mode linkrag --max-cost 0
 # expect "corpus manifest a086ca1c22dc1d93". If it differs, the cached replies below won't hit.
 tar -xzf results/xfile/reply_cache.tar.gz       # restores data/processed/verify_cache + judge_cache_offline
-python scripts/build_links.py --config configs/xfile.yaml --link-mode linkrag
+cp results/xfile/links.jsonl data/processed/xfile/links.jsonl   # don't rebuild (~4 h CPU)
 ```
 
 ## Undo these shortcuts (in this order)
@@ -91,16 +91,23 @@ python scripts/build_links.py --config configs/xfile.yaml --link-mode linkrag
    answered in a context of its own. In the shared-context batches a subagent saw ~14 questions
    on the same context.
 
-## Step 4: code still needed before the evaluation
+## Finish the redundancy gate
 
-- `scripts/compare_retrieval.py` builds `http_completer(llm)` and `judge_completer(...)` **without
-  `cached_completer`**. The agent_queue backend refuses to run that way. Wrap both in
-  `cached_completer(..., Path("data/processed/verify_cache") / mhash / model)` first, as
-  `verify_gold.py` does.
-- **Answer correctness** is not scored yet. Score each answer against `expected_answer` with
-  `linkrag.eval.verify_gold.grade` (same judge, 3 runs). Report it by `kind` (bridge /
-  conjunction / deictic / control). Bridge questions are where links should help; conjunction
-  questions mostly test retrieving two things.
+Re-running collection rebuilds the same queue, because the prompts are deterministic:
+
+```bash
+export LINKRAG_JUDGE_BACKEND=claude_agents_judge LINKRAG_AGENT_QUEUE=data/processed/agent_queue/redundancy.jsonl
+for t in rl_mdp gp_scaling nfa_closure mimic_data psych_methods visual_system lightning; do
+  python scripts/dataset/redundancy.py --config configs/xfile.yaml --index data/processed/xfile/index \
+    --corpus xfile_$t --topic $t --sample 50 --runs 3 --entailment llm --max-cost 0 --reports-dir reports
+done      # first pass queues; after import, the same loop writes reports/redundancy_xfile_<topic>.md
+```
+
+Tell the subagents to **read every passage in full**. Several first-wave subagents cut passages to
+their first ~1,000 characters, and those batches were cleared and must be redone.
+
+## Step 4: running the evaluation
+
 - Split by topic into tune and test halves **before any run**, and write the split into PLAN.md.
   Knobs are set on tune only (DESIGN.md *Reporting convention*).
 - Headline comparison: `linkrag + complementarity` vs the no-links control `baseline +

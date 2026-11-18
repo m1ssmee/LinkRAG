@@ -953,6 +953,19 @@ the bugs they surfaced: `docs/pilot01_history.md`.
   pages. MaViLS `image_processing.pdf` gave 2 units from 21 pages. There is no OCR fallback for
   text-less deck pages; the MaViLS adapter OCRs separately (`--slide-text ocr`). XFile dropped
   that topic rather than change ingest for frozen corpora.
+- **(n) In a pooled corpus the audio↔slide gate leaks cross-lecture links (found 2026-11-18,
+  XFile).** Every recording is aligned to every deck: 7 × 7 = 49 pairs, `relatedness_z` 1.27.
+  The gate kept 9. Five are true pairs (psych z 12.2, gp 8.0, lightning 4.9, rl 3.9, nfa 2.3).
+  Four are false (rl→nfa 1.4, psych→visual 1.4, gp→nfa 2.1, lightning→psych 2.6), which
+  is what a one-sided z of 1.27 (~10 % false-positive rate) predicts over 42 wrong pairs. That
+  gives 699 audio_slide links between unrelated lectures; 8 of 15 deictic links ride on them.
+  Two true pairs failed outright: mimic_data z −1.5 and visual_system z −0.1 against their own
+  decks. So taking each recording's highest-z deck removes the four false pairs but does not
+  rescue those two, whose alignment itself fails. Not changed: XFile measures the layer as
+  configured. A one-deck-per-recording rule is a design change, to be set on the tune topics
+  with a config switch. figure_text: 128 of 156 document pairs judged unrelated, 39 of 527
+  links cross-topic. Also: `build_links.py`'s optional `.graphml` export crashes on a control
+  character in unit text (lxml), after `links.jsonl` is written.
 
 ## Environment decisions worth not re-litigating
 
