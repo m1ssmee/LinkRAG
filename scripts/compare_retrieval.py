@@ -152,6 +152,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--answer-prompt", choices=["baseline", "per-mode"], default="baseline",
                     help="baseline: one answer prompt for every mode, so a correctness difference is "
                          "retrieval alone; per-mode: linkrag modes add the 'combine the files' suffix")
+    ap.add_argument("--answerer-cache-only", action="store_true",
+                    help="replay stored answerer replies only; a miss is an error, never a call")
+    ap.add_argument("--judge-cache-only", action="store_true",
+                    help="replay stored judge replies only; a miss is an error, never a call")
     ap.add_argument("--topics", default=None,
                     help="comma-separated topics: keep only questions whose `topic` is listed (tune/test halves)")
     args = ap.parse_args(argv)
@@ -184,7 +188,8 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(f"no questions for topics {sorted(keep_topics)}")
     mhash = manifest.get("hash", "unstamped")
     inner = None if args.no_llm else http_completer(llm)
-    complete = None if inner is None else cached_completer(inner, Path(args.cache) / mhash / str(llm.get("model")))
+    complete = None if inner is None else cached_completer(inner, Path(args.cache) / mhash / str(llm.get("model")),
+                                                          cache_only=args.answerer_cache_only)
     modes = [m for m in MODES if not (args.no_llm and m in LLM_MODES)]
     methods = [m for m in METHODS if m in set(args.rerank.split(","))]
     if not methods:
@@ -203,7 +208,8 @@ def main(argv: list[str] | None = None) -> int:
         if jcfg.get("model") == llm.get("model"):
             print("WARNING: eval.judge is the same model as models.llm -- self-grading is lenient")
         judge_inner = judge_completer(cfg, entailment_opts(cfg, args.entailment)["backend"])
-        judge = cached_completer(judge_inner, Path(args.cache) / mhash / str(jcfg.get("model")))
+        judge = cached_completer(judge_inner, Path(args.cache) / mhash / str(jcfg.get("model")),
+                                 cache_only=args.judge_cache_only)
     correct: dict[tuple[str, str, str], list[bool]] = {}     # (qid, mode, method) -> pass per run
     graded: dict[tuple[str, str, str], bool] = {}
     id_sets: dict[str, list[tuple]] = {}
