@@ -142,6 +142,18 @@ run at 345 of 600 answers, so the answers come from Claude Haiku 5.5 run as suba
 adds +9.48 [+7.91, +11.06]. *Updated 2026-11-15: this said the run was "proposed and not
 approved" at about $1.20 on the OpenAI answerer.*
 
+*Outside this list, on explicit instruction (2026-11-12), all $0:* the free re-checks of the
+stored results on both targets (`results/external/lectqa_recheck.md`, `mavils_recheck.md`),
+the text corrections that followed from them, and the pooled-corpus run on LectQA-Vid
+(`lectqa_pooled.md`), which stays **exploratory**: it has not been agreed with the mentor
+and is not to be cited until it has. The closed-book control was run on 2026-11-15 (`lectqa_closedbook.md`): the same 300 questions
+with no context and with the full transcript, under one prompt that allows the model's own
+knowledge. The OpenAI balance was exhausted and the Groq free tier's daily token cap stopped a
+run at 345 of 600 answers, so the answers come from Claude Haiku 5.5 run as subagents, one run:
+**direction only**. Closed book 28.07 F1 against 37.55 with the transcript (75 %); the video
+adds +9.48 [+7.91, +11.06]. *Updated 2026-11-15: this said the run was "proposed and not
+approved" at about $1.20 on the OpenAI answerer.*
+
 ### Previous priority order (2026-09-20 → 2026-09-23), for the record
 
 (ii) relatedness gate, (iv) MaViLS and (v) Phase 6 were completed. (iii) LectQA-Vid was
