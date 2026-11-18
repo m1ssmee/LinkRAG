@@ -155,3 +155,24 @@ def test_topic_scopes_source_contexts_in_a_pooled_corpus():
     verify_gold([row], units, model, judge=model, deck_files={"alpha_slides.pdf"}, runs=1, workers=1)
     assert seen and all("beta" not in p for p in seen)
     assert any("alpha talk fact" in p for p in seen) and any("alpha slide fact" in p for p in seen)
+
+
+def test_gold_rows_carry_topic_and_kind_from_the_proposal():
+    units = [EvidenceUnit(id="t_slides:p3:t0", modality="text", content="Focus is 57x cheaper.",
+                          source_file="t_slides.pdf", location=Location(page=3), metadata={"slide_deck": True})]
+    row = {"qid": "X1", "type": "slides_only", "question": "How much cheaper?", "expected_answer": "57x",
+           "gold_units": [{"source": "t_slides.pdf", "page": 3}], "topic": "t", "kind": "control"}
+
+    def judge(system, prompt):
+        if prompt.startswith("Context ("):
+            return "57x" if "57x" in prompt else "NOT ANSWERABLE"
+        if "Candidate answer:" in prompt:
+            ok = "57x" in prompt.split("Candidate answer:")[1]
+            return json.dumps({"facts": [], "verdict": "PASS" if ok else "FAIL", "reason": "r"})
+        return json.dumps({"facts": [{"fact": "57x", "supported": True, "span": "57x cheaper"}], "verdict": "yes"})
+
+    out = verify_gold([row], units, judge, judge=judge, deck_files={"t_slides.pdf"}, runs=1, workers=1)
+    (gold,) = verified_gold_rows(out, units, {"X1": row})
+    assert (gold["topic"], gold["kind"]) == ("t", "control")
+    (bare,) = verified_gold_rows(out, units)
+    assert "topic" not in bare

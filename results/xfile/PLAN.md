@@ -139,3 +139,14 @@ Work happens on branch `cross-file-benchmark`.
 - Measurement rules: if a linkrag row exactly equals baseline, or is exactly 0, inspect it
   before believing it. Per-type counts must reconcile to the total.
 - All runs use `--max-cost 0`, and `reports/llm_ledger.jsonl` shows $0.
+
+## Tune / test split (fixed 2026-11-18, before any evaluation run)
+
+`random.Random(20261118).shuffle(sorted(topics))`, first 3 = tune, rest = test:
+
+- **tune:** nfa_closure, psych_methods, visual_system
+- **test:** gp_scaling, lightning, mimic_data, rl_mdp
+
+Knobs (`decay`, alpha/beta/gamma, `normalise_seeds`, `expansion`, any gate change from DESIGN.md
+issue (n)) are set on tune only and applied once to test. Runs over all 7 topics with default
+knobs and no tuning are labelled *exploratory*.

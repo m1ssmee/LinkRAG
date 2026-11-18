@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
                       manifest_hash=mhash, model=verifier, runs=vruns,
                       n_units=len(index), answerer=str(llm.get("model")))
     js = dump_json(verdicts, reports / f"gold_verified_{args.corpus}.json")
-    gold_rows = verified_gold_rows(verdicts, list(index.units))
+    gold_rows = verified_gold_rows(verdicts, list(index.units), {r["qid"]: r for r in rows})
     gold = write_gold(gold_rows, args.out, manifest_hash=mhash, model=verifier,
                       runs=vruns, source=args.proposed, answerer=str(llm.get("model")))
 

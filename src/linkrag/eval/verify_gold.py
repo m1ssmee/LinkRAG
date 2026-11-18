@@ -415,11 +415,16 @@ def verify_gold(rows: Sequence[dict[str, Any]], units: Sequence[EvidenceUnit],
 
 # ----------------------------------------------------------------- outputs
 
-def verified_gold_rows(verdicts: Sequence[QuestionVerdict], units: Sequence[EvidenceUnit]
-                       ) -> list[dict[str, Any]]:
+CARRY_FIELDS = ("topic", "kind", "reviewed_by", "review")   # proposal fields kept in the gold rows
+
+
+def verified_gold_rows(verdicts: Sequence[QuestionVerdict], units: Sequence[EvidenceUnit],
+                       proposals: dict[str, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """Regression-format rows. Locators are narrowed to the surviving units so a
     page with three units of which one passed contributes one locator; unit ids are
-    also stamped for exact matching against this manifest."""
+    also stamped for exact matching against this manifest. `proposals` (qid -> proposed row)
+    carries CARRY_FIELDS through: the topic a pooled corpus scopes by, the question kind and
+    the review provenance."""
     by_id = {u.id: u for u in units}
     rows = []
     for v in verdicts:
@@ -447,6 +452,8 @@ def verified_gold_rows(verdicts: Sequence[QuestionVerdict], units: Sequence[Evid
             "verification": {"status": v.status, "answerable_from": v.answerable_from,
                              "original_type": v.original_type,
                              "units_proposed": len(v.units), "units_kept": len(ids)},
+            **{k: (proposals or {}).get(v.qid, {})[k] for k in CARRY_FIELDS
+               if k in (proposals or {}).get(v.qid, {})},
         })
     return rows
 
