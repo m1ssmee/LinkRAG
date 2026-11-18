@@ -1,0 +1,1202 @@
+[
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "September 9, 2013: The layout of the visual system, the retina and the lateral geniculate nucleus 1",
+  "unit_id": "visual_system_slides:p1:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a3",
+   "visual_system_talk:a77",
+   "visual_system_talk:a187",
+   "visual_system_talk:a26",
+   "visual_system_talk:a24",
+   "visual_system_talk:a34",
+   "visual_system_talk:a31",
+   "visual_system_talk:a27"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Basic Wiring of the Visual System 2",
+  "unit_id": "visual_system_slides:p2:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "talk about the basic wiring of the visual system",
+  "passages": [
+   "visual_system_talk:a7",
+   "visual_system_talk:a129",
+   "visual_system_talk:a34",
+   "visual_system_talk:a3",
+   "visual_system_talk:a2",
+   "visual_system_talk:a33",
+   "visual_system_talk:a4",
+   "visual_system_talk:a18"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The world seen by the two eyes rabbit human Graph showing the distribution of rods and cones o n the retina.",
+  "unit_id": "visual_system_slides:p3:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "And when that is the case, as in this picture shown here for the rabbit, what you find is that there's only a small area which is seen by both eyes.",
+  "passages": [
+   "visual_system_talk:a130",
+   "visual_system_talk:a8",
+   "visual_system_talk:a131",
+   "visual_system_talk:a70",
+   "visual_system_talk:a9",
+   "visual_system_talk:a10",
+   "visual_system_talk:a67",
+   "visual_system_talk:a30"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Please refer to lecture video or Figure 3 from Schiller, Peter H., and Edward J.",
+  "unit_id": "visual_system_slides:p5:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a2",
+   "visual_system_talk:a0",
+   "visual_system_talk:a78",
+   "visual_system_talk:a5",
+   "visual_system_talk:a101",
+   "visual_system_talk:a117",
+   "visual_system_talk:a87",
+   "visual_system_talk:a168"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"Visual prosthesis.\" Perception 37, no.",
+  "unit_id": "visual_system_slides:p5:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a34",
+   "visual_system_talk:a4",
+   "visual_system_talk:a3",
+   "visual_system_talk:a130",
+   "visual_system_talk:a168",
+   "visual_system_talk:a152",
+   "visual_system_talk:a7",
+   "visual_system_talk:a132"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Basics of Retinal Connections and Retinal Ganglion Cells 6",
+  "unit_id": "visual_system_slides:p6:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a74",
+   "visual_system_talk:a163",
+   "visual_system_talk:a92",
+   "visual_system_talk:a76",
+   "visual_system_talk:a87",
+   "visual_system_talk:a162",
+   "visual_system_talk:a113",
+   "visual_system_talk:a90"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "near far Ciliary process Retrolental space Optic axis Canal of Cloquet Retina Sclera Choroid Lamina cribrosa Horizontal section of the right human eye.",
+  "unit_id": "visual_system_slides:p7:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a30",
+   "visual_system_talk:a21",
+   "visual_system_talk:a27",
+   "visual_system_talk:a31",
+   "visual_system_talk:a34",
+   "visual_system_talk:a41",
+   "visual_system_talk:a26",
+   "visual_system_talk:a75"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Nerve & sheath Macula lutea Fovea Vitreous humor Visual axis Ora serrata Ciliary epithelium Zonule fibers Ciliary muscle Canal of Schlemm Conjunctiva Iris Cornea Rectus tendon Lens Anterior Chamber Posterior chamber Limbal zone Ciliary body Disc Image by MIT OpenCourseWare.",
+  "unit_id": "visual_system_slides:p7:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a27",
+   "visual_system_talk:a3",
+   "visual_system_talk:a26",
+   "visual_system_talk:a41",
+   "visual_system_talk:a75",
+   "visual_system_talk:a34",
+   "visual_system_talk:a160",
+   "visual_system_talk:a28"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "I mage of human retina with optic ne rve and fovea labeled.",
+  "unit_id": "visual_system_slides:p8:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a51",
+   "visual_system_talk:a139",
+   "visual_system_talk:a141",
+   "visual_system_talk:a169",
+   "visual_system_talk:a131",
+   "visual_system_talk:a64",
+   "visual_system_talk:a67",
+   "visual_system_talk:a152"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Image removed due to copyright restrictions.",
+  "unit_id": "visual_system_slides:p9:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a158",
+   "visual_system_talk:a0",
+   "visual_system_talk:a130",
+   "visual_system_talk:a169",
+   "visual_system_talk:a152",
+   "visual_system_talk:a10",
+   "visual_system_talk:a153",
+   "visual_system_talk:a22"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The Vertebrate Visual System: Its Origin, Structure, and Function and its Manifestations in Disease with an Analysis of its Role in the Life of Animal and in the Origin of Man.",
+  "unit_id": "visual_system_slides:p9:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a25",
+   "visual_system_talk:a18",
+   "visual_system_talk:a4",
+   "visual_system_talk:a34",
+   "visual_system_talk:a17",
+   "visual_system_talk:a7",
+   "visual_system_talk:a3",
+   "visual_system_talk:a103"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "University of Chicago Press, 1957.",
+  "unit_id": "visual_system_slides:p9:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a2",
+   "visual_system_talk:a4",
+   "visual_system_talk:a150",
+   "visual_system_talk:a168",
+   "visual_system_talk:a171",
+   "visual_system_talk:a73",
+   "visual_system_talk:a139",
+   "visual_system_talk:a145"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Retinal ganglion cells, cross section, Golgi label Image removed due to copyright restrictions. by Polyak 10 Please refer to lecture video or Figure 4 from Schiller, Peter H.",
+  "unit_id": "visual_system_slides:p10:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a87",
+   "visual_system_talk:a74",
+   "visual_system_talk:a162",
+   "visual_system_talk:a89",
+   "visual_system_talk:a168",
+   "visual_system_talk:a90",
+   "visual_system_talk:a76",
+   "visual_system_talk:a91"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"Parallel information processing channels created in the retina.\" Proceedings of the National Academy of Sciences 107, no.",
+  "unit_id": "visual_system_slides:p10:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a34",
+   "visual_system_talk:a139",
+   "visual_system_talk:a3",
+   "visual_system_talk:a167",
+   "visual_system_talk:a168",
+   "visual_system_talk:a76",
+   "visual_system_talk:a116",
+   "visual_system_talk:a130"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Physiology of retinal ganglion cells 11",
+  "unit_id": "visual_system_slides:p11:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "now let's look at the physiology of retinoganglion cells",
+  "passages": [
+   "visual_system_talk:a92",
+   "visual_system_talk:a74",
+   "visual_system_talk:a163",
+   "visual_system_talk:a86",
+   "visual_system_talk:a76",
+   "visual_system_talk:a113",
+   "visual_system_talk:a91",
+   "visual_system_talk:a170"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Please see lecture video or Figure 1 from Wassle, H., W.",
+  "unit_id": "visual_system_slides:p14:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a2",
+   "visual_system_talk:a0",
+   "visual_system_talk:a117",
+   "visual_system_talk:a78",
+   "visual_system_talk:a1",
+   "visual_system_talk:a5",
+   "visual_system_talk:a168",
+   "visual_system_talk:a3"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"The distribution of the alpha type of ganglion cells in the cat's retina.\" Journal of Comparative Neurology 159, no.",
+  "unit_id": "visual_system_slides:p14:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a12",
+   "visual_system_talk:a76",
+   "visual_system_talk:a163",
+   "visual_system_talk:a77",
+   "visual_system_talk:a168",
+   "visual_system_talk:a3",
+   "visual_system_talk:a74",
+   "visual_system_talk:a92"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Graph of conduction velocit y in optic nerve fib e r s.",
+  "unit_id": "visual_system_slides:p15:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "And it shows that they form distinct groups, a very rapidly conducting group, a slow conducting group, and a very slow, more diffused group.",
+  "passages": [
+   "visual_system_talk:a117",
+   "visual_system_talk:a95",
+   "visual_system_talk:a14",
+   "visual_system_talk:a116",
+   "visual_system_talk:a119",
+   "visual_system_talk:a130",
+   "visual_system_talk:a28",
+   "visual_system_talk:a31"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "15 Conduction velocity in optic nerve fibers",
+  "unit_id": "visual_system_slides:p15:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "it shows that they form distinct groups, a very rapidly conducting group, a slow conducting group, and a very slow, more diffused group.",
+  "passages": [
+   "visual_system_talk:a117",
+   "visual_system_talk:a51",
+   "visual_system_talk:a163",
+   "visual_system_talk:a50",
+   "visual_system_talk:a116",
+   "visual_system_talk:a95",
+   "visual_system_talk:a119",
+   "visual_system_talk:a174"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Please see lecture video or Figures 2 and 3 from Watanabe, M. and R.W.",
+  "unit_id": "visual_system_slides:p16:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a2",
+   "visual_system_talk:a0",
+   "visual_system_talk:a117",
+   "visual_system_talk:a5",
+   "visual_system_talk:a78",
+   "visual_system_talk:a109",
+   "visual_system_talk:a3",
+   "visual_system_talk:a188"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"Parasol and midget ganglion cells of the primate retina.\" Journal of Comparative Neurology 289, no.",
+  "unit_id": "visual_system_slides:p16:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a92",
+   "visual_system_talk:a122",
+   "visual_system_talk:a12",
+   "visual_system_talk:a163",
+   "visual_system_talk:a168",
+   "visual_system_talk:a74",
+   "visual_system_talk:a76",
+   "visual_system_talk:a77"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Rods and cones in periphery Image removed due to copyright restrictions.",
+  "unit_id": "visual_system_slides:p20:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "This shows the rods and the cones in the periphery.",
+  "passages": [
+   "visual_system_talk:a130",
+   "visual_system_talk:a71",
+   "visual_system_talk:a68",
+   "visual_system_talk:a128",
+   "visual_system_talk:a78",
+   "visual_system_talk:a65",
+   "visual_system_talk:a140",
+   "visual_system_talk:a131"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Please see lecture video or Figure 1 from Winkler, Kenneth C., and Pasko Rakic.",
+  "unit_id": "visual_system_slides:p20:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a2",
+   "visual_system_talk:a5",
+   "visual_system_talk:a87",
+   "visual_system_talk:a3",
+   "visual_system_talk:a78",
+   "visual_system_talk:a168",
+   "visual_system_talk:a0",
+   "visual_system_talk:a74"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"Distribution of photoreceptor subtypes in the retina of diurnal and noctournal primates.\" The Journal of Neuroscience 10, no.",
+  "unit_id": "visual_system_slides:p20:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a3",
+   "visual_system_talk:a67",
+   "visual_system_talk:a57",
+   "visual_system_talk:a183",
+   "visual_system_talk:a187",
+   "visual_system_talk:a168",
+   "visual_system_talk:a56",
+   "visual_system_talk:a76"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "In human retina there are about 120 million rods and about 5 million cones 20",
+  "unit_id": "visual_system_slides:p20:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "we have in humans, there are about 120 million rods, now 5 million cones, in each retina.",
+  "passages": [
+   "visual_system_talk:a131",
+   "visual_system_talk:a82",
+   "visual_system_talk:a50",
+   "visual_system_talk:a67",
+   "visual_system_talk:a130",
+   "visual_system_talk:a79",
+   "visual_system_talk:a70",
+   "visual_system_talk:a74"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Graph showing the distribution of rods and cone s on the ret ina.",
+  "unit_id": "visual_system_slides:p21:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "you can see that as you go away from the fovea, there's a very rapid decline in the number of cones.",
+  "passages": [
+   "visual_system_talk:a131",
+   "visual_system_talk:a130",
+   "visual_system_talk:a128",
+   "visual_system_talk:a78",
+   "visual_system_talk:a71",
+   "visual_system_talk:a70",
+   "visual_system_talk:a68",
+   "visual_system_talk:a79"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "21 Distribution of rods and cones on the retina",
+  "unit_id": "visual_system_slides:p21:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "he said, well, let me take a closer look at the retina and see how the rods and the cones are distributed on the retinal surface.",
+  "passages": [
+   "visual_system_talk:a131",
+   "visual_system_talk:a130",
+   "visual_system_talk:a67",
+   "visual_system_talk:a70",
+   "visual_system_talk:a74",
+   "visual_system_talk:a82",
+   "visual_system_talk:a51",
+   "visual_system_talk:a132"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Some basic facts about the receptor array: 1 degree = 200u on retina Intercone distance in fovea = 2.4u (0.7 min) 200,000 cones per sq.mm. in fovea 20,000 cones per sq.mm.",
+  "unit_id": "visual_system_slides:p23:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "in the fovea, you have something like 200,000 cones per square millimeter. 200,000. As you go five degrees out, it reduces tenfold to 20,000.",
+  "passages": [
+   "visual_system_talk:a141",
+   "visual_system_talk:a50",
+   "visual_system_talk:a131",
+   "visual_system_talk:a128",
+   "visual_system_talk:a51",
+   "visual_system_talk:a130",
+   "visual_system_talk:a82",
+   "visual_system_talk:a67"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "5 degrees out Thumbnail at arm's length = 1 degree The 12 font letter \"I\" activates about 80 cones at 23 cm Each rod has 1,000 disks, each with 10,000 molecules Only 1 of 8 cones is blue.",
+  "unit_id": "visual_system_slides:p23:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "if you look at a 12-font letter, I, when you look at it at 23 centimeters, that activates about 80 cones.",
+  "passages": [
+   "visual_system_talk:a143",
+   "visual_system_talk:a79",
+   "visual_system_talk:a142",
+   "visual_system_talk:a50",
+   "visual_system_talk:a82",
+   "visual_system_talk:a141",
+   "visual_system_talk:a144",
+   "visual_system_talk:a78"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Cat bipolar cells Kolb, Helga, Ralph Nelson, and Andrew Mariani.",
+  "unit_id": "visual_system_slides:p26:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a160",
+   "visual_system_talk:a176",
+   "visual_system_talk:a139",
+   "visual_system_talk:a75",
+   "visual_system_talk:a178",
+   "visual_system_talk:a162",
+   "visual_system_talk:a177",
+   "visual_system_talk:a101"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"Amacrine cells, bipolar cells and ganglion cells of the cat retina: a Golgi study.\" Vision Research 21, no.",
+  "unit_id": "visual_system_slides:p26:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a76",
+   "visual_system_talk:a74",
+   "visual_system_talk:a12",
+   "visual_system_talk:a160",
+   "visual_system_talk:a92",
+   "visual_system_talk:a179",
+   "visual_system_talk:a139",
+   "visual_system_talk:a163"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Courtesy of Elsevier, Inc., http://www.sciencedirect.com.",
+  "unit_id": "visual_system_slides:p26:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a0",
+   "visual_system_talk:a73",
+   "visual_system_talk:a181",
+   "visual_system_talk:a68",
+   "visual_system_talk:a168",
+   "visual_system_talk:a104",
+   "visual_system_talk:a118",
+   "visual_system_talk:a144"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "28 Please refer to lecture video or to Polyak, Stephen Lucian.",
+  "unit_id": "visual_system_slides:p28:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a2",
+   "visual_system_talk:a87",
+   "visual_system_talk:a0",
+   "visual_system_talk:a3",
+   "visual_system_talk:a5",
+   "visual_system_talk:a1",
+   "visual_system_talk:a133",
+   "visual_system_talk:a78"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Diagram of horizontal cell .",
+  "unit_id": "visual_system_slides:p29:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a162",
+   "visual_system_talk:a119",
+   "visual_system_talk:a176",
+   "visual_system_talk:a75",
+   "visual_system_talk:a171",
+   "visual_system_talk:a163",
+   "visual_system_talk:a178",
+   "visual_system_talk:a117"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Labeled and injected cholinergic amacrine cell Images removed due to copyright restrictions.",
+  "unit_id": "visual_system_slides:p31:t0",
+  "entailed": true,
+  "votes": [
+   "no",
+   "yes",
+   "yes"
+  ],
+  "span": "This is the labeled, again, purple and yellow labeled cell, amacrine cell.",
+  "passages": [
+   "visual_system_talk:a165",
+   "visual_system_talk:a164",
+   "visual_system_talk:a166",
+   "visual_system_talk:a177",
+   "visual_system_talk:a167",
+   "visual_system_talk:a169",
+   "visual_system_talk:a161",
+   "visual_system_talk:a174"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"The functional architecture of the retina.\" Scientific American 255, no.",
+  "unit_id": "visual_system_slides:p31:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a168",
+   "visual_system_talk:a34",
+   "visual_system_talk:a3",
+   "visual_system_talk:a167",
+   "visual_system_talk:a139",
+   "visual_system_talk:a146",
+   "visual_system_talk:a41",
+   "visual_system_talk:a76"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Diagrams of amac rine cel ls.",
+  "unit_id": "visual_system_slides:p32:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "This is the labeled, again, purple and yellow labeled cell, amacrine cell.",
+  "passages": [
+   "visual_system_talk:a165",
+   "visual_system_talk:a139",
+   "visual_system_talk:a167",
+   "visual_system_talk:a177",
+   "visual_system_talk:a87",
+   "visual_system_talk:a164",
+   "visual_system_talk:a171",
+   "visual_system_talk:a78"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Electrical responses in the retina 33",
+  "unit_id": "visual_system_slides:p33:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "We're going to talk about the electrical responses in the retina.",
+  "passages": [
+   "visual_system_talk:a167",
+   "visual_system_talk:a163",
+   "visual_system_talk:a130",
+   "visual_system_talk:a176",
+   "visual_system_talk:a30",
+   "visual_system_talk:a64",
+   "visual_system_talk:a171",
+   "visual_system_talk:a105"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "all hyperpolarize to light all hyperpolarize to light some hyperpolarize and some depolarize some hyperpolarize, some depolarize and some give action potentials all give action potentials Bipolar Cells Receptors Horizontal Cells Amacrine Cell Ganglion Cells mudpuppy retina (Necturus maculosus) 0 -50 oscilloscope DC recording epsp © American Physiological Association.",
+  "unit_id": "visual_system_slides:p34:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a178",
+   "visual_system_talk:a176",
+   "visual_system_talk:a173",
+   "visual_system_talk:a177",
+   "visual_system_talk:a179",
+   "visual_system_talk:a184",
+   "visual_system_talk:a183",
+   "visual_system_talk:a175"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "This content is excluded from our Creative Commons license.",
+  "unit_id": "visual_system_slides:p34:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a0",
+   "visual_system_talk:a22",
+   "visual_system_talk:a40",
+   "visual_system_talk:a158",
+   "visual_system_talk:a17",
+   "visual_system_talk:a133",
+   "visual_system_talk:a28",
+   "visual_system_talk:a168"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Source: Figure 2 and 3 from Werblin, Frank S., and John E.",
+  "unit_id": "visual_system_slides:p34:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a117",
+   "visual_system_talk:a101",
+   "visual_system_talk:a106",
+   "visual_system_talk:a78",
+   "visual_system_talk:a119",
+   "visual_system_talk:a133",
+   "visual_system_talk:a112",
+   "visual_system_talk:a179"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"Organization of the Retina of the Mudpuppy.",
+  "unit_id": "visual_system_slides:p34:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a170",
+   "visual_system_talk:a171",
+   "visual_system_talk:a41",
+   "visual_system_talk:a130",
+   "visual_system_talk:a76",
+   "visual_system_talk:a167",
+   "visual_system_talk:a57",
+   "visual_system_talk:a61"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "All photoreceptors hyperpolarize to light.",
+  "unit_id": "visual_system_slides:p36:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "All photoreceptors hyperpolarize the light.",
+  "passages": [
+   "visual_system_talk:a184",
+   "visual_system_talk:a178",
+   "visual_system_talk:a176",
+   "visual_system_talk:a173",
+   "visual_system_talk:a183",
+   "visual_system_talk:a187",
+   "visual_system_talk:a52",
+   "visual_system_talk:a174"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Depolarization of the photoreceptor releases glutamate.",
+  "unit_id": "visual_system_slides:p36:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Depolarization of the photoreceptor releases glutamate.",
+  "passages": [
+   "visual_system_talk:a183",
+   "visual_system_talk:a184",
+   "visual_system_talk:a175",
+   "visual_system_talk:a187",
+   "visual_system_talk:a178",
+   "visual_system_talk:a174",
+   "visual_system_talk:a188",
+   "visual_system_talk:a160"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Photon absorption by the photopigment results in isomerization of the chromophore from 11-cis to all-trans.",
+  "unit_id": "visual_system_slides:p36:t0",
+  "entailed": true,
+  "votes": [
+   "no",
+   "yes",
+   "yes"
+  ],
+  "span": "Photon absorption by the photopigment results in isomerization of the chromophore from 11 cis to 11 trans.",
+  "passages": [
+   "visual_system_talk:a184",
+   "visual_system_talk:a178",
+   "visual_system_talk:a83",
+   "visual_system_talk:a185",
+   "visual_system_talk:a183",
+   "visual_system_talk:a80",
+   "visual_system_talk:a173",
+   "visual_system_talk:a187"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "This causes hyperpolarization thereby reducing neurotransmitter release.",
+  "unit_id": "visual_system_slides:p36:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Cells, when they hyperpolarize, they are less likely to cause a release in neurotransmitters.",
+  "passages": [
+   "visual_system_talk:a174",
+   "visual_system_talk:a175",
+   "visual_system_talk:a178",
+   "visual_system_talk:a187",
+   "visual_system_talk:a183",
+   "visual_system_talk:a184",
+   "visual_system_talk:a176",
+   "visual_system_talk:a15"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Two classes of bipolars are the ON and the OFF.",
+  "unit_id": "visual_system_slides:p36:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "All right, then we have these two classes that we talked about, the on and the off cells",
+  "passages": [
+   "visual_system_talk:a186",
+   "visual_system_talk:a177",
+   "visual_system_talk:a161",
+   "visual_system_talk:a176",
+   "visual_system_talk:a75",
+   "visual_system_talk:a160",
+   "visual_system_talk:a162",
+   "visual_system_talk:a179"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The ON bipolar receptor is mGluR6.",
+  "unit_id": "visual_system_slides:p36:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Now, the unbipolar receptor is, I should mention that now, and I will deal with it in detail, is called the mGluR6.",
+  "passages": [
+   "visual_system_talk:a186",
+   "visual_system_talk:a175",
+   "visual_system_talk:a177",
+   "visual_system_talk:a178",
+   "visual_system_talk:a161",
+   "visual_system_talk:a179",
+   "visual_system_talk:a75",
+   "visual_system_talk:a160"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Its activation leads to closing of channels causing hyperpolarization.",
+  "unit_id": "visual_system_slides:p36:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Its activation leads to closing of channels causing hyperpolarization.",
+  "passages": [
+   "visual_system_talk:a187",
+   "visual_system_talk:a174",
+   "visual_system_talk:a175",
+   "visual_system_talk:a178",
+   "visual_system_talk:a184",
+   "visual_system_talk:a173",
+   "visual_system_talk:a183",
+   "visual_system_talk:a176"
+  ],
+  "population": 58
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "MIT OpenCourseWare http://ocw.mit.edu 9.04 Sensory Systems Fall 2013 For information about citing these materials or our Terms of Use, visit: http://ocw.mit.edu/terms.",
+  "unit_id": "visual_system_slides:p37:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "visual_system_talk:a0",
+   "visual_system_talk:a2",
+   "visual_system_talk:a33",
+   "visual_system_talk:a188",
+   "visual_system_talk:a109",
+   "visual_system_talk:a145",
+   "visual_system_talk:a6",
+   "visual_system_talk:a104"
+  ],
+  "population": 58
+ }
+]

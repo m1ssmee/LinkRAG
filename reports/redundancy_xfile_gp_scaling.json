@@ -1,0 +1,1202 @@
+[
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Numerics of Machine Learning — Winter 2022/23 — Lecture 03: Scaling GPs — © N.",
+  "unit_id": "gp_scaling_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a2",
+   "gp_scaling_talk:a1",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a0",
+   "gp_scaling_talk:a158",
+   "gp_scaling_talk:a152",
+   "gp_scaling_talk:a3",
+   "gp_scaling_talk:a189"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 2",
+  "unit_id": "gp_scaling_slides:p3:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a6",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a70"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Goal: Learn an unknown function f∗: Rd _ R from a training dataset of example input-output pairs.",
+  "unit_id": "gp_scaling_slides:p4:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So the main goal for regression is we are trying to learn an unknown function, in this case f star, from a training data set of examples, right.",
+  "passages": [
+   "gp_scaling_talk:a5",
+   "gp_scaling_talk:a13",
+   "gp_scaling_talk:a6",
+   "gp_scaling_talk:a154",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a41",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a153"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Recap: Model selection for Gaussian Processes Finding the best kernel hyperparameters.",
+  "unit_id": "gp_scaling_slides:p6:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "We also need to find the kernel hyperparameters. So do model selection in a way.",
+  "passages": [
+   "gp_scaling_talk:a1",
+   "gp_scaling_talk:a14",
+   "gp_scaling_talk:a151",
+   "gp_scaling_talk:a129",
+   "gp_scaling_talk:a10",
+   "gp_scaling_talk:a84",
+   "gp_scaling_talk:a25",
+   "gp_scaling_talk:a158"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 4",
+  "unit_id": "gp_scaling_slides:p6:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a152",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a80"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 5",
+  "unit_id": "gp_scaling_slides:p7:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a6",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a152"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Large-scale Gaussian Process Regression Cholesky-based Gaussian process regression on a large dataset.",
+  "unit_id": "gp_scaling_slides:p9:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a187",
+   "gp_scaling_talk:a158",
+   "gp_scaling_talk:a1",
+   "gp_scaling_talk:a162",
+   "gp_scaling_talk:a133",
+   "gp_scaling_talk:a167",
+   "gp_scaling_talk:a0",
+   "gp_scaling_talk:a43"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Homework: Train GP on dataset with n = 100,000 Memory: MemoryError: Unable to allocate 74.5GiB for an array with shape (100000, 100000) and data type float64 Time: Modern CPU ≈109 flops s : #flops 109 flops s ≃1 3 (105)3 109 s = 1 31015−9s = 1 3106s ≈83h A Cholesky decomposition is prohibitive both in time and space for large datasets.",
+  "unit_id": "gp_scaling_slides:p11:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "it'll take you about 83 hours to do that modulo overhead, okay?",
+  "passages": [
+   "gp_scaling_talk:a18",
+   "gp_scaling_talk:a17",
+   "gp_scaling_talk:a19",
+   "gp_scaling_talk:a122",
+   "gp_scaling_talk:a187",
+   "gp_scaling_talk:a145",
+   "gp_scaling_talk:a153",
+   "gp_scaling_talk:a40"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Iterative Approximation of the Kernel Matrix via Cholesky The Cholesky decomposition computes a rank-i approximation to the kernel matrix.",
+  "unit_id": "gp_scaling_slides:p13:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "If I do i iterations of the Jouleski in its iterative form, that's a rank i matrix.",
+  "passages": [
+   "gp_scaling_talk:a32",
+   "gp_scaling_talk:a40",
+   "gp_scaling_talk:a31",
+   "gp_scaling_talk:a20",
+   "gp_scaling_talk:a122",
+   "gp_scaling_talk:a119",
+   "gp_scaling_talk:a71",
+   "gp_scaling_talk:a80"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Cholesky can be seen as an iterative learning algorithm for the kernel matrix.",
+  "unit_id": "gp_scaling_slides:p15:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "So the part of the matrix that we haven't learned yet, that we can rewrite via this part",
+  "passages": [
+   "gp_scaling_talk:a32",
+   "gp_scaling_talk:a40",
+   "gp_scaling_talk:a21",
+   "gp_scaling_talk:a31",
+   "gp_scaling_talk:a49",
+   "gp_scaling_talk:a122",
+   "gp_scaling_talk:a46",
+   "gp_scaling_talk:a80"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 9",
+  "unit_id": "gp_scaling_slides:p16:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a6",
+   "gp_scaling_talk:a152"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "LiL⊺ i ≈A (A−1Li)(A−1Li)⊺ =Ci ≈A−1 Consider last column (A−1Li):i = A−1li: A−1li = A−1A′ ei ∥ei∥A′ = A−1(A −Li−1L⊺ i−1) ei ∥ei∥A′ = (I −Ci−1A) ei ∥ei∥A′ Numerics of Machine Learning — Winter 2022/23 — Lecture 03: Scaling GPs — © N.",
+  "unit_id": "gp_scaling_slides:p17:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "And the last column is just A inverse times this Li vector that we constructed in step 7.",
+  "passages": [
+   "gp_scaling_talk:a28",
+   "gp_scaling_talk:a33",
+   "gp_scaling_talk:a29",
+   "gp_scaling_talk:a30",
+   "gp_scaling_talk:a139",
+   "gp_scaling_talk:a35",
+   "gp_scaling_talk:a75",
+   "gp_scaling_talk:a76"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "LiL⊺ i ≈A, low-rank Ci ≈A−1 1 procedure CHOLESKY(A) 2 A′ ^ A, C0 = 0 3 for i ∈{1, . . . , n} do 4 si ^ ei Action 5 di ^(I −Ci−1A)si 6 ηi ^ s⊺ i Adi= e⊺ i A′ei = ∥ei∥2 A′ Norm. constant 7 li ^ A 1 √ηi di Matrix observation 8 Ci ^ Ci−1 + 1 ηi did⊺ i Inverse estimate 9 A′ ^ A −LiL⊺ i = A(A−1 −Ci)A = A(I −CiA) 10 Li = (Li−1 li ) 11 end for 12 return Li, Ci 13 end procedure Goal: (Low-rank) Approximation Ci ≈A−1 Observation: Matrix approx. →inverse approx.?",
+  "unit_id": "gp_scaling_slides:p18:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a28",
+   "gp_scaling_talk:a71",
+   "gp_scaling_talk:a31",
+   "gp_scaling_talk:a32",
+   "gp_scaling_talk:a38",
+   "gp_scaling_talk:a35",
+   "gp_scaling_talk:a78",
+   "gp_scaling_talk:a33"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "LiL⊺ i ≈A (A−1Li)(A−1Li)⊺ =Ci ≈A−1 Consider last column (A−1Li):i = A−1li: A−1li = A−1A′ ei ∥ei∥A′ = A−1(A −Li−1L⊺ i−1) ei ∥ei∥A′ = (I −Ci−1A) ei ∥ei∥A′ = 1 √ηi di Computational complexity: #flops ∈O(in2) Cholesky can be seen as an iterative learning algorithm for the kernel matrix and its inverse.",
+  "unit_id": "gp_scaling_slides:p18:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a28",
+   "gp_scaling_talk:a32",
+   "gp_scaling_talk:a40",
+   "gp_scaling_talk:a31",
+   "gp_scaling_talk:a38",
+   "gp_scaling_talk:a49",
+   "gp_scaling_talk:a35",
+   "gp_scaling_talk:a80"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 11",
+  "unit_id": "gp_scaling_slides:p19:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a152",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a6"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The selection of datapoints, i.e. choice of actions si, matters a lot for convergence.",
+  "unit_id": "gp_scaling_slides:p21:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So the selection of data points that you choose really matters for how quickly you converge to this inverse approximation, and thus, to the GP posterior.",
+  "passages": [
+   "gp_scaling_talk:a47",
+   "gp_scaling_talk:a159",
+   "gp_scaling_talk:a46",
+   "gp_scaling_talk:a81",
+   "gp_scaling_talk:a160",
+   "gp_scaling_talk:a120",
+   "gp_scaling_talk:a163",
+   "gp_scaling_talk:a84"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 13",
+  "unit_id": "gp_scaling_slides:p22:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a6",
+   "gp_scaling_talk:a80",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a8"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "How to rapidly compute linear solves with a (kernel) matrix: Method of Conjugate Gradients Numerics of Machine Learning — Winter 2022/23 — Lecture 03: Scaling GPs — © N.",
+  "unit_id": "gp_scaling_slides:p23:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "yes",
+   "no"
+  ],
+  "span": "So method of conjugate gradients. Our goal is to solve a linear system, Ax equals b.",
+  "passages": [
+   "gp_scaling_talk:a1",
+   "gp_scaling_talk:a52",
+   "gp_scaling_talk:a53",
+   "gp_scaling_talk:a3",
+   "gp_scaling_talk:a85",
+   "gp_scaling_talk:a129",
+   "gp_scaling_talk:a164",
+   "gp_scaling_talk:a8"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Goal: Approximately solve linear system Ax = b with few matrix-vector multiplies.",
+  "unit_id": "gp_scaling_slides:p24:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "you want to do that with, ideally, very few matrix vector multiplies",
+  "passages": [
+   "gp_scaling_talk:a55",
+   "gp_scaling_talk:a54",
+   "gp_scaling_talk:a53",
+   "gp_scaling_talk:a132",
+   "gp_scaling_talk:a94",
+   "gp_scaling_talk:a22",
+   "gp_scaling_talk:a110",
+   "gp_scaling_talk:a121"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Gradient descent: Follow di = r(xi) = −∇f(xi) s.t. ⟨di, dj⟩= 0.",
+  "unit_id": "gp_scaling_slides:p24:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a67",
+   "gp_scaling_talk:a59",
+   "gp_scaling_talk:a65",
+   "gp_scaling_talk:a68",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a57",
+   "gp_scaling_talk:a116",
+   "gp_scaling_talk:a75"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Conjugate direction method: Follow di s. t. ⟨d⊺ i dj⟩A = d⊺ i Adj = 0 for i̸ = j. =⇒convergence in at most n steps.",
+  "unit_id": "gp_scaling_slides:p25:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "if you follow such conjugate directions, let's call them conjugate being another word for orthogonal in a product, with respect to an arbitrary inner product, I can converge in at most n steps",
+  "passages": [
+   "gp_scaling_talk:a64",
+   "gp_scaling_talk:a65",
+   "gp_scaling_talk:a81",
+   "gp_scaling_talk:a69",
+   "gp_scaling_talk:a96",
+   "gp_scaling_talk:a67",
+   "gp_scaling_talk:a85",
+   "gp_scaling_talk:a184"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Conjugate gradient method: First step d0 = r(x0).",
+  "unit_id": "gp_scaling_slides:p26:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Why don't we just take our negative gradient as a first step, walk into the direction of steepest descent",
+  "passages": [
+   "gp_scaling_talk:a65",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a67",
+   "gp_scaling_talk:a69",
+   "gp_scaling_talk:a59",
+   "gp_scaling_talk:a81",
+   "gp_scaling_talk:a96",
+   "gp_scaling_talk:a93"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Algorithm 3 Conjugate Gradient Method Input: spd matrix A, vector b, initial guess x0 Output: approximate solution xi ≈A−1b 1 procedure CG(A, b, x0) 2 while ∥ri∥2 > max(δrtol∥b∥2, δatol) do 3 ri−1 ^ b −Axi−1 Residual 4 5 6 di ^ ri−1 − r⊺ i−1Adi−1 d⊺ i−1Adi−1 di−1 Search direction 7 8 9 xi ^ xi−1 + r⊺ i−1ri−1 d⊺ i Adi di Solution estimate 10 end while 11 return xi 12 end procedure Algorithm 4 CG with Inverse Approximation Input: spd matrix A, vector b, initial guess x0 Output: approximate solution xi ≈A−1b, low-rank Ci ≈A−1 1 procedure CG(A, b, x0) 2 while ∥ri∥2 > max(δrtol∥b∥2, δatol) do 3 ri−1 ^ b −Axi−1 Residual 4 si ^ ri−1 Action 5 αi ^ s⊺ i ri−1 Observation 6 di ^(I −Ci−1A)si Search direction 7 ηi ^ s⊺ i Adi= d⊺ i Adi Norm. constant 8 Ci ^ Ci−1 + 1 ηi did⊺ i Inverse estimate 9 xi ^ xi−1 + αi ηi di= Cib Solution estimate 10 end while 11 return xi, Ci 12 end procedure Numerics of Machine Learning — Winter 2022/23 — Lecture 03: Scaling GPs — © N.",
+  "unit_id": "gp_scaling_slides:p28:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a3",
+   "gp_scaling_talk:a85",
+   "gp_scaling_talk:a69",
+   "gp_scaling_talk:a184",
+   "gp_scaling_talk:a52",
+   "gp_scaling_talk:a75",
+   "gp_scaling_talk:a167"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Comparing the Partial Cholesky and CG for GP Inference How we observe the kernel matrix influences the approximate posterior.",
+  "unit_id": "gp_scaling_slides:p30:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "So this choice of data points not only matters for approximating the kernel matrix. In particular, it also matters if you approximate the inverse, and thus, for GP approximation.",
+  "passages": [
+   "gp_scaling_talk:a46",
+   "gp_scaling_talk:a40",
+   "gp_scaling_talk:a32",
+   "gp_scaling_talk:a45",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a1",
+   "gp_scaling_talk:a167",
+   "gp_scaling_talk:a119"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Numerics Interlude How much should I trust the output of a numerical algorithm?",
+  "unit_id": "gp_scaling_slides:p31:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a186",
+   "gp_scaling_talk:a86",
+   "gp_scaling_talk:a92",
+   "gp_scaling_talk:a184",
+   "gp_scaling_talk:a106",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a156",
+   "gp_scaling_talk:a9"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Convergence Behavior of CG The spectrum of the matrix determines the convergence speed. n = 103 κ(A) ≈7",
+  "unit_id": "gp_scaling_slides:p32:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a96",
+   "gp_scaling_talk:a85",
+   "gp_scaling_talk:a109",
+   "gp_scaling_talk:a159",
+   "gp_scaling_talk:a160",
+   "gp_scaling_talk:a101",
+   "gp_scaling_talk:a117",
+   "gp_scaling_talk:a53"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 19",
+  "unit_id": "gp_scaling_slides:p32:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a6",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a173"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 20",
+  "unit_id": "gp_scaling_slides:p33:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a6",
+   "gp_scaling_talk:a8"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Preconditioning How to encode and leverage structural prior knowledge about matrices.",
+  "unit_id": "gp_scaling_slides:p35:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "if you already know an approximate inverse of the matrix through a preconditioner, we can accelerate these methods",
+  "passages": [
+   "gp_scaling_talk:a161",
+   "gp_scaling_talk:a112",
+   "gp_scaling_talk:a146",
+   "gp_scaling_talk:a113",
+   "gp_scaling_talk:a188",
+   "gp_scaling_talk:a119",
+   "gp_scaling_talk:a148",
+   "gp_scaling_talk:a125"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Preconditioning accelerates and stabilizes linear solves via CG.",
+  "unit_id": "gp_scaling_slides:p35:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "it actually accelerates CG. And in finite precision, it actually makes it also more stable",
+  "passages": [
+   "gp_scaling_talk:a115",
+   "gp_scaling_talk:a161",
+   "gp_scaling_talk:a188",
+   "gp_scaling_talk:a151",
+   "gp_scaling_talk:a111",
+   "gp_scaling_talk:a109",
+   "gp_scaling_talk:a120",
+   "gp_scaling_talk:a117"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 22",
+  "unit_id": "gp_scaling_slides:p36:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a6",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a152",
+   "gp_scaling_talk:a80"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Preconditioned Conjugate Gradients Preconditioners accelerate convergence of CG.",
+  "unit_id": "gp_scaling_slides:p37:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "If you have a good preconditioner, you converge much, much faster as we saw previously.",
+  "passages": [
+   "gp_scaling_talk:a115",
+   "gp_scaling_talk:a149",
+   "gp_scaling_talk:a120",
+   "gp_scaling_talk:a161",
+   "gp_scaling_talk:a188",
+   "gp_scaling_talk:a85",
+   "gp_scaling_talk:a116",
+   "gp_scaling_talk:a117"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "6 di ^(I −Ci−1A)si Search direction 7 ηi ^ s⊺ i Adi= d⊺ i Adi Norm. constant 8 Ci ^ Ci−1 + 1 ηi did⊺ i Inverse estimate 9 xi ^ xi−1 + αi ηi di Solution estimate 10 end while 11 return xi, Ci 12 end procedure Low-rank-plus-diagonal preconditioner: ˆK ≈ˆPℓ:= Pℓ+ σ2I = CHOLESKY(K, rank = ℓ) + σ2I Memory: O(nℓ) Inverse via matrix inv. lemma: O(nℓ2) Numerics of Machine Learning — Winter 2022/23 — Lecture 03: Scaling GPs — © N.",
+  "unit_id": "gp_scaling_slides:p38:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a28",
+   "gp_scaling_talk:a71",
+   "gp_scaling_talk:a119",
+   "gp_scaling_talk:a32",
+   "gp_scaling_talk:a78",
+   "gp_scaling_talk:a31",
+   "gp_scaling_talk:a38",
+   "gp_scaling_talk:a35"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Matrix size: n = 105 Preconditioner: Cholesky(ℓ= 20) Time ≈(1.5 + 6) min (Intel i7, 32GB RAM) 0 20 40 60 80 100 120 iteration 10 12 10 8 10 4 100 residual norm Note: At runtime track residual norm ∥ri∥2 = ∥A(x −xi)∥2 = ∥x −xi∥A⊺A since ∥x −xi∥A is unavailable.",
+  "unit_id": "gp_scaling_slides:p39:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a122",
+   "gp_scaling_talk:a119",
+   "gp_scaling_talk:a17",
+   "gp_scaling_talk:a40",
+   "gp_scaling_talk:a32",
+   "gp_scaling_talk:a92",
+   "gp_scaling_talk:a49",
+   "gp_scaling_talk:a123"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 24",
+  "unit_id": "gp_scaling_slides:p39:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a80",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a152",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a8"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Goal: Find kernel hyperparameters θ, which maximize log-marginal likelihood L(θ). →gradient-based hyperparameter optimization Need to: Evaluate log-marginal likelihood and its derivative repeatedly. ▶log-marginal likelihood L(θ) = −1 2(y −µ)⊺ˆK−1(y −µ) −1 2 log det(ˆK) −n 2 log(2π) ▶derivative ∂ ∂θL(θ) = 1 2(y −µ)⊺ˆK−1 ∂ˆK ∂θ ˆK−1(y −µ) −1 2 tr(ˆK−1 ∂ˆK ∂θ) Challenge: Computationally costly operations with the kernel matrix. ▶linear solves v 7→ˆK−1v →iterative methods ▶matrix traces log det(ˆK) = tr(log(ˆK)) and tr(ˆK−1 ∂ˆK ∂θi ) ˆK = n×n Can we also compute matrix traces via matrix-vector multiplication?",
+  "unit_id": "gp_scaling_slides:p41:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a128",
+   "gp_scaling_talk:a143",
+   "gp_scaling_talk:a127",
+   "gp_scaling_talk:a142",
+   "gp_scaling_talk:a130",
+   "gp_scaling_talk:a129",
+   "gp_scaling_talk:a14",
+   "gp_scaling_talk:a11"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Definition: Trace of a matrix tr(A) = n X i=1 Aii = n X i=1 e⊺ i Aei= n X i=1 λi(A) Problem: Can only afford ℓ≪n matrix-vector multiplies.",
+  "unit_id": "gp_scaling_slides:p42:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So the trace of a matrix is the sum of its diagonal, so the sum over the diagonal elements aii.",
+  "passages": [
+   "gp_scaling_talk:a131",
+   "gp_scaling_talk:a29",
+   "gp_scaling_talk:a54",
+   "gp_scaling_talk:a24",
+   "gp_scaling_talk:a132",
+   "gp_scaling_talk:a133",
+   "gp_scaling_talk:a25",
+   "gp_scaling_talk:a35"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Observation: For orthogonal Z ∈Rn×n, it holds that tr(A) = tr(AZZ⊺) = tr(Z⊺AZ) = Pn i=1 z⊺ i Azi.",
+  "unit_id": "gp_scaling_slides:p42:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Then we can just rewrite the trace of A as the trace of A times its identity matrix, we're just introducing a one. And by trace rotation, I can just pull this matrix to the front and I get the trace of Z transposed Az.",
+  "passages": [
+   "gp_scaling_talk:a135",
+   "gp_scaling_talk:a134",
+   "gp_scaling_talk:a138",
+   "gp_scaling_talk:a139",
+   "gp_scaling_talk:a136",
+   "gp_scaling_talk:a140",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a61"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 27",
+  "unit_id": "gp_scaling_slides:p42:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a80",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a152",
+   "gp_scaling_talk:a8"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "100 101 102 103 104 Number of random vectors ℓ log-determinant log det( ˆK) τ STE ℓ (log ˆK) τ SLQ ℓ,m (log ˆK) tr(f(ˆK)) = nE[z⊺ i f(ˆK)zi] ≈τ STE ℓ (f(ˆK)) = n ℓ ℓ X i=1 z⊺ i f(ˆK)zi ≈τ SLQ ℓ,m (f(ˆK)) Problems: ▶Worst-case convergence in the number of random vectors is O(ℓ−1 2 ) ▶Introduces stochasticity into hyperparameter optimization =⇒slows down training Numerics of Machine Learning — Winter 2022/23 — Lecture 03: Scaling GPs — © N.",
+  "unit_id": "gp_scaling_slides:p43:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "yes"
+  ],
+  "span": "Well, this is a property of Monte Carlo estimators that they just converge at this rather slow speed, one over the square root of the number of random vectors or random samples.",
+  "passages": [
+   "gp_scaling_talk:a142",
+   "gp_scaling_talk:a144",
+   "gp_scaling_talk:a149",
+   "gp_scaling_talk:a141",
+   "gp_scaling_talk:a145",
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a160",
+   "gp_scaling_talk:a173"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "CG-based GP inference on Large-Scale Data with GPyTorch Wang, Pleiss, Gardner, Tyree, Weinberger, Wilson.",
+  "unit_id": "gp_scaling_slides:p45:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a151",
+   "gp_scaling_talk:a3",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a164",
+   "gp_scaling_talk:a187",
+   "gp_scaling_talk:a84",
+   "gp_scaling_talk:a10",
+   "gp_scaling_talk:a149"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Exact Gaussian Processes on a Million Data Points, NeurIPS, 2019 Numerics of Machine Learning — Winter 2022/23 — Lecture 03: Scaling GPs — © N.",
+  "unit_id": "gp_scaling_slides:p45:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a158",
+   "gp_scaling_talk:a189",
+   "gp_scaling_talk:a0",
+   "gp_scaling_talk:a187",
+   "gp_scaling_talk:a1",
+   "gp_scaling_talk:a152",
+   "gp_scaling_talk:a180",
+   "gp_scaling_talk:a167"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Can we approximate in linear time O(i2n)?",
+  "unit_id": "gp_scaling_slides:p47:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "But can we do this even faster in linear time in the size of the data set?",
+  "passages": [
+   "gp_scaling_talk:a177",
+   "gp_scaling_talk:a133",
+   "gp_scaling_talk:a22",
+   "gp_scaling_talk:a183",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a39",
+   "gp_scaling_talk:a164",
+   "gp_scaling_talk:a26"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Sparse Gaussian Processes Numerics of Machine Learning — Winter 2022/23 — Lecture 03: Scaling GPs — © N.",
+  "unit_id": "gp_scaling_slides:p47:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a158",
+   "gp_scaling_talk:a0",
+   "gp_scaling_talk:a189",
+   "gp_scaling_talk:a1",
+   "gp_scaling_talk:a187",
+   "gp_scaling_talk:a180",
+   "gp_scaling_talk:a2",
+   "gp_scaling_talk:a167"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Idea: Instead of approximating the quantities needed for inference, approximate posterior directly.",
+  "unit_id": "gp_scaling_slides:p48:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So we directly approximate the posterior instead of using numerical algorithms to compute the mathematical operations in the posterior, OK?",
+  "passages": [
+   "gp_scaling_talk:a167",
+   "gp_scaling_talk:a45",
+   "gp_scaling_talk:a177",
+   "gp_scaling_talk:a40",
+   "gp_scaling_talk:a69",
+   "gp_scaling_talk:a9",
+   "gp_scaling_talk:a184",
+   "gp_scaling_talk:a183"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Computational complexity: O(i2n) Numerics of Machine Learning — Winter 2022/23 — Lecture 03: Scaling GPs — © N.",
+  "unit_id": "gp_scaling_slides:p48:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a2",
+   "gp_scaling_talk:a8",
+   "gp_scaling_talk:a158",
+   "gp_scaling_talk:a0",
+   "gp_scaling_talk:a1",
+   "gp_scaling_talk:a187",
+   "gp_scaling_talk:a3",
+   "gp_scaling_talk:a10"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 33",
+  "unit_id": "gp_scaling_slides:p48:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a6",
+   "gp_scaling_talk:a80",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a173"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Please cite this course, as @techreport { NoML22 , t i t l e = { Numerics of Machine L e a r n i n g } , a u t h o r = {N .",
+  "unit_id": "gp_scaling_slides:p50:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a86",
+   "gp_scaling_talk:a2",
+   "gp_scaling_talk:a33",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a142",
+   "gp_scaling_talk:a87",
+   "gp_scaling_talk:a4",
+   "gp_scaling_talk:a174"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "T a t z e l and J .",
+  "unit_id": "gp_scaling_slides:p50:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a139",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a23",
+   "gp_scaling_talk:a138",
+   "gp_scaling_talk:a103",
+   "gp_scaling_talk:a64",
+   "gp_scaling_talk:a44",
+   "gp_scaling_talk:a134"
+  ],
+  "population": 144
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Wenger, 2022 CC BY-NC-SA 3.0 34",
+  "unit_id": "gp_scaling_slides:p50:t1",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "gp_scaling_talk:a172",
+   "gp_scaling_talk:a176",
+   "gp_scaling_talk:a181",
+   "gp_scaling_talk:a66",
+   "gp_scaling_talk:a173",
+   "gp_scaling_talk:a70",
+   "gp_scaling_talk:a152",
+   "gp_scaling_talk:a80"
+  ],
+  "population": 144
+ }
+]

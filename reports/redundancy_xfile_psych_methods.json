@@ -1,0 +1,1202 @@
+[
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "deprecating, and sometimes angry young men and women” Time, “The Lasting Wounds of Divorce” Psychologist Judith Wallerstein, quoted in Toufexis, A., and G.",
+  "unit_id": "psych_methods_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a15",
+   "psych_methods_talk:a18",
+   "psych_methods_talk:a17",
+   "psych_methods_talk:a131",
+   "psych_methods_talk:a50",
+   "psych_methods_talk:a14",
+   "psych_methods_talk:a53",
+   "psych_methods_talk:a38"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "For more information, see http://ocw.mit.edu/fairuse.",
+  "unit_id": "psych_methods_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a0",
+   "psych_methods_talk:a22",
+   "psych_methods_talk:a81",
+   "psych_methods_talk:a80",
+   "psych_methods_talk:a2",
+   "psych_methods_talk:a103",
+   "psych_methods_talk:a86",
+   "psych_methods_talk:a117"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "HOW DO YOU KNOW WHAT IS TRUE?",
+  "unit_id": "psych_methods_slides:p4:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "How do you know what is true?",
+  "passages": [
+   "psych_methods_talk:a19",
+   "psych_methods_talk:a20",
+   "psych_methods_talk:a133",
+   "psych_methods_talk:a116",
+   "psych_methods_talk:a95",
+   "psych_methods_talk:a96",
+   "psych_methods_talk:a21",
+   "psych_methods_talk:a103"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Filter model frontier vs. textbook",
+  "unit_id": "psych_methods_slides:p6:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a100",
+   "psych_methods_talk:a32",
+   "psych_methods_talk:a126",
+   "psych_methods_talk:a54",
+   "psych_methods_talk:a56",
+   "psych_methods_talk:a112",
+   "psych_methods_talk:a140",
+   "psych_methods_talk:a139"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "WHAT MAKES SOMETHING AN EXPERIMENT? dependent variable what you measure",
+  "unit_id": "psych_methods_slides:p8:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "the dependent variable, what you measure, the outcome, and the independent variable, what you vary",
+  "passages": [
+   "psych_methods_talk:a29",
+   "psych_methods_talk:a69",
+   "psych_methods_talk:a126",
+   "psych_methods_talk:a25",
+   "psych_methods_talk:a37",
+   "psych_methods_talk:a19",
+   "psych_methods_talk:a82",
+   "psych_methods_talk:a1"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Edward Titchener (1867-1927) -English/Oxford -Ph.D. at Leipzig with Wundt -New department of psychology at Cornell -Introspection",
+  "unit_id": "psych_methods_slides:p10:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a33",
+   "psych_methods_talk:a79",
+   "psych_methods_talk:a13",
+   "psych_methods_talk:a31",
+   "psych_methods_talk:a153",
+   "psych_methods_talk:a35",
+   "psych_methods_talk:a2",
+   "psych_methods_talk:a138"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "look inward objectivity -Private vs. public technique",
+  "unit_id": "psych_methods_slides:p10:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So introspection about your thoughts is a private process. It's not a public measure that you can exchange among scientists",
+  "passages": [
+   "psych_methods_talk:a34",
+   "psych_methods_talk:a33",
+   "psych_methods_talk:a35",
+   "psych_methods_talk:a129",
+   "psych_methods_talk:a24",
+   "psych_methods_talk:a68",
+   "psych_methods_talk:a139",
+   "psych_methods_talk:a143"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Mental (and later neural) representations of stimuli and responses STIMULI STIMULI MIND BRAIN MIND BRAIN Responses Responses",
+  "unit_id": "psych_methods_slides:p12:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "yes"
+  ],
+  "span": "So ideas of representations or knowledge in the mind or in the brain later on, and how that translates what's out there and how you act upon it.",
+  "passages": [
+   "psych_methods_talk:a37",
+   "psych_methods_talk:a98",
+   "psych_methods_talk:a7",
+   "psych_methods_talk:a36",
+   "psych_methods_talk:a21",
+   "psych_methods_talk:a1",
+   "psych_methods_talk:a2",
+   "psych_methods_talk:a55"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "DOES AGE OF MOTHER INCREASE LIKLIHOOD OF DISEASE IN CHILDREN?",
+  "unit_id": "psych_methods_slides:p15:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "the older the mother is, the higher the risk of Down syndrome",
+  "passages": [
+   "psych_methods_talk:a39",
+   "psych_methods_talk:a42",
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a41",
+   "psych_methods_talk:a15",
+   "psych_methods_talk:a46",
+   "psych_methods_talk:a131",
+   "psych_methods_talk:a50"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "DOES AGE OF FATHER INCREASE LIKLIHOOD OF DISEASE IN CHILDREN?",
+  "unit_id": "psych_methods_slides:p16:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "a dramatic growth in the likelihood of an offspring child having schizophrenia depending on the age of the father",
+  "passages": [
+   "psych_methods_talk:a41",
+   "psych_methods_talk:a42",
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a46",
+   "psych_methods_talk:a15",
+   "psych_methods_talk:a39",
+   "psych_methods_talk:a131",
+   "psych_methods_talk:a51"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "DOES AGE OF FATHER INCREASE LIKLIHOOD OF DISEASE IN CHILDREN? aging sperm? or who marries later in life?",
+  "unit_id": "psych_methods_slides:p19:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "which is, who marries later in life?",
+  "passages": [
+   "psych_methods_talk:a41",
+   "psych_methods_talk:a46",
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a44",
+   "psych_methods_talk:a43",
+   "psych_methods_talk:a45",
+   "psych_methods_talk:a15",
+   "psych_methods_talk:a42"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Your Level of Empathy 40% lower today than 20 years ago Graph provided by Education-Portal.com and original data modeled after \"Changes in Dispositional Empathy Over Time in American College Students\" by Sara Konrath, University of Michigan.",
+  "unit_id": "psych_methods_slides:p22:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a57",
+   "psych_methods_talk:a48",
+   "psych_methods_talk:a47",
+   "psych_methods_talk:a56",
+   "psych_methods_talk:a52",
+   "psych_methods_talk:a53",
+   "psych_methods_talk:a58",
+   "psych_methods_talk:a50"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "women least able to parent kids (poor, unstable, addictions) had access to abortion",
+  "unit_id": "psych_methods_slides:p24:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "That children, on average, in these communities, had at least access to safe and legal abortions, would be poor and unstable, addiction-ridden communities, statistically.",
+  "passages": [
+   "psych_methods_talk:a65",
+   "psych_methods_talk:a64",
+   "psych_methods_talk:a39",
+   "psych_methods_talk:a111",
+   "psych_methods_talk:a60",
+   "psych_methods_talk:a16",
+   "psych_methods_talk:a44",
+   "psych_methods_talk:a76"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Or reduction in crack epidemic?",
+  "unit_id": "psych_methods_slides:p24:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Or there was a big crack academic that reduced.",
+  "passages": [
+   "psych_methods_talk:a66",
+   "psych_methods_talk:a65",
+   "psych_methods_talk:a67",
+   "psych_methods_talk:a72",
+   "psych_methods_talk:a62",
+   "psych_methods_talk:a60",
+   "psych_methods_talk:a63",
+   "psych_methods_talk:a107"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Keizer et al., Science, 2008 When people observe that others violate a social norm or legitimate rule, are they more likely to violate other norms or rules, and thus disorder spreads?",
+  "unit_id": "psych_methods_slides:p25:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a68",
+   "psych_methods_talk:a9",
+   "psych_methods_talk:a129",
+   "psych_methods_talk:a60",
+   "psych_methods_talk:a71",
+   "psych_methods_talk:a12",
+   "psych_methods_talk:a77",
+   "psych_methods_talk:a67"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"The Spreading of Disorder.\" Science 322, no.",
+  "unit_id": "psych_methods_slides:p26:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a68",
+   "psych_methods_talk:a77",
+   "psych_methods_talk:a42",
+   "psych_methods_talk:a9",
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a129",
+   "psych_methods_talk:a2",
+   "psych_methods_talk:a153"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "importance of random assignment of subjects & control conditions",
+  "unit_id": "psych_methods_slides:p28:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "That we randomly assign them to one condition or another.",
+  "passages": [
+   "psych_methods_talk:a77",
+   "psych_methods_talk:a127",
+   "psych_methods_talk:a78",
+   "psych_methods_talk:a128",
+   "psych_methods_talk:a2",
+   "psych_methods_talk:a86",
+   "psych_methods_talk:a36",
+   "psych_methods_talk:a153"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Who Is in Your Experiment?",
+  "unit_id": "psych_methods_slides:p29:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Now, that's just to start with who's in the subject pool or the participant pool.",
+  "passages": [
+   "psych_methods_talk:a82",
+   "psych_methods_talk:a80",
+   "psych_methods_talk:a1",
+   "psych_methods_talk:a78",
+   "psych_methods_talk:a99",
+   "psych_methods_talk:a83",
+   "psych_methods_talk:a85",
+   "psych_methods_talk:a153"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "US college student 4000 times more likely research participant generalizable principles of human mind & behavior?",
+  "unit_id": "psych_methods_slides:p30:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "if you're a US college student, you're 4,000 times more likely to show up in a scientifically reported experiment than if you're a person anywhere else on the planet",
+  "passages": [
+   "psych_methods_talk:a80",
+   "psych_methods_talk:a77",
+   "psych_methods_talk:a68",
+   "psych_methods_talk:a1",
+   "psych_methods_talk:a52",
+   "psych_methods_talk:a47",
+   "psych_methods_talk:a82",
+   "psych_methods_talk:a57"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Students told that rats were either “maze-bright” or maze-dull”",
+  "unit_id": "psych_methods_slides:p32:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "students were told that rats were either maze bright or maze dull.",
+  "passages": [
+   "psych_methods_talk:a86",
+   "psych_methods_talk:a87",
+   "psych_methods_talk:a88",
+   "psych_methods_talk:a89",
+   "psych_methods_talk:a90",
+   "psych_methods_talk:a103",
+   "psych_methods_talk:a105",
+   "psych_methods_talk:a130"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Each card has a letter on one side, and a number on the other side.",
+  "unit_id": "psych_methods_slides:p33:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Each card is a letter on one side and a number on the other side.",
+  "passages": [
+   "psych_methods_talk:a91",
+   "psych_methods_talk:a92",
+   "psych_methods_talk:a84",
+   "psych_methods_talk:a122",
+   "psych_methods_talk:a100",
+   "psych_methods_talk:a106",
+   "psych_methods_talk:a112",
+   "psych_methods_talk:a90"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "E J 6 7 Correct answer",
+  "unit_id": "psych_methods_slides:p33:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "The correct answer is E and 7.",
+  "passages": [
+   "psych_methods_talk:a93",
+   "psych_methods_talk:a92",
+   "psych_methods_talk:a94",
+   "psych_methods_talk:a90",
+   "psych_methods_talk:a133",
+   "psych_methods_talk:a134",
+   "psych_methods_talk:a122",
+   "psych_methods_talk:a42"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "if there is a vowel on the other side Confirmation bias",
+  "unit_id": "psych_methods_slides:p34:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "And it's what's called confirmatory bias.",
+  "passages": [
+   "psych_methods_talk:a94",
+   "psych_methods_talk:a91",
+   "psych_methods_talk:a93",
+   "psych_methods_talk:a95",
+   "psych_methods_talk:a122",
+   "psych_methods_talk:a133",
+   "psych_methods_talk:a68",
+   "psych_methods_talk:a21"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "two temperature conditions meet subject in lobby, carry cup of coffee (hot/cold), clipboard, 2 textbooks, please hold cup while I write down your name (on elevator)",
+  "unit_id": "psych_methods_slides:p36:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "could you just hold my cup while I write down your name on my list of subjects in the experiment?",
+  "passages": [
+   "psych_methods_talk:a100",
+   "psych_methods_talk:a99",
+   "psych_methods_talk:a104",
+   "psych_methods_talk:a109",
+   "psych_methods_talk:a101",
+   "psych_methods_talk:a102",
+   "psych_methods_talk:a106",
+   "psych_methods_talk:a112"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "“warm condition” rated person as “warmer” possible confound? experimenter knowledge/bias",
+  "unit_id": "psych_methods_slides:p38:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "And if you had the warm cup of coffee, you're more likely to describe that person as a warm kind of a person.",
+  "passages": [
+   "psych_methods_talk:a103",
+   "psych_methods_talk:a101",
+   "psych_methods_talk:a104",
+   "psych_methods_talk:a105",
+   "psych_methods_talk:a97",
+   "psych_methods_talk:a98",
+   "psych_methods_talk:a99",
+   "psych_methods_talk:a102"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "75% for themselves (25% friend) Warm pad",
+  "unit_id": "psych_methods_slides:p39:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "yes"
+  ],
+  "span": "If the people got a cold pad, 75% of the times they say, please give it to me right now, I'll take it.",
+  "passages": [
+   "psych_methods_talk:a106",
+   "psych_methods_talk:a107",
+   "psych_methods_talk:a105",
+   "psych_methods_talk:a97",
+   "psych_methods_talk:a101",
+   "psych_methods_talk:a57",
+   "psych_methods_talk:a102",
+   "psych_methods_talk:a146"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Vohs et al., 2006, Science",
+  "unit_id": "psych_methods_slides:p41:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a28",
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a94",
+   "psych_methods_talk:a1",
+   "psych_methods_talk:a117",
+   "psych_methods_talk:a153",
+   "psych_methods_talk:a118",
+   "psych_methods_talk:a80"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "stack of Monopoly $$ in corner Hard task",
+  "unit_id": "psych_methods_slides:p41:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "An experimenter, as he or she leaves the room, they say, it's a pretty hard task.",
+  "passages": [
+   "psych_methods_talk:a109",
+   "psych_methods_talk:a110",
+   "psych_methods_talk:a91",
+   "psych_methods_talk:a112",
+   "psych_methods_talk:a90",
+   "psych_methods_talk:a152",
+   "psych_methods_talk:a122",
+   "psych_methods_talk:a84"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Percentage of participants who asked for help as a function of money prime and length of time that had elapsed while working on a difficult task (from Experiment 1) or (B) Source: Vohs, K.",
+  "unit_id": "psych_methods_slides:p42:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a110",
+   "psych_methods_talk:a112",
+   "psych_methods_talk:a132",
+   "psych_methods_talk:a30",
+   "psych_methods_talk:a107",
+   "psych_methods_talk:a1",
+   "psych_methods_talk:a148",
+   "psych_methods_talk:a147"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "evolutionary psychology perspective (investment in offspring)",
+  "unit_id": "psych_methods_slides:p44:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Evolutionary psychologists will go, well, because by evolutionary theory, men have to go and make as many offspring as they can to keep their genes going.",
+  "passages": [
+   "psych_methods_talk:a115",
+   "psych_methods_talk:a118",
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a36",
+   "psych_methods_talk:a13",
+   "psych_methods_talk:a153",
+   "psych_methods_talk:a126",
+   "psych_methods_talk:a37"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "speed dating; 4 min; yes/no match cards; men make more yes responses",
+  "unit_id": "psych_methods_slides:p46:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "for each time you meet a person, you fill out a card that says, yes or no, I'd be willing to have a date with the person.",
+  "passages": [
+   "psych_methods_talk:a119",
+   "psych_methods_talk:a120",
+   "psych_methods_talk:a121",
+   "psych_methods_talk:a122",
+   "psych_methods_talk:a125",
+   "psych_methods_talk:a118",
+   "psych_methods_talk:a124",
+   "psych_methods_talk:a117"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "men rotate from table to table of women",
+  "unit_id": "psych_methods_slides:p47:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "The men jump up, and they shift over one station.",
+  "passages": [
+   "psych_methods_talk:a121",
+   "psych_methods_talk:a122",
+   "psych_methods_talk:a120",
+   "psych_methods_talk:a124",
+   "psych_methods_talk:a123",
+   "psych_methods_talk:a119",
+   "psych_methods_talk:a125",
+   "psych_methods_talk:a109"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Influence Sex Differenc Science 20 (2009):129 All rights reserved.",
+  "unit_id": "psych_methods_slides:p48:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a0",
+   "psych_methods_talk:a128",
+   "psych_methods_talk:a37",
+   "psych_methods_talk:a127",
+   "psych_methods_talk:a125",
+   "psych_methods_talk:a20",
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a28"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "many studies also examine individual differences among people",
+  "unit_id": "psych_methods_slides:p50:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a126",
+   "psych_methods_talk:a2",
+   "psych_methods_talk:a1",
+   "psych_methods_talk:a34",
+   "psych_methods_talk:a79",
+   "psych_methods_talk:a68",
+   "psych_methods_talk:a114",
+   "psych_methods_talk:a139"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "scientific psychology sometimes supports and sometimes contradicts these ideas",
+  "unit_id": "psych_methods_slides:p51:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a28",
+   "psych_methods_talk:a24",
+   "psych_methods_talk:a36",
+   "psych_methods_talk:a103",
+   "psych_methods_talk:a34",
+   "psych_methods_talk:a1",
+   "psych_methods_talk:a118",
+   "psych_methods_talk:a68"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The more people present at an emergency, the more likely that someone will intervene Yes No 4.",
+  "unit_id": "psych_methods_slides:p52:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "On average, are more people present in an emergency? Are you more likely to get some help?",
+  "passages": [
+   "psych_methods_talk:a129",
+   "psych_methods_talk:a68",
+   "psych_methods_talk:a58",
+   "psych_methods_talk:a124",
+   "psych_methods_talk:a80",
+   "psych_methods_talk:a133",
+   "psych_methods_talk:a21",
+   "psych_methods_talk:a38"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Subliminal advertising works Yes No 7.",
+  "unit_id": "psych_methods_slides:p52:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "yes"
+  ],
+  "span": "Does subliminal advertising work?",
+  "passages": [
+   "psych_methods_talk:a130",
+   "psych_methods_talk:a94",
+   "psych_methods_talk:a93",
+   "psych_methods_talk:a113",
+   "psych_methods_talk:a109",
+   "psych_methods_talk:a69",
+   "psych_methods_talk:a112",
+   "psych_methods_talk:a95"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Playing Mozart’s music to infants boosts their intelligence Yes No 8.",
+  "unit_id": "psych_methods_slides:p52:t0",
+  "entailed": true,
+  "votes": [
+   "no",
+   "yes",
+   "yes"
+  ],
+  "span": "Does playing Mozart to an infant boost their intelligence, Mozart effect?",
+  "passages": [
+   "psych_methods_talk:a130",
+   "psych_methods_talk:a42",
+   "psych_methods_talk:a146",
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a148",
+   "psych_methods_talk:a150",
+   "psych_methods_talk:a55",
+   "psych_methods_talk:a75"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Raising children similarly leads to similarities in their adult personalities 13.",
+  "unit_id": "psych_methods_slides:p52:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Raising children similarly leads to similarities in their adult personalities.",
+  "passages": [
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a15",
+   "psych_methods_talk:a131",
+   "psych_methods_talk:a146",
+   "psych_methods_talk:a42",
+   "psych_methods_talk:a46",
+   "psych_methods_talk:a41",
+   "psych_methods_talk:a126"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "People’s responses in the Inkblots Test tells us a Yes No great deal about their personalities 15.",
+  "unit_id": "psych_methods_slides:p52:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "People's responses on the inkblot tests tell us a lot about their personalities.",
+  "passages": [
+   "psych_methods_talk:a136",
+   "psych_methods_talk:a131",
+   "psych_methods_talk:a101",
+   "psych_methods_talk:a96",
+   "psych_methods_talk:a143",
+   "psych_methods_talk:a94",
+   "psych_methods_talk:a97",
+   "psych_methods_talk:a132"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "There are visual learners and there are verbal learners No 5.",
+  "unit_id": "psych_methods_slides:p53:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a130",
+   "psych_methods_talk:a100",
+   "psych_methods_talk:a94",
+   "psych_methods_talk:a105",
+   "psych_methods_talk:a91",
+   "psych_methods_talk:a109",
+   "psych_methods_talk:a126",
+   "psych_methods_talk:a2"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Hypnosis is baloney No 6.",
+  "unit_id": "psych_methods_slides:p53:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a130",
+   "psych_methods_talk:a94",
+   "psych_methods_talk:a4",
+   "psych_methods_talk:a8",
+   "psych_methods_talk:a93",
+   "psych_methods_talk:a109",
+   "psych_methods_talk:a135",
+   "psych_methods_talk:a136"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Ulcers are caused primarily by stress No 11.",
+  "unit_id": "psych_methods_slides:p53:t0",
+  "entailed": true,
+  "votes": [
+   "no",
+   "yes",
+   "yes"
+  ],
+  "span": "Ulcers are caused primarily by stress.",
+  "passages": [
+   "psych_methods_talk:a131",
+   "psych_methods_talk:a51",
+   "psych_methods_talk:a74",
+   "psych_methods_talk:a50",
+   "psych_methods_talk:a52",
+   "psych_methods_talk:a49",
+   "psych_methods_talk:a42",
+   "psych_methods_talk:a58"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "A positive attitude can stave off cancer No 12.",
+  "unit_id": "psych_methods_slides:p53:t0",
+  "entailed": true,
+  "votes": [
+   "no",
+   "yes",
+   "yes"
+  ],
+  "span": "A positive attitude can stave off cancer.",
+  "passages": [
+   "psych_methods_talk:a131",
+   "psych_methods_talk:a103",
+   "psych_methods_talk:a144",
+   "psych_methods_talk:a95",
+   "psych_methods_talk:a50",
+   "psych_methods_talk:a38",
+   "psych_methods_talk:a72",
+   "psych_methods_talk:a73"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Projective Tests Rorschach inkblots (10) Location Determinants (form, color) Content Thematic Apperception Test (TAT) Validity?",
+  "unit_id": "psych_methods_slides:p55:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a130",
+   "psych_methods_talk:a132",
+   "psych_methods_talk:a25",
+   "psych_methods_talk:a135",
+   "psych_methods_talk:a95",
+   "psych_methods_talk:a86",
+   "psych_methods_talk:a21",
+   "psych_methods_talk:a94"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "All 150 who came were among top 350 choices",
+  "unit_id": "psych_methods_slides:p57:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a141",
+   "psych_methods_talk:a142",
+   "psych_methods_talk:a109",
+   "psych_methods_talk:a139",
+   "psych_methods_talk:a112",
+   "psych_methods_talk:a120",
+   "psych_methods_talk:a138",
+   "psych_methods_talk:a124"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "50 students came from last 700-800",
+  "unit_id": "psych_methods_slides:p57:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a141",
+   "psych_methods_talk:a80",
+   "psych_methods_talk:a52",
+   "psych_methods_talk:a87",
+   "psych_methods_talk:a126",
+   "psych_methods_talk:a142",
+   "psych_methods_talk:a57",
+   "psych_methods_talk:a70"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "no evidence to support view that self-esteem is causal (higher self-esteem may be a product rather than a cause of positive things)",
+  "unit_id": "psych_methods_slides:p58:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "they could find no evidence that higher self-esteem leads to better things. It all seemed the other way around, that doing better at things led to higher self-esteem.",
+  "passages": [
+   "psych_methods_talk:a145",
+   "psych_methods_talk:a143",
+   "psych_methods_talk:a111",
+   "psych_methods_talk:a136",
+   "psych_methods_talk:a144",
+   "psych_methods_talk:a146",
+   "psych_methods_talk:a24",
+   "psych_methods_talk:a131"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "How Praise May Harm praise for intelligence (vs. effort)",
+  "unit_id": "psych_methods_slides:p62:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "If you were praised for your intelligence, you did worse on the second test.",
+  "passages": [
+   "psych_methods_talk:a149",
+   "psych_methods_talk:a148",
+   "psych_methods_talk:a150",
+   "psych_methods_talk:a147",
+   "psych_methods_talk:a146",
+   "psych_methods_talk:a145",
+   "psych_methods_talk:a152",
+   "psych_methods_talk:a111"
+  ],
+  "population": 156
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "MIT OpenCourseWare http://ocw.mit.edu 9.00SC Introduction to Psychology Fall 2011 For information about citing these materials or our Terms of Use, visit: http://ocw.mit.edu/terms.",
+  "unit_id": "psych_methods_slides:p64:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "psych_methods_talk:a0",
+   "psych_methods_talk:a19",
+   "psych_methods_talk:a153",
+   "psych_methods_talk:a138",
+   "psych_methods_talk:a24",
+   "psych_methods_talk:a34",
+   "psych_methods_talk:a1",
+   "psych_methods_talk:a33"
+  ],
+  "population": 156
+ }
+]

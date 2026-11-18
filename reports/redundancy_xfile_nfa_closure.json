@@ -1,0 +1,1202 @@
+[
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "18.404/6.840 Lecture 2 Last time: (Sipser §1.1)",
+  "unit_id": "nfa_closure_slides:p1:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a6",
+   "nfa_closure_talk:a80",
+   "nfa_closure_talk:a5",
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a33",
+   "nfa_closure_talk:a137",
+   "nfa_closure_talk:a86",
+   "nfa_closure_talk:a0"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Closure under ∪ Today: (Sipser §1.2",
+  "unit_id": "nfa_closure_slides:p1:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a6",
+   "nfa_closure_talk:a125",
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a137",
+   "nfa_closure_talk:a80",
+   "nfa_closure_talk:a99",
+   "nfa_closure_talk:a127",
+   "nfa_closure_talk:a135"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Closure under ∘ and ∗",
+  "unit_id": "nfa_closure_slides:p1:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "We showed constructions which give us closure under union, concatenation, and star.",
+  "passages": [
+   "nfa_closure_talk:a113",
+   "nfa_closure_talk:a99",
+   "nfa_closure_talk:a137",
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a125",
+   "nfa_closure_talk:a6",
+   "nfa_closure_talk:a98",
+   "nfa_closure_talk:a5"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Regular expressions → finite automata Goal: Show finite automata equivalent to regular expressions 1",
+  "unit_id": "nfa_closure_slides:p1:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "And one of our goals is to show that those two systems are equivalent to one another, even though they look rather different at first glance.",
+  "passages": [
+   "nfa_closure_talk:a2",
+   "nfa_closure_talk:a15",
+   "nfa_closure_talk:a7",
+   "nfa_closure_talk:a138",
+   "nfa_closure_talk:a4",
+   "nfa_closure_talk:a141",
+   "nfa_closure_talk:a47",
+   "nfa_closure_talk:a130"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Leave time to think about them.",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a78",
+   "nfa_closure_talk:a46",
+   "nfa_closure_talk:a116",
+   "nfa_closure_talk:a76",
+   "nfa_closure_talk:a107",
+   "nfa_closure_talk:a0",
+   "nfa_closure_talk:a10"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Writeups need to be clear and understandable, handwritten ok.",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a16",
+   "nfa_closure_talk:a2",
+   "nfa_closure_talk:a129",
+   "nfa_closure_talk:a108",
+   "nfa_closure_talk:a57",
+   "nfa_closure_talk:a139",
+   "nfa_closure_talk:a109"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Level of detail in proofs comparable to lecture: focus on main ideas.",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a5",
+   "nfa_closure_talk:a6",
+   "nfa_closure_talk:a138",
+   "nfa_closure_talk:a137",
+   "nfa_closure_talk:a16",
+   "nfa_closure_talk:a80",
+   "nfa_closure_talk:a135",
+   "nfa_closure_talk:a57"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Don’t need to include minor details.",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a30",
+   "nfa_closure_talk:a0",
+   "nfa_closure_talk:a95",
+   "nfa_closure_talk:a81",
+   "nfa_closure_talk:a46",
+   "nfa_closure_talk:a122",
+   "nfa_closure_talk:a109"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Submit via gradescope (see Canvas) by 2:30pm Cambridge time.",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a0",
+   "nfa_closure_talk:a78",
+   "nfa_closure_talk:a42",
+   "nfa_closure_talk:a116",
+   "nfa_closure_talk:a76",
+   "nfa_closure_talk:a46",
+   "nfa_closure_talk:a104"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Late submission accepted (on gradescope) until 11:59pm following day: 1 point (out of 10 points) per late problem penalty.",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a78",
+   "nfa_closure_talk:a107",
+   "nfa_closure_talk:a46",
+   "nfa_closure_talk:a76",
+   "nfa_closure_talk:a56",
+   "nfa_closure_talk:a1",
+   "nfa_closure_talk:a22",
+   "nfa_closure_talk:a104"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "After that solutions are posted so not accepted without S3 excuse.",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a46",
+   "nfa_closure_talk:a95",
+   "nfa_closure_talk:a93",
+   "nfa_closure_talk:a106",
+   "nfa_closure_talk:a109",
+   "nfa_closure_talk:a98",
+   "nfa_closure_talk:a43",
+   "nfa_closure_talk:a45"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Optional problems: Don’t count towards grade except for A+.",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a122",
+   "nfa_closure_talk:a1",
+   "nfa_closure_talk:a95",
+   "nfa_closure_talk:a46",
+   "nfa_closure_talk:a140",
+   "nfa_closure_talk:a112",
+   "nfa_closure_talk:a36",
+   "nfa_closure_talk:a34"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Value to you (besides the challenge): Recommendations, employment (future grading, TA, UROP)",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a56",
+   "nfa_closure_talk:a125",
+   "nfa_closure_talk:a45",
+   "nfa_closure_talk:a106",
+   "nfa_closure_talk:a36",
+   "nfa_closure_talk:a57",
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a20"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Problem Set 1 is due in one week.",
+  "unit_id": "nfa_closure_slides:p2:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a1",
+   "nfa_closure_talk:a51",
+   "nfa_closure_talk:a86",
+   "nfa_closure_talk:a70",
+   "nfa_closure_talk:a10",
+   "nfa_closure_talk:a25",
+   "nfa_closure_talk:a107"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Closure Properties for Regular Languages Theorem: If !\", !$ are regular languages, so is !\"!$ (closure under ∘) Recall proof attempt: Let &\" = ()\", Σ, +\", ,\", -\") recognize !\" &$ = ()$, Σ, +$, ,$, -$) recognize !$ Construct & = (), Σ, +, ,0, -) recognizing !\"!$ &\" &$ & should accept input 0 if 0 = 12 where &\" accepts 1 and &$ accepts 2. & 0 1 2 Doesn’t work: Where to split 0?",
+  "unit_id": "nfa_closure_slides:p3:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a3",
+   "nfa_closure_talk:a5",
+   "nfa_closure_talk:a99",
+   "nfa_closure_talk:a118",
+   "nfa_closure_talk:a2",
+   "nfa_closure_talk:a121",
+   "nfa_closure_talk:a7",
+   "nfa_closure_talk:a113"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Nondeterminism doesn’t correspond to a physical machine we can build.",
+  "unit_id": "nfa_closure_slides:p4:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "We're not intending for nondeterminism, as we're defining it, to correspond to a physical device.",
+  "passages": [
+   "nfa_closure_talk:a39",
+   "nfa_closure_talk:a19",
+   "nfa_closure_talk:a64",
+   "nfa_closure_talk:a55",
+   "nfa_closure_talk:a88",
+   "nfa_closure_talk:a14",
+   "nfa_closure_talk:a21",
+   "nfa_closure_talk:a81"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "However, it is useful mathematically. accept reject accept reject Nondeterministic Finite Automata a a !1 b a,ε #1 #2 #3 #4 b New features of nondeterminism:",
+  "unit_id": "nfa_closure_slides:p4:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "it's a very mathematically useful concept, this nondeterminism",
+  "passages": [
+   "nfa_closure_talk:a15",
+   "nfa_closure_talk:a21",
+   "nfa_closure_talk:a61",
+   "nfa_closure_talk:a40",
+   "nfa_closure_talk:a88",
+   "nfa_closure_talk:a19",
+   "nfa_closure_talk:a87",
+   "nfa_closure_talk:a64"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "multiple paths possible (0, 1 or many at each step)",
+  "unit_id": "nfa_closure_slides:p4:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "You might be able to have one, as we had before, or many ways to go at each step, or maybe zero ways to go at each step.",
+  "passages": [
+   "nfa_closure_talk:a18",
+   "nfa_closure_talk:a23",
+   "nfa_closure_talk:a43",
+   "nfa_closure_talk:a44",
+   "nfa_closure_talk:a106",
+   "nfa_closure_talk:a32",
+   "nfa_closure_talk:a29",
+   "nfa_closure_talk:a22"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "ε-transition is a “free” move without reading input",
+  "unit_id": "nfa_closure_slides:p4:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "that means the machine can go along that arrow for free without even reading anything",
+  "passages": [
+   "nfa_closure_talk:a28",
+   "nfa_closure_talk:a95",
+   "nfa_closure_talk:a30",
+   "nfa_closure_talk:a93",
+   "nfa_closure_talk:a29",
+   "nfa_closure_talk:a50",
+   "nfa_closure_talk:a92",
+   "nfa_closure_talk:a18"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Accept input if some path leads to accept Check-in 2.1 Example inputs: What does !' do on input aab ?",
+  "unit_id": "nfa_closure_slides:p4:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "yes",
+   "no"
+  ],
+  "span": "Accept the input if some path leads to an accept.",
+  "passages": [
+   "nfa_closure_talk:a32",
+   "nfa_closure_talk:a43",
+   "nfa_closure_talk:a20",
+   "nfa_closure_talk:a56",
+   "nfa_closure_talk:a106",
+   "nfa_closure_talk:a44",
+   "nfa_closure_talk:a122",
+   "nfa_closure_talk:a107"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "abb (c) Both Accept and Reject Check-in 2.1 4",
+  "unit_id": "nfa_closure_slides:p4:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a45",
+   "nfa_closure_talk:a43",
+   "nfa_closure_talk:a20",
+   "nfa_closure_talk:a32",
+   "nfa_closure_talk:a22",
+   "nfa_closure_talk:a34",
+   "nfa_closure_talk:a56",
+   "nfa_closure_talk:a107"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "ac al tr sta sta a c p e n r t h p s t sta e ab i t s ti s e o t n f a t te te u s nction NFA",
+  "unit_id": "nfa_closure_slides:p5:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a129",
+   "nfa_closure_talk:a128",
+   "nfa_closure_talk:a136",
+   "nfa_closure_talk:a132",
+   "nfa_closure_talk:a122",
+   "nfa_closure_talk:a130",
+   "nfa_closure_talk:a127",
+   "nfa_closure_talk:a138"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Formal Definition !1 a a #1 #2 b #3 a,ε #4 b Defn: A nondeterministic finite automaton (NFA) ! is a 5-tuple ((, Σ, +, #0, -) Ways to think about nondeterminism: Computational: Fork new parallel thread and accept if any thread leads to an accept state.",
+  "unit_id": "nfa_closure_slides:p5:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "you think of the machine as branching, forking new threads of the parallel computation at that stage",
+  "passages": [
+   "nfa_closure_talk:a47",
+   "nfa_closure_talk:a61",
+   "nfa_closure_talk:a15",
+   "nfa_closure_talk:a138",
+   "nfa_closure_talk:a55",
+   "nfa_closure_talk:a63",
+   "nfa_closure_talk:a4",
+   "nfa_closure_talk:a81"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "all same as before except + Mathematical: Tree with branches.",
+  "unit_id": "nfa_closure_slides:p5:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "no"
+  ],
+  "span": "So the formal definition looks exactly the same, except the structure of the transition function.",
+  "passages": [
+   "nfa_closure_talk:a86",
+   "nfa_closure_talk:a48",
+   "nfa_closure_talk:a58",
+   "nfa_closure_talk:a140",
+   "nfa_closure_talk:a107",
+   "nfa_closure_talk:a57",
+   "nfa_closure_talk:a18",
+   "nfa_closure_talk:a135"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "+: (×Σε →2 ( = 4 4 ⊆(} Accept if any branch leads to an accept state. power set Σ ∪{ε} Magical: Guess at each nondeterministic step",
+  "unit_id": "nfa_closure_slides:p5:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a32",
+   "nfa_closure_talk:a89",
+   "nfa_closure_talk:a58",
+   "nfa_closure_talk:a60",
+   "nfa_closure_talk:a45",
+   "nfa_closure_talk:a90",
+   "nfa_closure_talk:a44",
+   "nfa_closure_talk:a87"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "In the !7 example: + #7, a = {#7, #9} which way to go.",
+  "unit_id": "nfa_closure_slides:p5:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a90",
+   "nfa_closure_talk:a24",
+   "nfa_closure_talk:a26",
+   "nfa_closure_talk:a53",
+   "nfa_closure_talk:a69",
+   "nfa_closure_talk:a23",
+   "nfa_closure_talk:a35",
+   "nfa_closure_talk:a86"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Machine always makes the + #7, b = ∅ right guess that leads to accepting, if possible.",
+  "unit_id": "nfa_closure_slides:p5:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "you think of the machine as magically guessing the correct one at every stage, and the correct one being the one that will eventually lead it to accept",
+  "passages": [
+   "nfa_closure_talk:a43",
+   "nfa_closure_talk:a60",
+   "nfa_closure_talk:a97",
+   "nfa_closure_talk:a45",
+   "nfa_closure_talk:a106",
+   "nfa_closure_talk:a41",
+   "nfa_closure_talk:a8",
+   "nfa_closure_talk:a44"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": ") ) ∈((4, 2) for some 4 ∈1} \" )8 )9 NFA Check-in 2.2 If \" has : states, how many states does \"′ have by this construction?",
+  "unit_id": "nfa_closure_slides:p6:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "If M has n states, how many states does M prime have by this construction?",
+  "passages": [
+   "nfa_closure_talk:a114",
+   "nfa_closure_talk:a67",
+   "nfa_closure_talk:a68",
+   "nfa_closure_talk:a75",
+   "nfa_closure_talk:a115",
+   "nfa_closure_talk:a66",
+   "nfa_closure_talk:a86",
+   "nfa_closure_talk:a31"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "(a) 2: (b) :< (c) 2= Converting NFAs to DFAs Theorem: If an NFA recognizes ! then ! is regular Proof: Let NFA \" = (%, Σ, (, )*, +) recognize !",
+  "unit_id": "nfa_closure_slides:p6:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "we'll show that with this theorem here that if an NFA recognizes A, then A is regular",
+  "passages": [
+   "nfa_closure_talk:a100",
+   "nfa_closure_talk:a62",
+   "nfa_closure_talk:a82",
+   "nfa_closure_talk:a128",
+   "nfa_closure_talk:a117",
+   "nfa_closure_talk:a130",
+   "nfa_closure_talk:a118",
+   "nfa_closure_talk:a121"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Construct DFA \"′ = (%′, Σ, (′, )* . , +′) recognizing !",
+  "unit_id": "nfa_closure_slides:p6:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "no"
+  ],
+  "span": "we're going to build a deterministic machine, M prime, which does exactly the same thing",
+  "passages": [
+   "nfa_closure_talk:a100",
+   "nfa_closure_talk:a129",
+   "nfa_closure_talk:a130",
+   "nfa_closure_talk:a74",
+   "nfa_closure_talk:a71",
+   "nfa_closure_talk:a82",
+   "nfa_closure_talk:a126",
+   "nfa_closure_talk:a65"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "(Ignore the ε-transitions, can easily modify to handle them) IDEA: DFA \"′ keeps track of the subset of possible states in NFA \".",
+  "unit_id": "nfa_closure_slides:p6:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "yes"
+  ],
+  "span": "And the possibilities here are the different subsets of states that the NFA could be in at a given point.",
+  "passages": [
+   "nfa_closure_talk:a68",
+   "nfa_closure_talk:a66",
+   "nfa_closure_talk:a67",
+   "nfa_closure_talk:a63",
+   "nfa_closure_talk:a81",
+   "nfa_closure_talk:a69",
+   "nfa_closure_talk:a74",
+   "nfa_closure_talk:a65"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "\"′ Construction of /′: %′ = 0 % {)8,)9} (.",
+  "unit_id": "nfa_closure_slides:p6:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a125",
+   "nfa_closure_talk:a130",
+   "nfa_closure_talk:a135",
+   "nfa_closure_talk:a137",
+   "nfa_closure_talk:a128",
+   "nfa_closure_talk:a134",
+   "nfa_closure_talk:a136",
+   "nfa_closure_talk:a79"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "1, 2 = 1 ∈%′ )* . = {q*} +′ = 1 ∈%.",
+  "unit_id": "nfa_closure_slides:p6:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a33",
+   "nfa_closure_talk:a42",
+   "nfa_closure_talk:a9",
+   "nfa_closure_talk:a25",
+   "nfa_closure_talk:a70",
+   "nfa_closure_talk:a26",
+   "nfa_closure_talk:a10",
+   "nfa_closure_talk:a86"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "1 intersects +} DFA Check-in 2.2 6",
+  "unit_id": "nfa_closure_slides:p6:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a66",
+   "nfa_closure_talk:a86",
+   "nfa_closure_talk:a68",
+   "nfa_closure_talk:a82",
+   "nfa_closure_talk:a47",
+   "nfa_closure_talk:a127",
+   "nfa_closure_talk:a122",
+   "nfa_closure_talk:a100"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Return to Closure Properties Recall Theorem: If !\", !$ are regular languages, so is !\" ∪!$ (The class of regular languages is closed under union) New Proof (sketch): Given DFAs &\" and &$ recognizing !\" and !$ &$ &\" ε ε & Construct NFA & recognizing !\" ∪!$ Nondeterminism parallelism vs guessing 7",
+  "unit_id": "nfa_closure_slides:p7:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a62",
+   "nfa_closure_talk:a3",
+   "nfa_closure_talk:a138",
+   "nfa_closure_talk:a63",
+   "nfa_closure_talk:a80",
+   "nfa_closure_talk:a127",
+   "nfa_closure_talk:a5",
+   "nfa_closure_talk:a82"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Closure under ∘ (concatenation) Theorem: If \"#, \"% are regular languages, so is \"#\"% Proof sketch: Given DFAs &# and &# recognizing \"# and \"% Construct NFA & recognizing \"#\"% & &% &# ε ε & should accept input ' if ' = )* where &# accepts ) and &% accepts *.",
+  "unit_id": "nfa_closure_slides:p8:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a62",
+   "nfa_closure_talk:a118",
+   "nfa_closure_talk:a121",
+   "nfa_closure_talk:a63",
+   "nfa_closure_talk:a82",
+   "nfa_closure_talk:a127",
+   "nfa_closure_talk:a7",
+   "nfa_closure_talk:a128"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "' = ) * Nondeterministic &′ has the option to jump to &% when &# accepts.",
+  "unit_id": "nfa_closure_slides:p8:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a29",
+   "nfa_closure_talk:a32",
+   "nfa_closure_talk:a88",
+   "nfa_closure_talk:a64",
+   "nfa_closure_talk:a18",
+   "nfa_closure_talk:a89",
+   "nfa_closure_talk:a21",
+   "nfa_closure_talk:a58"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "#′ should accept input % if % = '(') … '+ where , ≥0 and # accepts each '/ % = '( ') '0 '1 Closure under ∗ (star) Theorem: If \" is a regular language, so is \"∗ Proof sketch: Given DFA # recognizing \" Construct NFA #′ recognizing \"∗ #′ ε # ε ε Make sure #′ accepts ε Check-in 2.3 If # has 2 states, how many states does #′ have by this construction?",
+  "unit_id": "nfa_closure_slides:p9:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a113",
+   "nfa_closure_talk:a121",
+   "nfa_closure_talk:a123",
+   "nfa_closure_talk:a31",
+   "nfa_closure_talk:a99",
+   "nfa_closure_talk:a100",
+   "nfa_closure_talk:a128",
+   "nfa_closure_talk:a122"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "(a) 2 (b) 2 + 1 (c) 22 Check-in 2.3 9",
+  "unit_id": "nfa_closure_slides:p9:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a43",
+   "nfa_closure_talk:a42",
+   "nfa_closure_talk:a44",
+   "nfa_closure_talk:a86",
+   "nfa_closure_talk:a16",
+   "nfa_closure_talk:a41",
+   "nfa_closure_talk:a134",
+   "nfa_closure_talk:a56"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Regular Expressions → NFA Theorem: If \" is a regular expr and # = % \" then # is regular Proof: Convert \" to equivalent NFA &: If \" is atomic: Equivalent & is: ) Example: \" = ) for ) ∈Σ Convert a ∪ ab ∗ to equivalent NFA \" = ε a a: \" = ∅ b b: a ε b If \" is composite: ab: a \" = \". ∪\"/ a ∪ ab: ε a ε b \" = \". ∘\"/ Use closure constructions ε } ∗ a ∪ ab ∗ : ε \" = \". a ε ε a ε b ε 10 ε",
+  "unit_id": "nfa_closure_slides:p10:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a128",
+   "nfa_closure_talk:a121",
+   "nfa_closure_talk:a130",
+   "nfa_closure_talk:a118",
+   "nfa_closure_talk:a117",
+   "nfa_closure_talk:a62",
+   "nfa_closure_talk:a100",
+   "nfa_closure_talk:a120"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Quick review of today 1.",
+  "unit_id": "nfa_closure_slides:p11:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So that's all I wanted to say for today's lecture. That's a quick review.",
+  "passages": [
+   "nfa_closure_talk:a0",
+   "nfa_closure_talk:a6",
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a137",
+   "nfa_closure_talk:a70",
+   "nfa_closure_talk:a16",
+   "nfa_closure_talk:a107",
+   "nfa_closure_talk:a116"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Nondeterministic finite automata (NFA) 2.",
+  "unit_id": "nfa_closure_slides:p11:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "We introduced this new model, the nondeterministic finite automaton, NFA.",
+  "passages": [
+   "nfa_closure_talk:a47",
+   "nfa_closure_talk:a15",
+   "nfa_closure_talk:a138",
+   "nfa_closure_talk:a61",
+   "nfa_closure_talk:a63",
+   "nfa_closure_talk:a4",
+   "nfa_closure_talk:a81",
+   "nfa_closure_talk:a141"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Proved: NFA and DFA are equivalent in power 3.",
+  "unit_id": "nfa_closure_slides:p11:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "We proved they're equivalent in power",
+  "passages": [
+   "nfa_closure_talk:a62",
+   "nfa_closure_talk:a138",
+   "nfa_closure_talk:a129",
+   "nfa_closure_talk:a63",
+   "nfa_closure_talk:a69",
+   "nfa_closure_talk:a81",
+   "nfa_closure_talk:a68",
+   "nfa_closure_talk:a82"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Proved: Class of regular languages is closed under ∘,∗ 4.",
+  "unit_id": "nfa_closure_slides:p11:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "We proved they're equivalent in power, showed the class of regular languages closed under concatenation and star.",
+  "passages": [
+   "nfa_closure_talk:a3",
+   "nfa_closure_talk:a99",
+   "nfa_closure_talk:a5",
+   "nfa_closure_talk:a125",
+   "nfa_closure_talk:a138",
+   "nfa_closure_talk:a118",
+   "nfa_closure_talk:a117",
+   "nfa_closure_talk:a7"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Conversion of regular expressions to NFA Check-in 2.4 Recitations start tomorrow online (same link as for lectures).",
+  "unit_id": "nfa_closure_slides:p11:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a117",
+   "nfa_closure_talk:a130",
+   "nfa_closure_talk:a128",
+   "nfa_closure_talk:a126",
+   "nfa_closure_talk:a138",
+   "nfa_closure_talk:a5",
+   "nfa_closure_talk:a118",
+   "nfa_closure_talk:a82"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "They are optional, unless you need more help.",
+  "unit_id": "nfa_closure_slides:p11:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a95",
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a140",
+   "nfa_closure_talk:a46",
+   "nfa_closure_talk:a106",
+   "nfa_closure_talk:a99",
+   "nfa_closure_talk:a109",
+   "nfa_closure_talk:a43"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "You may attend any recitation(s).",
+  "unit_id": "nfa_closure_slides:p11:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a86",
+   "nfa_closure_talk:a0",
+   "nfa_closure_talk:a141",
+   "nfa_closure_talk:a44",
+   "nfa_closure_talk:a93",
+   "nfa_closure_talk:a43",
+   "nfa_closure_talk:a52"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Which do you think you’ll attend?",
+  "unit_id": "nfa_closure_slides:p11:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a0",
+   "nfa_closure_talk:a83",
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a116",
+   "nfa_closure_talk:a42",
+   "nfa_closure_talk:a104",
+   "nfa_closure_talk:a41",
+   "nfa_closure_talk:a90"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "(you may check several) (a) 10:00 (b) 11:00 (c) 12:00 (d) 1:00 (e) 2:00 (f) I prefer a different time (please Check-in 2.4 post on piazza, but no promises) 11",
+  "unit_id": "nfa_closure_slides:p11:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a78",
+   "nfa_closure_talk:a42",
+   "nfa_closure_talk:a0",
+   "nfa_closure_talk:a79",
+   "nfa_closure_talk:a41",
+   "nfa_closure_talk:a25",
+   "nfa_closure_talk:a13",
+   "nfa_closure_talk:a116"
+  ],
+  "population": 50
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "MIT OpenCourseWare https://ocw.mit.edu 18.404J / 18.4041J / 6.840J Theory of Computation Fall 2020 For information about citing these materials or our Terms of Use, visit: https://ocw.mit.edu/terms.",
+  "unit_id": "nfa_closure_slides:p12:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "nfa_closure_talk:a57",
+   "nfa_closure_talk:a5",
+   "nfa_closure_talk:a6",
+   "nfa_closure_talk:a80",
+   "nfa_closure_talk:a27",
+   "nfa_closure_talk:a56",
+   "nfa_closure_talk:a37",
+   "nfa_closure_talk:a107"
+  ],
+  "population": 50
+ }
+]

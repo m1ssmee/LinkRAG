@@ -150,3 +150,12 @@ Work happens on branch `cross-file-benchmark`.
 Knobs (`decay`, alpha/beta/gamma, `normalise_seeds`, `expansion`, any gate change from DESIGN.md
 issue (n)) are set on tune only and applied once to test. Runs over all 7 topics with default
 knobs and no tuning are labelled *exploratory*.
+
+## Intake gate outcome (2026-11-18)
+
+The deck→transcript redundancy gate (DESIGN.md *Sampled redundancy*: keep below 65 %, census
+decides borderline) gave **KEEP** for 6 topics and **REJECT** for `lightning` (census 67.3 %).
+The rule is applied as written: `lightning` leaves the reported XFile tables. Its questions stay
+in the gold file and are reported as a separate, labelled row. The test half is therefore
+**gp_scaling, mimic_data, rl_mdp**; tune is unchanged. The gate is a fixed rule and was not
+chosen by looking at any evaluation number. Reports: `reports/redundancy_xfile_*.md`.

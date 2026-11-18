@@ -1,0 +1,1202 @@
+[
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes 1 Markov Processes 2 Markov Reward Processes 3 Markov Decision Processes 4 Extensions to MDPs",
+  "unit_id": "rl_mdp_slides:p2:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "First of all, by adding rewards in to give a Markov reward process. Then by adding actions in to give a Markov decision process.",
+  "passages": [
+   "rl_mdp_talk:a0",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a28",
+   "rl_mdp_talk:a1",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a29",
+   "rl_mdp_talk:a106",
+   "rl_mdp_talk:a49"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Processes Introduction Introduction to MDPs Markov decision processes formally describe an environment for reinforcement learning Where the environment is fully observable i.e.",
+  "unit_id": "rl_mdp_slides:p3:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "And that's gonna be the MDP. And in this case, what we're gonna start with is the case, the nice case, where the environment is fully observable.",
+  "passages": [
+   "rl_mdp_talk:a0",
+   "rl_mdp_talk:a2",
+   "rl_mdp_talk:a5",
+   "rl_mdp_talk:a28",
+   "rl_mdp_talk:a1",
+   "rl_mdp_talk:a4",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a7"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The current state completely characterises the process Almost all RL problems can be formalised as MDPs, e.g.",
+  "unit_id": "rl_mdp_slides:p3:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a5",
+   "rl_mdp_talk:a202",
+   "rl_mdp_talk:a201",
+   "rl_mdp_talk:a200",
+   "rl_mdp_talk:a4",
+   "rl_mdp_talk:a2",
+   "rl_mdp_talk:a218",
+   "rl_mdp_talk:a28"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Processes Markov Property Markov Property “The future is independent of the past given the present” Deﬁnition A state St is Markov if and only if P [St+1 | St] = P [St+1 | S1, ..., St] The state captures all relevant information from the history Once the state is known, the history may be thrown away i.e.",
+  "unit_id": "rl_mdp_slides:p4:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "this basically tells us that the future is independent of the past, given the present",
+  "passages": [
+   "rl_mdp_talk:a8",
+   "rl_mdp_talk:a15",
+   "rl_mdp_talk:a10",
+   "rl_mdp_talk:a9",
+   "rl_mdp_talk:a101",
+   "rl_mdp_talk:a14",
+   "rl_mdp_talk:a103",
+   "rl_mdp_talk:a7"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Processes Markov Property State Transition Matrix For a Markov state s and successor state s′, the state transition probability is deﬁned by Pss′ = P \u0002 St+1 = s′ | St = s \u0003 State transition matrix P deﬁnes transition probabilities from all states s to all successor states s′, to P = from   P11 . . .",
+  "unit_id": "rl_mdp_slides:p5:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "you can actually define the probability that you'll transition from one of those states to the next state",
+  "passages": [
+   "rl_mdp_talk:a10",
+   "rl_mdp_talk:a15",
+   "rl_mdp_talk:a23",
+   "rl_mdp_talk:a14",
+   "rl_mdp_talk:a12",
+   "rl_mdp_talk:a13",
+   "rl_mdp_talk:a25",
+   "rl_mdp_talk:a16"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Pnn   where each row of the matrix sums to 1.",
+  "unit_id": "rl_mdp_slides:p5:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a88",
+   "rl_mdp_talk:a13",
+   "rl_mdp_talk:a85",
+   "rl_mdp_talk:a196",
+   "rl_mdp_talk:a87",
+   "rl_mdp_talk:a48",
+   "rl_mdp_talk:a197",
+   "rl_mdp_talk:a96"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Processes Markov Chains Markov Process A Markov process is a memoryless random process, i.e. a sequence of random states S1, S2, ... with the Markov property.",
+  "unit_id": "rl_mdp_slides:p6:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So a sequence of random states, S1, S2, going on in time, that has the Markov property.",
+  "passages": [
+   "rl_mdp_talk:a14",
+   "rl_mdp_talk:a15",
+   "rl_mdp_talk:a9",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a106",
+   "rl_mdp_talk:a0",
+   "rl_mdp_talk:a159",
+   "rl_mdp_talk:a10"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Processes Markov Chains Example: Student Markov Chain 0.5 0.5 0.2 0.8 0.6 0.4 Sleep Facebook Class 2 0.9 0.1 Pub Class 3 Pass Class 1 0.2 0.4 0.4 1.0",
+  "unit_id": "rl_mdp_slides:p7:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a18",
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a0",
+   "rl_mdp_talk:a21",
+   "rl_mdp_talk:a20",
+   "rl_mdp_talk:a24",
+   "rl_mdp_talk:a109",
+   "rl_mdp_talk:a54"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Processes Markov Chains Example: Student Markov Chain Transition Matrix 0.5 0.5 0.2 0.8 0.6 0.4 Sleep Facebook Class 2 0.9 0.1 Pub Class 3 Pass Class 1 0.2 0.4 0.4 1.0 P =   C1 C2 C3 Pass Pub FB Sleep C1 0.5 0.5 C2 0.8 0.2 C3 0.6 0.4 Pass 1.0 Pub 0.2 0.4 0.4 FB 0.1 0.9 Sleep 1  ",
+  "unit_id": "rl_mdp_slides:p9:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a18",
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a24",
+   "rl_mdp_talk:a20",
+   "rl_mdp_talk:a0",
+   "rl_mdp_talk:a21",
+   "rl_mdp_talk:a48",
+   "rl_mdp_talk:a14"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes MRP Markov Reward Process A Markov reward process is a Markov chain with values.",
+  "unit_id": "rl_mdp_slides:p10:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "which you can think of as like a Markov process with value judgments",
+  "passages": [
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a29",
+   "rl_mdp_talk:a0",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a106",
+   "rl_mdp_talk:a14",
+   "rl_mdp_talk:a48",
+   "rl_mdp_talk:a109"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes MRP Example: Student MRP R = +10 0.5 0.5 0.2 0.8 0.6 0.4 Sleep Facebook Class 2 0.9 0.1 R = +1 R = -1 R = 0 Pub Class 3 Pass Class 1 R = -2 R = -2 R = -2 0.2 0.4 0.4 1.0",
+  "unit_id": "rl_mdp_slides:p11:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a18",
+   "rl_mdp_talk:a48",
+   "rl_mdp_talk:a80",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a24",
+   "rl_mdp_talk:a63"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes Return Return Deﬁnition The return Gt is the total discounted reward from time-step t.",
+  "unit_id": "rl_mdp_slides:p12:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "If we just unwrap the definition of return, the return is just the sum of these rewards going into the future, discounted.",
+  "passages": [
+   "rl_mdp_talk:a58",
+   "rl_mdp_talk:a34",
+   "rl_mdp_talk:a67",
+   "rl_mdp_talk:a55",
+   "rl_mdp_talk:a39",
+   "rl_mdp_talk:a35",
+   "rl_mdp_talk:a68",
+   "rl_mdp_talk:a56"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "This values immediate reward above delayed reward. γ close to 0 leads to ”myopic” evaluation γ close to 1 leads to ”far-sighted” evaluation",
+  "unit_id": "rl_mdp_slides:p12:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a40",
+   "rl_mdp_talk:a79",
+   "rl_mdp_talk:a38",
+   "rl_mdp_talk:a65",
+   "rl_mdp_talk:a116",
+   "rl_mdp_talk:a129",
+   "rl_mdp_talk:a55",
+   "rl_mdp_talk:a37"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes Return Why discount?",
+  "unit_id": "rl_mdp_slides:p13:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "yes",
+   "no"
+  ],
+  "span": "So one reason to use a discount factor is to basically represent the fact that we do not have a perfect model.",
+  "passages": [
+   "rl_mdp_talk:a42",
+   "rl_mdp_talk:a39",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a41",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a0",
+   "rl_mdp_talk:a109"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Mathematically convenient to discount rewards Avoids inﬁnite returns in cyclic Markov processes Uncertainty about the future may not be fully represented If the reward is ﬁnancial, immediate rewards may earn more interest than delayed rewards Animal/human behaviour shows preference for immediate reward It is sometimes possible to use undiscounted Markov reward processes (i.e. γ = 1), e.g. if all sequences terminate.",
+  "unit_id": "rl_mdp_slides:p13:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "you need some mechanism to avoid infinity as your evaluation",
+  "passages": [
+   "rl_mdp_talk:a47",
+   "rl_mdp_talk:a45",
+   "rl_mdp_talk:a42",
+   "rl_mdp_talk:a48",
+   "rl_mdp_talk:a40",
+   "rl_mdp_talk:a29",
+   "rl_mdp_talk:a49",
+   "rl_mdp_talk:a46"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes Value Function Example: Student MRP Returns Sample returns for Student MRP: Starting from S1 = C1 with γ = 1 2 G1 = R2 + γR3 + ... + γT−2RT C1 C2 C3 Pass Sleep v1 = −2 −2 ∗1 2 −2 ∗1 4 + 10 ∗1 8 = −2.25 C1 FB FB C1 C2 Sleep v1 = −2 −1 ∗1 2 −1 ∗1 4 −2 ∗1 8 −2 ∗ 1 16 = −3.125 C1 C2 C3 Pub C2 C3 Pass Sleep v1 = −2 −2 ∗1 2 −2 ∗1 4 + 1 ∗1 8 −2 ∗ 1 16 ... = −3.41 C1 FB FB C1 C2 C3 Pub C1 ... v1 = −2 −1 ∗1 2 −1 ∗1 4 −2 ∗1 8 −2 ∗ 1 16 ... = −3.20 FB FB FB C1 C2 C3 Pub C2 Sleep",
+  "unit_id": "rl_mdp_slides:p15:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a48",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a124",
+   "rl_mdp_talk:a56",
+   "rl_mdp_talk:a34",
+   "rl_mdp_talk:a109"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes Value Function Example: State-Value Function for Student MRP (1) 10 -2 -2 -2 0 -1 R = +10 0.5 0.5 0.2 0.8 0.6 0.4 0.9 0.1 R = +1 R = -1 R = 0 +1 R = -2 R = -2 R = -2 0.2 0.4 0.4 1.0 v(s) for γ =0",
+  "unit_id": "rl_mdp_slides:p16:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a124",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a60",
+   "rl_mdp_talk:a114",
+   "rl_mdp_talk:a56",
+   "rl_mdp_talk:a30"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes Value Function Example: State-Value Function for Student MRP (3) 10 -13 1.5 4.3 0 -23 R = +10 0.5 0.5 0.2 0.8 0.6 0.4 0.9 0.1 R = +1 R = -1 R = 0 +0.8 R = -2 R = -2 R = -2 0.2 0.4 0.4 1.0 v(s) for γ =1",
+  "unit_id": "rl_mdp_slides:p18:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a124",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a56",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a30",
+   "rl_mdp_talk:a60",
+   "rl_mdp_talk:a130",
+   "rl_mdp_talk:a32"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes Bellman Equation Bellman Equation for MRPs (2) v(s) = E [Rt+1 + γv(St+1) | St = s] v(s) 7! s v(s0) 7! s0 r v(s) = Rs + γ X s′∈S Pss′v(s′)",
+  "unit_id": "rl_mdp_slides:p20:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "The value function now is equal to the expected immediate reward plus discounted value at the next state.",
+  "passages": [
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a74",
+   "rl_mdp_talk:a85",
+   "rl_mdp_talk:a194",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a179",
+   "rl_mdp_talk:a138",
+   "rl_mdp_talk:a90"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes Bellman Equation Example: Bellman Equation for Student MRP 10 -13 1.5 4.3 0 -23 R = +10 0.5 0.5 0.2 0.8 0.6 0.4 0.9 0.1 R = +1 R = -1 R = 0 0.8 R = -2 R = -2 R = -2 0.2 0.4 0.4 1.0 4.3 = -2 + 0.6*10 + 0.4*0.8",
+  "unit_id": "rl_mdp_slides:p21:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a64",
+   "rl_mdp_talk:a178",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a0",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a88",
+   "rl_mdp_talk:a74"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes Bellman Equation Bellman Equation in Matrix Form The Bellman equation can be expressed concisely using matrices, v = R + γPv where v is a column vector with one entry per state   v(1) ... v(n)  =   R1 ...",
+  "unit_id": "rl_mdp_slides:p22:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "there's a much more concise formulation, which is using matrices and vectors",
+  "passages": [
+   "rl_mdp_talk:a84",
+   "rl_mdp_talk:a85",
+   "rl_mdp_talk:a88",
+   "rl_mdp_talk:a194",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a89",
+   "rl_mdp_talk:a90",
+   "rl_mdp_talk:a74"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Pnn     v(1) ... v(n)  ",
+  "unit_id": "rl_mdp_slides:p22:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a75",
+   "rl_mdp_talk:a88",
+   "rl_mdp_talk:a89",
+   "rl_mdp_talk:a85",
+   "rl_mdp_talk:a186",
+   "rl_mdp_talk:a59",
+   "rl_mdp_talk:a192",
+   "rl_mdp_talk:a217"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Reward Processes Bellman Equation Solving the Bellman Equation The Bellman equation is a linear equation It can be solved directly: v = R + γPv (I −γP) v = R v = (I −γP)−1 R Computational complexity is O(n3) for n states Direct solution only possible for small MRPs There are many iterative methods for large MRPs, e.g.",
+  "unit_id": "rl_mdp_slides:p23:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a88",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a90",
+   "rl_mdp_talk:a138",
+   "rl_mdp_talk:a194",
+   "rl_mdp_talk:a179",
+   "rl_mdp_talk:a89",
+   "rl_mdp_talk:a74"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes MDP Markov Decision Process A Markov decision process (MDP) is a Markov reward process with decisions.",
+  "unit_id": "rl_mdp_slides:p24:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "the red highlights here indicate what changed from the Markov reward process",
+  "passages": [
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a144",
+   "rl_mdp_talk:a106",
+   "rl_mdp_talk:a26",
+   "rl_mdp_talk:a14",
+   "rl_mdp_talk:a29",
+   "rl_mdp_talk:a115"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Deﬁnition A Markov Decision Process is a tuple ⟨S, A, P, R, γ⟩ S is a ﬁnite set of states A is a ﬁnite set of actions P is a state transition probability matrix, Pa ss′ = P [St+1 = s′ | St = s, At = a] R is a reward function, Ra s = E [Rt+1 | St = s, At = a] γ is a discount factor γ ∈[0, 1].",
+  "unit_id": "rl_mdp_slides:p24:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a15",
+   "rl_mdp_talk:a14",
+   "rl_mdp_talk:a94",
+   "rl_mdp_talk:a30",
+   "rl_mdp_talk:a10",
+   "rl_mdp_talk:a106",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a124"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes MDP Example: Student MDP R = +10 R = +1 R = -1 R = 0 R = -2 R = -2 0.2 0.4 0.4 Study Facebook Study Sleep Facebook Quit Pub Study R = -1 R = 0",
+  "unit_id": "rl_mdp_slides:p25:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a18",
+   "rl_mdp_talk:a97",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a144",
+   "rl_mdp_talk:a48",
+   "rl_mdp_talk:a105"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Policies are stationary (time-independent), At ∼π(·|St), ∀t > 0",
+  "unit_id": "rl_mdp_slides:p26:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So all of the policies, the policy is the same no matter what time step we're in in the MDP.",
+  "passages": [
+   "rl_mdp_talk:a102",
+   "rl_mdp_talk:a101",
+   "rl_mdp_talk:a120",
+   "rl_mdp_talk:a26",
+   "rl_mdp_talk:a110",
+   "rl_mdp_talk:a100",
+   "rl_mdp_talk:a111",
+   "rl_mdp_talk:a131"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Policies Policies (2) Given an MDP M = ⟨S, A, P, R, γ⟩and a policy π The state sequence S1, S2, ... is a Markov process ⟨S, Pπ⟩ The state and reward sequence S1, R2, S2, ... is a Markov reward process ⟨S, Pπ, Rπ, γ⟩ where Pπ s,s′ = X a∈A π(a|s)Pa ss′ Rπ s = X a∈A π(a|s)Ra s",
+  "unit_id": "rl_mdp_slides:p27:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "if you fix the policy and look just at the sequence of states and rewards that you see as you go through this MDP, that sequence is a Markov reward process.",
+  "passages": [
+   "rl_mdp_talk:a106",
+   "rl_mdp_talk:a105",
+   "rl_mdp_talk:a15",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a30",
+   "rl_mdp_talk:a144",
+   "rl_mdp_talk:a108",
+   "rl_mdp_talk:a103"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Value Functions Example: State-Value Function for Student MDP -1.3 2.7 7.4 0 -2.3 R = +10 R = +1 R = -1 R = 0 R = -2 R = -2 0.2 0.4 0.4 Study Facebook Study Sleep Facebook Quit Pub Study R = -1 R = 0 vπ(s) for π(a|s)=0.5, γ =1",
+  "unit_id": "rl_mdp_slides:p29:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a124",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a114",
+   "rl_mdp_talk:a131",
+   "rl_mdp_talk:a97",
+   "rl_mdp_talk:a140",
+   "rl_mdp_talk:a18"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Bellman Expectation Equation Bellman Expectation Equation The state-value function can again be decomposed into immediate reward plus discounted value of successor state, vπ(s) = Eπ [Rt+1 + γvπ(St+1) | St = s] The action-value function can similarly be decomposed, qπ(s, a) = Eπ [Rt+1 + γqπ(St+1, At+1) | St = s, At = a]",
+  "unit_id": "rl_mdp_slides:p30:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a74",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a124",
+   "rl_mdp_talk:a68",
+   "rl_mdp_talk:a116",
+   "rl_mdp_talk:a85",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a94"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Bellman Expectation Equation Bellman Expectation Equation for Qπ v⇡(s0) 7! s0 q⇡(s, a) 7! s, a r qπ(s, a) = Ra s + γ X s′∈S Pa ss′vπ(s′)",
+  "unit_id": "rl_mdp_slides:p32:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a179",
+   "rl_mdp_talk:a74",
+   "rl_mdp_talk:a88",
+   "rl_mdp_talk:a84",
+   "rl_mdp_talk:a194",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a138"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Bellman Expectation Equation Bellman Expectation Equation for vπ (2) v⇡(s0) 7! s0 v⇡(s) 7! s r a vπ(s) = X a∈A π(a|s) Ra s + γ X s′∈S Pa ss′vπ(s′) !",
+  "unit_id": "rl_mdp_slides:p33:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "yes"
+  ],
+  "span": "The value function now is equal to the expected immediate reward plus discounted value at the next state.",
+  "passages": [
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a179",
+   "rl_mdp_talk:a74",
+   "rl_mdp_talk:a84",
+   "rl_mdp_talk:a90",
+   "rl_mdp_talk:a88",
+   "rl_mdp_talk:a194",
+   "rl_mdp_talk:a138"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Bellman Expectation Equation Example: Bellman Expectation Equation in Student MDP -1.3 2.7 7.4 0 -2.3 R = +10 R = +1 R = -1 R = 0 R = -2 R = -2 0.2 0.4 0.4 Study Facebook Study Sleep Facebook Quit Pub Study R = -1 R = 0 7.4 = 0.5 * (1 + 0.2* -1.3 + 0.4 * 2.7 + 0.4 * 7.4) + 0.5 * 10",
+  "unit_id": "rl_mdp_slides:p35:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a179",
+   "rl_mdp_talk:a18",
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a26",
+   "rl_mdp_talk:a138",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a144"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Optimal Value Functions Optimal Value Function Deﬁnition The optimal state-value function v∗(s) is the maximum value function over all policies v∗(s) = max π vπ(s) The optimal action-value function q∗(s, a) is the maximum action-value function over all policies q∗(s, a) = max π qπ(s, a) The optimal value function speciﬁes the best possible performance in the MDP.",
+  "unit_id": "rl_mdp_slides:p37:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "V star, the optimal state value function, V star, is the maximum value function over all policies.",
+  "passages": [
+   "rl_mdp_talk:a148",
+   "rl_mdp_talk:a183",
+   "rl_mdp_talk:a147",
+   "rl_mdp_talk:a124",
+   "rl_mdp_talk:a171",
+   "rl_mdp_talk:a111",
+   "rl_mdp_talk:a149",
+   "rl_mdp_talk:a172"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "An MDP is “solved” when we know the optimal value fn.",
+  "unit_id": "rl_mdp_slides:p37:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So we could say it informally that an MDP is solved when we know this optimal value function.",
+  "passages": [
+   "rl_mdp_talk:a152",
+   "rl_mdp_talk:a138",
+   "rl_mdp_talk:a174",
+   "rl_mdp_talk:a147",
+   "rl_mdp_talk:a214",
+   "rl_mdp_talk:a172",
+   "rl_mdp_talk:a179",
+   "rl_mdp_talk:a5"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Optimal Value Functions Example: Optimal Action-Value Function for Student MDP 6 8 10 0 6 R = +10 R = +1 R = -1 R = 0 R = -2 R = -2 0.2 0.4 0.4 Study Facebook Study Sleep Facebook Quit Pub Study R = -1 R = 0 q*(s,a) for γ =1 q* =5 q* =6 q* =6 q* =5 q* =8 q* = 0 q* =10 q* =8.4",
+  "unit_id": "rl_mdp_slides:p39:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a147",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a152",
+   "rl_mdp_talk:a183",
+   "rl_mdp_talk:a175",
+   "rl_mdp_talk:a124"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Optimal Value Functions Finding an Optimal Policy An optimal policy can be found by maximising over q∗(s, a), π∗(a|s) = ( 1 if a = argmax a∈A q∗(s, a) 0 otherwise There is always a deterministic optimal policy for any MDP If we know q∗(s, a), we immediately have the optimal policy",
+  "unit_id": "rl_mdp_slides:p41:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Like if you have Q star and you pick the action that chooses the arc with the biggest Q star, that gives you one such policy.",
+  "passages": [
+   "rl_mdp_talk:a174",
+   "rl_mdp_talk:a201",
+   "rl_mdp_talk:a147",
+   "rl_mdp_talk:a172",
+   "rl_mdp_talk:a165",
+   "rl_mdp_talk:a169",
+   "rl_mdp_talk:a168",
+   "rl_mdp_talk:a164"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Optimal Value Functions Example: Optimal Policy for Student MDP 6 8 10 0 6 R = +10 R = +1 R = -1 R = 0 R = -2 R = -2 0.2 0.4 0.4 Study Facebook Study Sleep Facebook Quit Pub Study R = -1 R = 0 π*(a|s) for γ =1 q* =5 q* =6 q* =6 q* =5 q* =8 q* =0 q* =10 q* =8.4",
+  "unit_id": "rl_mdp_slides:p42:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a147",
+   "rl_mdp_talk:a175",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a131",
+   "rl_mdp_talk:a114",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a176"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Bellman Optimality Equation Bellman Optimality Equation for Q∗ q⇤(s, a) 7! s, a v⇤(s0) 7! s0 r q∗(s, a) = Ra s + γ X s′∈S Pa ss′v∗(s′)",
+  "unit_id": "rl_mdp_slides:p44:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a179",
+   "rl_mdp_talk:a194",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a178",
+   "rl_mdp_talk:a88",
+   "rl_mdp_talk:a210",
+   "rl_mdp_talk:a138",
+   "rl_mdp_talk:a74"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Bellman Optimality Equation Bellman Optimality Equation for V ∗(2) v⇤(s0) 7! s0 v⇤(s) 7! s a r v∗(s) = max a Ra s + γ X s′∈S Pa ss′v∗(s′)",
+  "unit_id": "rl_mdp_slides:p45:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a179",
+   "rl_mdp_talk:a194",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a178",
+   "rl_mdp_talk:a210",
+   "rl_mdp_talk:a138",
+   "rl_mdp_talk:a74",
+   "rl_mdp_talk:a89"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Markov Decision Processes Bellman Optimality Equation Example: Bellman Optimality Equation in Student MDP 6 8 10 0 6 R = +10 R = +1 R = -1 R = 0 R = -2 R = -2 0.2 0.4 0.4 Study Facebook Study Sleep Facebook Quit Pub Study R = -1 R = 0 6 = max {-2 + 8, -1 + 6}",
+  "unit_id": "rl_mdp_slides:p47:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a179",
+   "rl_mdp_talk:a32",
+   "rl_mdp_talk:a178",
+   "rl_mdp_talk:a54",
+   "rl_mdp_talk:a4",
+   "rl_mdp_talk:a138",
+   "rl_mdp_talk:a147"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Extensions to MDPs Extensions to MDPs (no exam) Inﬁnite and continuous MDPs Partially observable MDPs Undiscounted, average reward MDPs",
+  "unit_id": "rl_mdp_slides:p49:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "But the extensions are on the slides just there as additional material, in particular, telling you how to deal with infinite MDPs, continuous MDPs, partially observable MDPs, undiscounted average reward MDPs.",
+  "passages": [
+   "rl_mdp_talk:a218",
+   "rl_mdp_talk:a49",
+   "rl_mdp_talk:a5",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a48",
+   "rl_mdp_talk:a26",
+   "rl_mdp_talk:a28",
+   "rl_mdp_talk:a207"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Extensions to MDPs Inﬁnite MDPs Inﬁnite MDPs (no exam) The following extensions are all possible: Countably inﬁnite state and/or action spaces Straightforward Continuous state and/or action spaces Closed form for linear quadratic model (LQR) Continuous time Requires partial diﬀerential equations Hamilton-Jacobi-Bellman (HJB) equation Limiting case of Bellman equation as time-step →0",
+  "unit_id": "rl_mdp_slides:p50:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a5",
+   "rl_mdp_talk:a218",
+   "rl_mdp_talk:a26",
+   "rl_mdp_talk:a49",
+   "rl_mdp_talk:a28",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a94",
+   "rl_mdp_talk:a50"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "It is a hidden Markov model with actions.",
+  "unit_id": "rl_mdp_slides:p51:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a94",
+   "rl_mdp_talk:a16",
+   "rl_mdp_talk:a7",
+   "rl_mdp_talk:a219",
+   "rl_mdp_talk:a101",
+   "rl_mdp_talk:a106",
+   "rl_mdp_talk:a93",
+   "rl_mdp_talk:a0"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Deﬁnition A POMDP is a tuple ⟨S, A, O, P, R, Z, γ⟩ S is a ﬁnite set of states A is a ﬁnite set of actions O is a ﬁnite set of observations P is a state transition probability matrix, Pa ss′ = P [St+1 = s′ | St = s, At = a] R is a reward function, Ra s = E [Rt+1 | St = s, At = a] Z is an observation function, Za s′o = P [Ot+1 = o | St+1 = s′, At = a] γ is a discount factor γ ∈[0, 1].",
+  "unit_id": "rl_mdp_slides:p51:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a146",
+   "rl_mdp_talk:a111",
+   "rl_mdp_talk:a143",
+   "rl_mdp_talk:a129",
+   "rl_mdp_talk:a15",
+   "rl_mdp_talk:a144",
+   "rl_mdp_talk:a94",
+   "rl_mdp_talk:a113"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Extensions to MDPs Partially Observable MDPs Reductions of POMDPs (no exam) The history Ht satisﬁes the Markov property The belief state b(Ht) satisﬁes the Markov property a1 a2 a1o1 a1o2 a2o1 a2o2 a1o1a1 a1o1a2 ... ... ... a1 a2 o1 o2 o1 o2 a1 a2 ... ... ... a1 a2 o1 o2 o1 o2 a1 a2 P(s) P(s|a1) P(s|a2) P(s|a1o1) P(s|a1o2) P(s|a2o1) P(s|a2o2) History tree Belief tree P(s|a1o1a1) P(s|a1o1a2) A POMDP can be reduced to an (inﬁnite) history tree A POMDP can be reduced to an (inﬁnite) belief state tree",
+  "unit_id": "rl_mdp_slides:p53:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a7",
+   "rl_mdp_talk:a101",
+   "rl_mdp_talk:a5",
+   "rl_mdp_talk:a8",
+   "rl_mdp_talk:a159",
+   "rl_mdp_talk:a102",
+   "rl_mdp_talk:a106",
+   "rl_mdp_talk:a10"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Extensions to MDPs Average Reward MDPs Ergodic Markov Process (no exam) An ergodic Markov process is Recurrent: each state is visited an inﬁnite number of times Aperiodic: each state is visited without any systematic period Theorem An ergodic Markov process has a limiting stationary distribution dπ(s) with the property dπ(s) = X s′∈S dπ(s′)Ps′s",
+  "unit_id": "rl_mdp_slides:p54:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a26",
+   "rl_mdp_talk:a15",
+   "rl_mdp_talk:a14",
+   "rl_mdp_talk:a106",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a102",
+   "rl_mdp_talk:a48",
+   "rl_mdp_talk:a105"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "For any policy π, an ergodic MDP has an average reward per time-step ρπ that is independent of start state. ρπ = lim T→∞ 1 T E \" T X t=1 Rt #",
+  "unit_id": "rl_mdp_slides:p55:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a113",
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a144",
+   "rl_mdp_talk:a116",
+   "rl_mdp_talk:a101",
+   "rl_mdp_talk:a206",
+   "rl_mdp_talk:a102",
+   "rl_mdp_talk:a146"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Lecture 2: Markov Decision Processes Extensions to MDPs Average Reward MDPs Average Reward Value Function (no exam) The value function of an undiscounted, ergodic MDP can be expressed in terms of average reward. ˜vπ(s) is the extra reward due to starting from state s, ˜vπ(s) = Eπ \" ∞ X k=1 (Rt+k −ρπ) | St = s # There is a corresponding average reward Bellman equation, ˜vπ(s) = Eπ \" (Rt+1 −ρπ) + ∞ X k=1 (Rt+k+1 −ρπ) | St = s # = Eπ [(Rt+1 −ρπ) + ˜vπ(St+1) | St = s]",
+  "unit_id": "rl_mdp_slides:p56:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a136",
+   "rl_mdp_talk:a115",
+   "rl_mdp_talk:a116",
+   "rl_mdp_talk:a144",
+   "rl_mdp_talk:a129",
+   "rl_mdp_talk:a134",
+   "rl_mdp_talk:a49",
+   "rl_mdp_talk:a85"
+  ],
+  "population": 78
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The only stupid question is the one you were afraid to ask but never did. -Rich Sutton",
+  "unit_id": "rl_mdp_slides:p57:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "rl_mdp_talk:a203",
+   "rl_mdp_talk:a199",
+   "rl_mdp_talk:a168",
+   "rl_mdp_talk:a93",
+   "rl_mdp_talk:a135",
+   "rl_mdp_talk:a200",
+   "rl_mdp_talk:a145",
+   "rl_mdp_talk:a175"
+  ],
+  "population": 78
+ }
+]

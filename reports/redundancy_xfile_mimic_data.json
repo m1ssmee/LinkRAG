@@ -1,0 +1,1202 @@
+[
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Consider the distribution of heart rates in the MIMIC-III chart (as recorded in Careview) WTF?",
+  "unit_id": "mimic_data_slides:p2:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "I looked at the distribution of heart rates in the care view part of the database.",
+  "passages": [
+   "mimic_data_talk:a1",
+   "mimic_data_talk:a114",
+   "mimic_data_talk:a151",
+   "mimic_data_talk:a7",
+   "mimic_data_talk:a140",
+   "mimic_data_talk:a116",
+   "mimic_data_talk:a129",
+   "mimic_data_talk:a139"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "System n mean sd Careview 5177864 108.89 36.08 Metavision 2761158 87.41 18.72 \"3",
+  "unit_id": "mimic_data_slides:p3:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a7",
+   "mimic_data_talk:a5",
+   "mimic_data_talk:a122",
+   "mimic_data_talk:a103",
+   "mimic_data_talk:a54",
+   "mimic_data_talk:a140",
+   "mimic_data_talk:a51",
+   "mimic_data_talk:a116"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Weight, height, pulse, respiration rate, body temperature, …",
+  "unit_id": "mimic_data_slides:p10:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "We have vital signs, your weight, your height, your pulse, respiration rate, body temperature, et cetera.",
+  "passages": [
+   "mimic_data_talk:a20",
+   "mimic_data_talk:a41",
+   "mimic_data_talk:a21",
+   "mimic_data_talk:a105",
+   "mimic_data_talk:a141",
+   "mimic_data_talk:a28",
+   "mimic_data_talk:a115",
+   "mimic_data_talk:a54"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Cell-level measurements, e.g., cell-surface antigens \" 10",
+  "unit_id": "mimic_data_slides:p10:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a49",
+   "mimic_data_talk:a54",
+   "mimic_data_talk:a107",
+   "mimic_data_talk:a41",
+   "mimic_data_talk:a105",
+   "mimic_data_talk:a31",
+   "mimic_data_talk:a135",
+   "mimic_data_talk:a118"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Radiology, Pathology, ECG, Nutrition, Respiratory, Social work, …",
+  "unit_id": "mimic_data_slides:p11:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a20",
+   "mimic_data_talk:a29",
+   "mimic_data_talk:a101",
+   "mimic_data_talk:a28",
+   "mimic_data_talk:a151",
+   "mimic_data_talk:a143",
+   "mimic_data_talk:a39",
+   "mimic_data_talk:a41"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Growing availability of home health measurements http://qs18.quantiﬁedself.com/program/ \" 14",
+  "unit_id": "mimic_data_slides:p14:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a40",
+   "mimic_data_talk:a54",
+   "mimic_data_talk:a41",
+   "mimic_data_talk:a21",
+   "mimic_data_talk:a181",
+   "mimic_data_talk:a20",
+   "mimic_data_talk:a138",
+   "mimic_data_talk:a105"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "How do demographics inﬂuence in-hospital mortality? glm(formula = hospital_expire_flag ~ age + ethnicity + marital_status + language, family = \"binomial\", data = data) Deviance Residuals: Min 1Q Median 3Q Max -1.1146 -0.4583 -0.3812 -0.3054 2.8384 Coefficients: Estimate Std.",
+  "unit_id": "mimic_data_slides:p25:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a70",
+   "mimic_data_talk:a54",
+   "mimic_data_talk:a20",
+   "mimic_data_talk:a18",
+   "mimic_data_talk:a130",
+   "mimic_data_talk:a131",
+   "mimic_data_talk:a55",
+   "mimic_data_talk:a52"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "For example, consider prescriptions in MIMIC \" 26",
+  "unit_id": "mimic_data_slides:p26:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So for example, if you look at prescriptions in the MIMIC database, here are two particular prescriptions",
+  "passages": [
+   "mimic_data_talk:a76",
+   "mimic_data_talk:a96",
+   "mimic_data_talk:a151",
+   "mimic_data_talk:a0",
+   "mimic_data_talk:a45",
+   "mimic_data_talk:a2",
+   "mimic_data_talk:a77",
+   "mimic_data_talk:a25"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Most Common Prescriptions NDC Code count Iso-Osmotic Dextrose 0 86935 Sodium Chloride 0.9% Flush 0 83392 Insulin 0 81356 SW 0 72458 Magnesium Sulfate 409672924 55211 D5W 0 54938 Furosemide 517570425 53073 Potassium Chloride 338070341 47968 D5W 338001702 43038 LR 338011704 35407 Vancomycin 338355248 34741 0.9% Sodium Chloride 338004904 34682 Potassium Chloride 456066270 32533 Heparin 63323026201 31413 NS 338004902 30815 \"28",
+  "unit_id": "mimic_data_slides:p28:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a78",
+   "mimic_data_talk:a86",
+   "mimic_data_talk:a121",
+   "mimic_data_talk:a84",
+   "mimic_data_talk:a79",
+   "mimic_data_talk:a90",
+   "mimic_data_talk:a77",
+   "mimic_data_talk:a50"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "“the late 1990s, the International Council for Harmonisation of Technical Requirements for Pharmaceuticals for Human Use (ICH) developed MedDRA, a rich and highly speciﬁc standardised medical terminology to facilitate sharing of regulatory information internationally for medical products used by humans.” \" 31",
+  "unit_id": "mimic_data_slides:p31:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a93",
+   "mimic_data_talk:a25",
+   "mimic_data_talk:a176",
+   "mimic_data_talk:a96",
+   "mimic_data_talk:a94",
+   "mimic_data_talk:a180",
+   "mimic_data_talk:a181",
+   "mimic_data_talk:a90"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "HCPCS J-Codes: Drugs administered other than oral method, chemotherapy drugs",
+  "unit_id": "mimic_data_slides:p33:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a94",
+   "mimic_data_talk:a101",
+   "mimic_data_talk:a96",
+   "mimic_data_talk:a22",
+   "mimic_data_talk:a95",
+   "mimic_data_talk:a93",
+   "mimic_data_talk:a78",
+   "mimic_data_talk:a77"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The Generic Product Identiﬁer (GPI) from Medi-Span is 14 characters made up of 7 couplets.",
+  "unit_id": "mimic_data_slides:p33:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a78",
+   "mimic_data_talk:a95",
+   "mimic_data_talk:a76",
+   "mimic_data_talk:a97",
+   "mimic_data_talk:a153",
+   "mimic_data_talk:a91",
+   "mimic_data_talk:a79",
+   "mimic_data_talk:a100"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "FDB also has the GCN (Formulation ID) which is 5 digits, … \" 33",
+  "unit_id": "mimic_data_slides:p33:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a78",
+   "mimic_data_talk:a90",
+   "mimic_data_talk:a95",
+   "mimic_data_talk:a103",
+   "mimic_data_talk:a76",
+   "mimic_data_talk:a87",
+   "mimic_data_talk:a175",
+   "mimic_data_talk:a85"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Procedure Codes per Admission \"38",
+  "unit_id": "mimic_data_slides:p38:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "So if you look at the number of all of these codes per admission, you see a distribution like this.",
+  "passages": [
+   "mimic_data_talk:a103",
+   "mimic_data_talk:a76",
+   "mimic_data_talk:a97",
+   "mimic_data_talk:a118",
+   "mimic_data_talk:a106",
+   "mimic_data_talk:a94",
+   "mimic_data_talk:a96",
+   "mimic_data_talk:a111"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Reporting lab results Logical Observation Identiﬁers Names and Codes Most laboratory and clinical systems today are sending data out using the HL7 version 2 messaging standard.",
+  "unit_id": "mimic_data_slides:p42:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "That's called HL7 version 2. It's still in use very widely.",
+  "passages": [
+   "mimic_data_talk:a176",
+   "mimic_data_talk:a177",
+   "mimic_data_talk:a111",
+   "mimic_data_talk:a108",
+   "mimic_data_talk:a138",
+   "mimic_data_talk:a110",
+   "mimic_data_talk:a113",
+   "mimic_data_talk:a93"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "For more \" information, see https://ocw.mit.edu/help/faq-fair-use/ 42",
+  "unit_id": "mimic_data_slides:p42:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a40",
+   "mimic_data_talk:a76",
+   "mimic_data_talk:a103",
+   "mimic_data_talk:a102",
+   "mimic_data_talk:a25",
+   "mimic_data_talk:a19",
+   "mimic_data_talk:a45",
+   "mimic_data_talk:a175"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "NA NA 40054 81828 Stool Out Stool NA NA 226588 81128 Chest Tube #1 Output mL 40069 69467 Urine Out Void NA NA \" 46",
+  "unit_id": "mimic_data_slides:p46:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a119",
+   "mimic_data_talk:a120",
+   "mimic_data_talk:a28",
+   "mimic_data_talk:a79",
+   "mimic_data_talk:a78",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a99",
+   "mimic_data_talk:a32"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Showed that for many lab results, “process measures” of the data are more important than actual values in predicting outcomes",
+  "unit_id": "mimic_data_slides:p51:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a149",
+   "mimic_data_talk:a147",
+   "mimic_data_talk:a138",
+   "mimic_data_talk:a52",
+   "mimic_data_talk:a148",
+   "mimic_data_talk:a40",
+   "mimic_data_talk:a150",
+   "mimic_data_talk:a107"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Error z value Pr(>|z|) HA3 -15.69112 413.03210 -0.038 0.969696 (Intercept) 0.04321 0.11487 0.376 0.706758 HA4 -0.91247 1.21520 -0.751 0.452723 H0 0.75871 0.88579 0.857 0.391700 HA5 -0.32100 1.38380 -0.232 0.816564 H1 0.45657 0.76061 0.600 0.548333 HA6 -1.32274 1.04715 -1.263 0.206524 H2 0.39502 0.65687 0.601 0.547597 HA7 -0.71769 0.93684 -0.766 0.443632 H3 15.46281 413.03082 0.037 0.970136 HA8 -1.71813 0.66992 -2.565 0.010327 * H4 0.87956 0.90070 0.977 0.328804 HA9 -0.67054 0.51100 -1.312 0.189450 H5 0.19184 0.92995 0.206 0.836562 HA10 -0.19831 0.45897 -0.432 0.665693 H6 0.43533 0.65352 0.666 0.505330 HA11 1.72924 0.52482 3.295 0.000984 *** H7 0.05389 0.40893 0.132 0.895147 HA12 0.03971 0.59225 0.067 0.946540 H8 1.36632 0.47436 2.880 0.003972 ** HA13 0.94444 0.62952 1.500 0.133550 H9 0.07131 0.24685 0.289 0.772685 HA14 0.22134 0.45705 0.484 0.628188 H10 0.02999 0.16509 0.182 0.855845 HA15 1.25147 0.44487 2.813 0.004906 ** H11 -1.03418 0.32225 -3.209 0.001331 ** HA16 0.04059 0.39246 0.103 0.917633 H12 0.15791 0.21427 0.737 0.461133 HA17 0.18535 0.46846 0.396 0.692352 H13 -0.39467 0.31470 -1.254 0.209803 HA18 0.49504 0.44025 1.124 0.260823 H14",
+  "unit_id": "mimic_data_slides:p52:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a140",
+   "mimic_data_talk:a15",
+   "mimic_data_talk:a12",
+   "mimic_data_talk:a51",
+   "mimic_data_talk:a138",
+   "mimic_data_talk:a185",
+   "mimic_data_talk:a129",
+   "mimic_data_talk:a168"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Relationship of WBC measurements at night to mortality 0 1 2 3 4 FALSE 289 65 8 1 1 TRUE 253 67 3 0 0 \"53",
+  "unit_id": "mimic_data_slides:p53:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a134",
+   "mimic_data_talk:a137",
+   "mimic_data_talk:a129",
+   "mimic_data_talk:a127",
+   "mimic_data_talk:a132",
+   "mimic_data_talk:a54",
+   "mimic_data_talk:a136",
+   "mimic_data_talk:a112"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "About 1.5 Million Americans with Lupus, Underlying Pathologic Processes Unknown",
+  "unit_id": "mimic_data_slides:p61:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a144",
+   "mimic_data_talk:a42",
+   "mimic_data_talk:a27",
+   "mimic_data_talk:a112",
+   "mimic_data_talk:a22",
+   "mimic_data_talk:a178",
+   "mimic_data_talk:a97",
+   "mimic_data_talk:a2"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Clinical Notes in MIMIC Nursing/other 822497 Radiology 522279 Nursing 223556 ECG 209051 Physician 141624 Discharge summary 59652 Echo 45794 Respiratory 31739 Nutrition 9418 General 8301 Rehab Services 5431 Social Work 2670 Case Management 967 Pharmacy 103 Consult 98 \" 62",
+  "unit_id": "mimic_data_slides:p62:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a151",
+   "mimic_data_talk:a101",
+   "mimic_data_talk:a153",
+   "mimic_data_talk:a96",
+   "mimic_data_talk:a152",
+   "mimic_data_talk:a76",
+   "mimic_data_talk:a2",
+   "mimic_data_talk:a32"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Response: Pt comfortable during proceedure Plan: Continue sedation as needed, increasing Propofol to 100 mcg for sedation during dsg changes.",
+  "unit_id": "mimic_data_slides:p64:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a121",
+   "mimic_data_talk:a50",
+   "mimic_data_talk:a44",
+   "mimic_data_talk:a49",
+   "mimic_data_talk:a43",
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a172"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Incision and drainage and pulse irrigation of left groin and left above-knee popliteal site incisions with xxploration of bypass graft ([**2198-7-16**]) 2.",
+  "unit_id": "mimic_data_slides:p65:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "incision and drainage and pulse irrigation of the left groin and left above knee popliteal site, incisions with exploration of bypass graft",
+  "passages": [
+   "mimic_data_talk:a161",
+   "mimic_data_talk:a171",
+   "mimic_data_talk:a160",
+   "mimic_data_talk:a124",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a142",
+   "mimic_data_talk:a28",
+   "mimic_data_talk:a99"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "I and D/washout of left groin with complex wound closure over 2 drains History of Present Illness: Ms. [**Known lastname **] is a 45 y/o F who underwent a left fem-AK [**Doctor Last Name **] BPG with PTFE over one month ago on [**2198-6-11**].",
+  "unit_id": "mimic_data_slides:p65:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a162",
+   "mimic_data_talk:a160",
+   "mimic_data_talk:a161",
+   "mimic_data_talk:a167",
+   "mimic_data_talk:a171",
+   "mimic_data_talk:a54",
+   "mimic_data_talk:a163",
+   "mimic_data_talk:a155"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Past Medical History: PMH: current smoker (1-PPD), cocaine abuse (ceased 6-months prior), asthma, diabetes type 2 PSH: bilateral lower extremity angiograms ([**2198-5-10**]), L knee surgery x2, appendectomy, tonsillectomy, L fem-AK [**Doctor Last Name **] [**2198-6-11**] Social History: Moving in with her boyfriend.",
+  "unit_id": "mimic_data_slides:p66:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a167",
+   "mimic_data_talk:a162",
+   "mimic_data_talk:a54",
+   "mimic_data_talk:a22",
+   "mimic_data_talk:a23",
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a166",
+   "mimic_data_talk:a168"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "She died due to complications of a procedure.",
+  "unit_id": "mimic_data_slides:p66:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a160",
+   "mimic_data_talk:a161",
+   "mimic_data_talk:a162",
+   "mimic_data_talk:a48",
+   "mimic_data_talk:a163",
+   "mimic_data_talk:a158",
+   "mimic_data_talk:a96",
+   "mimic_data_talk:a171"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The patient's father died young.",
+  "unit_id": "mimic_data_slides:p66:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a18",
+   "mimic_data_talk:a59",
+   "mimic_data_talk:a130",
+   "mimic_data_talk:a22",
+   "mimic_data_talk:a10",
+   "mimic_data_talk:a57",
+   "mimic_data_talk:a146",
+   "mimic_data_talk:a46"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Nodes: No clavicular/cervical adenopathy, No inguinal adenopathy.",
+  "unit_id": "mimic_data_slides:p67:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a161",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a159",
+   "mimic_data_talk:a107",
+   "mimic_data_talk:a54",
+   "mimic_data_talk:a155",
+   "mimic_data_talk:a49"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Gastrointestinal: Non distended, No hepatosplenomegally, No hernia, No AAA.",
+  "unit_id": "mimic_data_slides:p67:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a99",
+   "mimic_data_talk:a161",
+   "mimic_data_talk:a28",
+   "mimic_data_talk:a41",
+   "mimic_data_talk:a21",
+   "mimic_data_talk:a86"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Pulse Exam (P=Palpation, D=Dopplerable, N=None) RUE Radial: P.",
+  "unit_id": "mimic_data_slides:p67:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a115",
+   "mimic_data_talk:a138",
+   "mimic_data_talk:a141",
+   "mimic_data_talk:a142",
+   "mimic_data_talk:a139",
+   "mimic_data_talk:a28",
+   "mimic_data_talk:a109",
+   "mimic_data_talk:a161"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Brief Hospital Course: The patient was admitted to the surgery service for evaluation and treatment of her lower extremity bypass graft infection.",
+  "unit_id": "mimic_data_slides:p69:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "this is somebody on the surgery service who came in complaining of leg pain, redness, and swelling secondary to infection of left femoral popliteal bypass",
+  "passages": [
+   "mimic_data_talk:a160",
+   "mimic_data_talk:a171",
+   "mimic_data_talk:a161",
+   "mimic_data_talk:a162",
+   "mimic_data_talk:a155",
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a39",
+   "mimic_data_talk:a158"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Neuro: The patient received IV pain medications with good effect and adequate pain control.",
+  "unit_id": "mimic_data_slides:p69:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a124",
+   "mimic_data_talk:a50",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a49",
+   "mimic_data_talk:a121",
+   "mimic_data_talk:a96",
+   "mimic_data_talk:a181"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "GI/GU/FEN: Post operatively, the patient was made NPO with IVF.",
+  "unit_id": "mimic_data_slides:p69:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a161",
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a124",
+   "mimic_data_talk:a160",
+   "mimic_data_talk:a171",
+   "mimic_data_talk:a99",
+   "mimic_data_talk:a162",
+   "mimic_data_talk:a98"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "The patient's electrolytes were routinely followed during this hospitalization, and repleted when necessary.",
+  "unit_id": "mimic_data_slides:p69:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a124",
+   "mimic_data_talk:a32",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a159",
+   "mimic_data_talk:a181",
+   "mimic_data_talk:a158",
+   "mimic_data_talk:a161"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Prophylaxis: The patient received subcutaneous heparin during this stay, and was encouraged to get up and ambulate as early as possible.",
+  "unit_id": "mimic_data_slides:p69:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a50",
+   "mimic_data_talk:a171",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a172",
+   "mimic_data_talk:a49",
+   "mimic_data_talk:a121",
+   "mimic_data_talk:a158"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "At the time of discharge, the patient was doing well,",
+  "unit_id": "mimic_data_slides:p69:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "And at the time of discharge, the patient was doing well.",
+  "passages": [
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a159",
+   "mimic_data_talk:a158",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a171",
+   "mimic_data_talk:a162",
+   "mimic_data_talk:a18",
+   "mimic_data_talk:a45"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "2. fexofenadine 60 mg Tablet Sig: One (1) Tablet PO BID (2 times a day).",
+  "unit_id": "mimic_data_slides:p71:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a80",
+   "mimic_data_talk:a77",
+   "mimic_data_talk:a79",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a50",
+   "mimic_data_talk:a91",
+   "mimic_data_talk:a112",
+   "mimic_data_talk:a121"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "3. fluticasone-salmeterol 100-50 mcg/dose Disk with Device Sig: One (1) Disk with Device Inhalation [**Hospital1 **] (2 times a day).",
+  "unit_id": "mimic_data_slides:p71:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a99",
+   "mimic_data_talk:a121",
+   "mimic_data_talk:a78",
+   "mimic_data_talk:a80",
+   "mimic_data_talk:a49",
+   "mimic_data_talk:a50",
+   "mimic_data_talk:a96",
+   "mimic_data_talk:a77"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "9. dicloxacillin 500 mg Capsule Sig: One (1) Capsule PO Q6H (every 6 hours) for 4 weeks: Take 1 tablet every 4 hours for a total 4 week course.",
+  "unit_id": "mimic_data_slides:p71:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a79",
+   "mimic_data_talk:a80",
+   "mimic_data_talk:a50",
+   "mimic_data_talk:a91",
+   "mimic_data_talk:a121",
+   "mimic_data_talk:a44",
+   "mimic_data_talk:a100",
+   "mimic_data_talk:a89"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "10. lisinopril 40 mg Tablet Sig: One (1) Tablet PO DAILY (Daily).",
+  "unit_id": "mimic_data_slides:p71:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a80",
+   "mimic_data_talk:a79",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a77",
+   "mimic_data_talk:a50",
+   "mimic_data_talk:a91",
+   "mimic_data_talk:a78",
+   "mimic_data_talk:a121"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Glargin 35 units (at discretion of patient while monitoring blood sugars, to be followed-up by PCP) Discharge Disposition: Home With Service Facility: [**Hospital 119**] Homecare \" 71",
+  "unit_id": "mimic_data_slides:p71:t1",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a38",
+   "mimic_data_talk:a171",
+   "mimic_data_talk:a170",
+   "mimic_data_talk:a105",
+   "mimic_data_talk:a78",
+   "mimic_data_talk:a89",
+   "mimic_data_talk:a49",
+   "mimic_data_talk:a112"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "When you go home, you may walk and go up and down stairs with an ace-wrap or compression stocking on your left leg. ??????",
+  "unit_id": "mimic_data_slides:p72:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a21",
+   "mimic_data_talk:a161",
+   "mimic_data_talk:a171",
+   "mimic_data_talk:a167",
+   "mimic_data_talk:a41",
+   "mimic_data_talk:a28",
+   "mimic_data_talk:a160",
+   "mimic_data_talk:a46"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "If either drains less than 20cc in one day, please call Dr. [**Last Name (STitle) 2866**] at his clinic (see number below).",
+  "unit_id": "mimic_data_slides:p72:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a172",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a32",
+   "mimic_data_talk:a153",
+   "mimic_data_talk:a23",
+   "mimic_data_talk:a119",
+   "mimic_data_talk:a80",
+   "mimic_data_talk:a112"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "After 1 week, you may resume sexual activity ??????",
+  "unit_id": "mimic_data_slides:p72:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a44",
+   "mimic_data_talk:a167",
+   "mimic_data_talk:a172",
+   "mimic_data_talk:a54",
+   "mimic_data_talk:a43",
+   "mimic_data_talk:a18",
+   "mimic_data_talk:a100",
+   "mimic_data_talk:a47"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "What to report to office: ??????",
+  "unit_id": "mimic_data_slides:p73:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a172",
+   "mimic_data_talk:a35",
+   "mimic_data_talk:a37",
+   "mimic_data_talk:a22",
+   "mimic_data_talk:a178",
+   "mimic_data_talk:a12",
+   "mimic_data_talk:a34",
+   "mimic_data_talk:a20"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Numbness, coldness or pain in lower extremities ??????",
+  "unit_id": "mimic_data_slides:p73:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a47",
+   "mimic_data_talk:a31",
+   "mimic_data_talk:a21",
+   "mimic_data_talk:a48",
+   "mimic_data_talk:a6",
+   "mimic_data_talk:a41",
+   "mimic_data_talk:a46",
+   "mimic_data_talk:a136"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "If bleeding stops, call vascular office [**Telephone/Fax (1) 1237**].",
+  "unit_id": "mimic_data_slides:p73:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a172",
+   "mimic_data_talk:a154",
+   "mimic_data_talk:a98",
+   "mimic_data_talk:a35",
+   "mimic_data_talk:a38",
+   "mimic_data_talk:a22",
+   "mimic_data_talk:a110",
+   "mimic_data_talk:a21"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "FHIR (Fast Healthcare Interoperability Resources) — pronounced “ﬁre”",
+  "unit_id": "mimic_data_slides:p74:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "mimic_data_talk:a179",
+   "mimic_data_talk:a180",
+   "mimic_data_talk:a175",
+   "mimic_data_talk:a35",
+   "mimic_data_talk:a78",
+   "mimic_data_talk:a39",
+   "mimic_data_talk:a45",
+   "mimic_data_talk:a157"
+  ],
+  "population": 171
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Standards are often lacking \" 76",
+  "unit_id": "mimic_data_slides:p76:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "And there are lots of things for which we just don't have standards.",
+  "passages": [
+   "mimic_data_talk:a186",
+   "mimic_data_talk:a15",
+   "mimic_data_talk:a12",
+   "mimic_data_talk:a51",
+   "mimic_data_talk:a178",
+   "mimic_data_talk:a182",
+   "mimic_data_talk:a92",
+   "mimic_data_talk:a93"
+  ],
+  "population": 171
+ }
+]

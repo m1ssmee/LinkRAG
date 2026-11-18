@@ -87,6 +87,17 @@ evidence that the criterion means something.
 | name | source | deck→transcript | transcript→deck | deck→notes | diagram-heavy? | points? | verdict | who / date |
 |---|---|---:|---:|---:|---|---|---|---|
 | pilot01 | OSDI '18 Focus talk | 94.2 % | 61.1 % | 46.2 % | partly | yes (10 windows) | reference corpus, would be REJECTED | — / 2026-09-21 |
+| xfile mimic_data | MaViLS ML-for-health + MIMIC-III paper | 16.0 % [8.3, 28.5] (n=50) | — | — | yes (tables) | yes | **KEEP** | Claude (Sonnet judge, 3 runs) / 2026-11-18 |
+| xfile gp_scaling | MaViLS Numerics L03 + GPML ch. 8 | 30.0 % [19.1, 43.8] (n=50) | — | — | yes (plots) | yes | **KEEP** | Claude / 2026-11-18 |
+| xfile rl_mdp | MaViLS Silver L2 + Sutton & Barto ch. 3 | 32.0 % [20.8, 45.8] (n=50) | — | — | yes (MDP diagrams) | yes | **KEEP** | Claude / 2026-11-18 |
+| xfile nfa_closure | MaViLS 18.404 L2 + Erickson notes | 32.0 % [20.8, 45.8] (n=50) | — | — | yes (automata) | yes | **KEEP** | Claude / 2026-11-18 |
+| xfile visual_system | MaViLS 9.04 + OpenStax Psych ch. 5 | 40.0 % [27.6, 53.8] (n=50) | — | — | yes | yes | **KEEP** | Claude / 2026-11-18 |
+| xfile psych_methods | MaViLS 9.00 L2 + OpenStax Psych ch. 2 | sampled 56.0 % [42.3, 68.8], borderline; census **57.1 %** (89/156) | — | — | partly | yes | **KEEP** (census) | Claude / 2026-11-18 |
+| xfile lightning | MaViLS MAS.S62 L14 + Lightning paper | sampled 66.0 % [52.2, 77.6], borderline; census **67.3 %** (35/52) | — | — | partly | yes | **REJECT** (census > 65 %) | Claude / 2026-11-18 |
+
+XFile rows: deck→transcript only, the one pair the gate uses (`--pairs "deck->transcript"`). The
+other three directions are informational and were only partly answered (usage limit); see
+`results/xfile/HANDOFF.md`. Reports: `reports/redundancy_xfile_<topic>.md` and `_census.md`.
 
 ## What happens after KEEP
 

@@ -1,0 +1,1202 @@
+[
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "mas.s62 lecture 14 lightning network and cross chain swaps 2018-04-02 Tadge Dryja 1",
+  "unit_id": "lightning_slides:p1:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "lightning_talk:a0",
+   "lightning_talk:a54",
+   "lightning_talk:a47",
+   "lightning_talk:a1",
+   "lightning_talk:a75",
+   "lightning_talk:a38",
+   "lightning_talk:a72",
+   "lightning_talk:a48"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "today payment channels recap optimizations: key addition, hash trees cross chain swaps 2",
+  "unit_id": "lightning_slides:p2:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "We'll recap a little bit. We'll talk about some optimizations, one of which is key addition. The other is hash trees. And then we'll talk about cross-chain swaps or cross-chain atomic swaps.",
+  "passages": [
+   "lightning_talk:a1",
+   "lightning_talk:a120",
+   "lightning_talk:a95",
+   "lightning_talk:a72",
+   "lightning_talk:a47",
+   "lightning_talk:a60",
+   "lightning_talk:a87",
+   "lightning_talk:a38"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "revokable tx Commit Tx (held by Alice) input output fund txid Bob's signature Alice key & 100 blocks or AliceR & Bob key 2 coins Bob address 8 coins 3",
+  "unit_id": "lightning_slides:p3:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "However, when Alice broadcasts this, she needs to wait 100 blocks.",
+  "passages": [
+   "lightning_talk:a3",
+   "lightning_talk:a4",
+   "lightning_talk:a50",
+   "lightning_talk:a65",
+   "lightning_talk:a2",
+   "lightning_talk:a27",
+   "lightning_talk:a5",
+   "lightning_talk:a7"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "revokable tx Commit Tx (held by Bob) input output fund txid Alice's signature Alice address 2 coins Bob key & 100 blocks or Alice & BobR key 8 coins 4",
+  "unit_id": "lightning_slides:p4:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "The two coins that go to Alice go to her in the clear. However, the eight coins that Bob gets for himself, he has to wait 100 blocks.",
+  "passages": [
+   "lightning_talk:a3",
+   "lightning_talk:a4",
+   "lightning_talk:a50",
+   "lightning_talk:a2",
+   "lightning_talk:a27",
+   "lightning_talk:a5",
+   "lightning_talk:a65",
+   "lightning_talk:a68"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "add and delete states Fund txout A&B 10 Alice 1 BTC Bob 9 BTC State 1 Alice 5 BTC Bob 5 BTC State 2 In Lightning, states are added sequentially, and validity is enforced by revealing private keys to previous states 5",
+  "unit_id": "lightning_slides:p5:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "And then they revoke the old one by sharing these secrets.",
+  "passages": [
+   "lightning_talk:a5",
+   "lightning_talk:a26",
+   "lightning_talk:a55",
+   "lightning_talk:a49",
+   "lightning_talk:a27",
+   "lightning_talk:a4",
+   "lightning_talk:a69",
+   "lightning_talk:a65"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "add and delete states Fund txout A&B 10 Alice 1 BTC Bob 9 BTC State 1 Alice 5 BTC Bob 5 BTC State 2 In Lightning, states are added sequentially, and validity is enforced by revealing private keys to previous states 6",
+  "unit_id": "lightning_slides:p6:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "And then they revoke the old one by sharing these secrets.",
+  "passages": [
+   "lightning_talk:a5",
+   "lightning_talk:a26",
+   "lightning_talk:a55",
+   "lightning_talk:a49",
+   "lightning_talk:a27",
+   "lightning_talk:a4",
+   "lightning_talk:a69",
+   "lightning_talk:a3"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "add and delete states Fund txout A&B 10 Alice 1 BTC Bob 9 BTC State 1 Alice 5 BTC Bob 5 BTC State 2 Alice 9 BTC Bob 1 BTC State 3 In Lightning, states are added sequentially, and validity is enforced by revealing private keys to previous states 7",
+  "unit_id": "lightning_slides:p7:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "lightning_talk:a5",
+   "lightning_talk:a55",
+   "lightning_talk:a26",
+   "lightning_talk:a49",
+   "lightning_talk:a4",
+   "lightning_talk:a27",
+   "lightning_talk:a69",
+   "lightning_talk:a54"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "add and delete states Fund txout A&B 10 Alice 1 BTC Bob 9 BTC State 1 Alice 5 BTC Bob 5 BTC State 2 Alice 9 BTC Bob 1 BTC State 3 In Lightning, states are added sequentially, and validity is enforced by revealing private keys to previous states 8",
+  "unit_id": "lightning_slides:p8:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "yes"
+  ],
+  "span": "And then they revoke the old one by sharing these secrets.",
+  "passages": [
+   "lightning_talk:a5",
+   "lightning_talk:a55",
+   "lightning_talk:a26",
+   "lightning_talk:a49",
+   "lightning_talk:a4",
+   "lightning_talk:a27",
+   "lightning_talk:a69",
+   "lightning_talk:a54"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "reveal to revoke Either party broadcasts & has to wait Alice gives Bob the AliceR privKey Bob gives Alice the BobR privKey Now if they broadcast the counterparty can take all funds while they wait!",
+  "unit_id": "lightning_slides:p9:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "either party broadcasts and has to wait. Alice gives Bob the AliceR private key. Bob gives Alice the BobR private key. They broadcast. The counterparty takes all the funds.",
+  "passages": [
+   "lightning_talk:a7",
+   "lightning_talk:a6",
+   "lightning_talk:a50",
+   "lightning_talk:a5",
+   "lightning_talk:a68",
+   "lightning_talk:a69",
+   "lightning_talk:a3",
+   "lightning_talk:a2"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "preimage or private key KeyA && time || (KeyB && KeyC) optimizations here?",
+  "unit_id": "lightning_slides:p10:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "you can have a signature from key A, and you have to wait a day or two or five or whatever. Or you can have a signature from key B and a signature from key C.",
+  "passages": [
+   "lightning_talk:a8",
+   "lightning_talk:a7",
+   "lightning_talk:a9",
+   "lightning_talk:a14",
+   "lightning_talk:a15",
+   "lightning_talk:a11",
+   "lightning_talk:a10",
+   "lightning_talk:a12"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "preimage or private key KeyA && time || (KeyB && KeyC) KeyC could be a hash/preimage pair, 20 bytes instead of ~70 Even smaller?",
+  "unit_id": "lightning_slides:p11:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "you get down to like 20 bytes for a hash and a preimage.",
+  "passages": [
+   "lightning_talk:a8",
+   "lightning_talk:a27",
+   "lightning_talk:a9",
+   "lightning_talk:a11",
+   "lightning_talk:a13",
+   "lightning_talk:a50",
+   "lightning_talk:a7",
+   "lightning_talk:a63"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Adding keys Add KeyB and KeyC B + C = R what's the private key for R?",
+  "unit_id": "lightning_slides:p12:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So in the case where you have key B and key C, and you add them together to get, say, key R, what's the private key for key R?",
+  "passages": [
+   "lightning_talk:a10",
+   "lightning_talk:a11",
+   "lightning_talk:a12",
+   "lightning_talk:a13",
+   "lightning_talk:a14",
+   "lightning_talk:a7",
+   "lightning_talk:a9",
+   "lightning_talk:a27"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Adding keys Add KeyB and KeyC B + C = R what's the private key for D? bG + cG = rG (b + c)G = rG sum of private keys works 13",
+  "unit_id": "lightning_slides:p13:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Yeah, it's the sum of the private keys.",
+  "passages": [
+   "lightning_talk:a11",
+   "lightning_talk:a10",
+   "lightning_talk:a12",
+   "lightning_talk:a13",
+   "lightning_talk:a9",
+   "lightning_talk:a14",
+   "lightning_talk:a27",
+   "lightning_talk:a34"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "reduced script stack: 1 SigR OP_IF KeyR OP_ELSE <delay> OP_CHECKSEQUENCEVERIFY OP_DROP KeyA OP_ENDIF OP_CHECKSIG 15",
+  "unit_id": "lightning_slides:p15:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "You say OPIF, the key r, OPELSE, delay, OPCHECKSEQUENCEVERIFY, OPDROP, then the key A, then the ENDIF, then the OPCHECKSIG.",
+  "passages": [
+   "lightning_talk:a15",
+   "lightning_talk:a20",
+   "lightning_talk:a18",
+   "lightning_talk:a16",
+   "lightning_talk:a19",
+   "lightning_talk:a23",
+   "lightning_talk:a17",
+   "lightning_talk:a21"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "reduced script stack: 0 SigA OP_IF KeyR OP_ELSE <delay> OP_CHECKSEQUENCEVERIFY OP_DROP KeyA OP_ENDIF OP_CHECKSIG 16",
+  "unit_id": "lightning_slides:p16:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "You say OPIF, the key r, OPELSE, delay, OPCHECKSEQUENCEVERIFY, OPDROP, then the key A, then the ENDIF, then the OPCHECKSIG.",
+  "passages": [
+   "lightning_talk:a20",
+   "lightning_talk:a15",
+   "lightning_talk:a18",
+   "lightning_talk:a16",
+   "lightning_talk:a19",
+   "lightning_talk:a23",
+   "lightning_talk:a17",
+   "lightning_talk:a21"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "reveal key, revoke state need to keep track of old secrets one for each state 32 bytes each... not great for scaling 17",
+  "unit_id": "lightning_slides:p17:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "So you need to keep track of all these old things. So it's 32 bytes each. It's not great for scalability.",
+  "passages": [
+   "lightning_talk:a27",
+   "lightning_talk:a26",
+   "lightning_talk:a8",
+   "lightning_talk:a32",
+   "lightning_talk:a25",
+   "lightning_talk:a5",
+   "lightning_talk:a28",
+   "lightning_talk:a37"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "hash tree reveal secrets 1 at a time store only log(n) secrets recompute any received secret 18",
+  "unit_id": "lightning_slides:p18:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "You have a hash tree. So you reveal secrets one at a time. You store only log n secrets, and you recompute any secret you want with something around log n operations.",
+  "passages": [
+   "lightning_talk:a32",
+   "lightning_talk:a34",
+   "lightning_talk:a28",
+   "lightning_talk:a37",
+   "lightning_talk:a29",
+   "lightning_talk:a36",
+   "lightning_talk:a8",
+   "lightning_talk:a30"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 1 4 root (6) 2 0 5 3 19",
+  "unit_id": "lightning_slides:p19:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "yes"
+  ],
+  "span": "And you say, OK, if I wanted to send to the left, I append a 0 to the hash value of this root, and I hash to get down.",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a30",
+   "lightning_talk:a35",
+   "lightning_talk:a32",
+   "lightning_talk:a28",
+   "lightning_talk:a11",
+   "lightning_talk:a33",
+   "lightning_talk:a31"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 0 20",
+  "unit_id": "lightning_slides:p20:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "if I wanted to send to the left, I append a 0 to the hash value of this root, and I hash to get down. And if I want to go right, I append a 1 at the end, hash that",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a35",
+   "lightning_talk:a30",
+   "lightning_talk:a60",
+   "lightning_talk:a32",
+   "lightning_talk:a114",
+   "lightning_talk:a10",
+   "lightning_talk:a29"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 0 1 21",
+  "unit_id": "lightning_slides:p21:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "if I wanted to send to the left, I append a 0 to the hash value of this root, and I hash to get down. And if I want to go right, I append a 1 at the end, hash that",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a35",
+   "lightning_talk:a30",
+   "lightning_talk:a60",
+   "lightning_talk:a114",
+   "lightning_talk:a29",
+   "lightning_talk:a32",
+   "lightning_talk:a10"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 1 2 0 22",
+  "unit_id": "lightning_slides:p22:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "if I wanted to send to the left, I append a 0 to the hash value of this root, and I hash to get down. And if I want to go right, I append a 1 at the end, hash that, and then I go down here.",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a35",
+   "lightning_talk:a30",
+   "lightning_talk:a32",
+   "lightning_talk:a60",
+   "lightning_talk:a28",
+   "lightning_talk:a29",
+   "lightning_talk:a37"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 1 2 0 23",
+  "unit_id": "lightning_slides:p23:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "And if I want to go right, I append a 1 at the end, hash that, and then I go down here.",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a30",
+   "lightning_talk:a35",
+   "lightning_talk:a60",
+   "lightning_talk:a32",
+   "lightning_talk:a114",
+   "lightning_talk:a31",
+   "lightning_talk:a29"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 1 3 2 0 24",
+  "unit_id": "lightning_slides:p24:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "no"
+  ],
+  "span": "if I wanted to send to the left, I append a 0 to the hash value of this root, and I hash to get down. And if I want to go right, I append a 1 at the end, hash that, and then I go down here.",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a30",
+   "lightning_talk:a35",
+   "lightning_talk:a32",
+   "lightning_talk:a60",
+   "lightning_talk:a31",
+   "lightning_talk:a29",
+   "lightning_talk:a28"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 1 3 4 2 0 25",
+  "unit_id": "lightning_slides:p25:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "if I wanted to send to the left, I append a 0 to the hash value of this root, and I hash to get down. And if I want to go right, I append a 1 at the end, hash that, and then I go down here.",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a30",
+   "lightning_talk:a35",
+   "lightning_talk:a32",
+   "lightning_talk:a31",
+   "lightning_talk:a60",
+   "lightning_talk:a11",
+   "lightning_talk:a29"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 1 4 2 0 5 3 26",
+  "unit_id": "lightning_slides:p26:t0",
+  "entailed": true,
+  "votes": [
+   "no",
+   "yes",
+   "yes"
+  ],
+  "span": "I append a 0 to the hash value of this root, and I hash to get down. And if I want to go right, I append a 1 at the end, hash that, and then I go down here.",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a30",
+   "lightning_talk:a35",
+   "lightning_talk:a32",
+   "lightning_talk:a31",
+   "lightning_talk:a60",
+   "lightning_talk:a36",
+   "lightning_talk:a28"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 1 4 2 0 5 3 27",
+  "unit_id": "lightning_slides:p27:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "I append a 0 to the hash value of this root, and I hash to get down.",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a30",
+   "lightning_talk:a35",
+   "lightning_talk:a32",
+   "lightning_talk:a31",
+   "lightning_talk:a60",
+   "lightning_talk:a28",
+   "lightning_talk:a36"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 1 4 6 2 0 5 3 28",
+  "unit_id": "lightning_slides:p28:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "yes"
+  ],
+  "span": "if I wanted to send to the left, I append a 0 to the hash value of this root, and I hash to get down",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a30",
+   "lightning_talk:a35",
+   "lightning_talk:a32",
+   "lightning_talk:a60",
+   "lightning_talk:a31",
+   "lightning_talk:a29",
+   "lightning_talk:a28"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Elkrem left child: append 0, hash right child: append 1, hash 1 4 6 2 0 5 3 29",
+  "unit_id": "lightning_slides:p29:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "if I wanted to send to the left, I append a 0 to the hash value of this root, and I hash to get down. And if I want to go right, I append a 1 at the end, hash that, and then I go down here.",
+  "passages": [
+   "lightning_talk:a34",
+   "lightning_talk:a30",
+   "lightning_talk:a35",
+   "lightning_talk:a32",
+   "lightning_talk:a28",
+   "lightning_talk:a31",
+   "lightning_talk:a60",
+   "lightning_talk:a11"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "intermission 0x7f sec to stretch 30",
+  "unit_id": "lightning_slides:p30:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "lightning_talk:a15",
+   "lightning_talk:a70",
+   "lightning_talk:a16",
+   "lightning_talk:a20",
+   "lightning_talk:a51",
+   "lightning_talk:a37",
+   "lightning_talk:a50",
+   "lightning_talk:a7"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "cross chain there are altcoins most of them (used to) work like Bitcoin, as they just copied the whole codebase on github (see e.g. coingen.io) some recent coins very different 31",
+  "unit_id": "lightning_slides:p31:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "lightning_talk:a38",
+   "lightning_talk:a87",
+   "lightning_talk:a39",
+   "lightning_talk:a120",
+   "lightning_talk:a41",
+   "lightning_talk:a122",
+   "lightning_talk:a59",
+   "lightning_talk:a121"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "cross chain people trade altcoins for bitcoins they even trade altcoins for altcoins how to trade? use \"exchanges\" 32",
+  "unit_id": "lightning_slides:p32:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "People trade altcoins for bitcoins and trade altcoins for altcoins, and they use exchanges.",
+  "passages": [
+   "lightning_talk:a41",
+   "lightning_talk:a38",
+   "lightning_talk:a75",
+   "lightning_talk:a47",
+   "lightning_talk:a87",
+   "lightning_talk:a120",
+   "lightning_talk:a107",
+   "lightning_talk:a92"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "coin exchanges exchange model: give us all your coins post orders on our site to swap ask for your coins back 33",
+  "unit_id": "lightning_slides:p33:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "give us all your coins, post orders on our site to swap with other users, and then ask for your coins back",
+  "passages": [
+   "lightning_talk:a42",
+   "lightning_talk:a91",
+   "lightning_talk:a88",
+   "lightning_talk:a98",
+   "lightning_talk:a47",
+   "lightning_talk:a38",
+   "lightning_talk:a110",
+   "lightning_talk:a41"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "coin exchanges exchange model: give us all your coins (this part works fine) post orders on our site to swap ask for your coins back 34",
+  "unit_id": "lightning_slides:p34:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "And so the current exchange model, pretty much without fail, is give us all your coins, post orders on our site to swap with other users, and then ask for your coins back.",
+  "passages": [
+   "lightning_talk:a42",
+   "lightning_talk:a91",
+   "lightning_talk:a98",
+   "lightning_talk:a88",
+   "lightning_talk:a41",
+   "lightning_talk:a38",
+   "lightning_talk:a110",
+   "lightning_talk:a99"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "coin exchanges exchange model: give us all your coins post orders on our site to swap ask for your coins back (here's where the model tends to fail) 35",
+  "unit_id": "lightning_slides:p35:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "give us all your coins, post orders on our site to swap with other users, and then ask for your coins back",
+  "passages": [
+   "lightning_talk:a42",
+   "lightning_talk:a91",
+   "lightning_talk:a98",
+   "lightning_talk:a99",
+   "lightning_talk:a88",
+   "lightning_talk:a46",
+   "lightning_talk:a82",
+   "lightning_talk:a56"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "cross-chain swaps no custody you get coinA iff I get coinB use HTLCs just like in lightning network channels are on different networks 36",
+  "unit_id": "lightning_slides:p36:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "we can swap between them without giving custody to some third party, or even giving custody to each other? So you can do this using hash time lock contracts, just like in the Lightning Network. So you get this coin if and only if I get this other coin.",
+  "passages": [
+   "lightning_talk:a47",
+   "lightning_talk:a54",
+   "lightning_talk:a49",
+   "lightning_talk:a48",
+   "lightning_talk:a72",
+   "lightning_talk:a1",
+   "lightning_talk:a65",
+   "lightning_talk:a75"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "Preimage determines who spends Commit Tx (held by Bob) input output fund txid Alice's signature Alice address: 2 coins Bob key && 100 blocks || Alice && BobR key 7 coins HTLC Alice && R || Bob && height 500000 1 coin 37",
+  "unit_id": "lightning_slides:p37:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "lightning_talk:a50",
+   "lightning_talk:a3",
+   "lightning_talk:a4",
+   "lightning_talk:a2",
+   "lightning_talk:a65",
+   "lightning_talk:a64",
+   "lightning_talk:a5",
+   "lightning_talk:a7"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "HTLC construction Alice Bob Alice DOGE VTC H = hash(R) 38",
+  "unit_id": "lightning_slides:p38:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Alice computes a random number, r, hashes it to make h.",
+  "passages": [
+   "lightning_talk:a60",
+   "lightning_talk:a50",
+   "lightning_talk:a65",
+   "lightning_talk:a61",
+   "lightning_talk:a52",
+   "lightning_talk:a106",
+   "lightning_talk:a64",
+   "lightning_talk:a114"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "HTLC forwarding Alice Bob Alice DOGE VTC H, R H HTLC: Bob && R || Alice && 17:00 40",
+  "unit_id": "lightning_slides:p40:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "she constructs an HTLC to Bob and says, OK, if Bob knows r, he gets this money. Otherwise, Alice gets it after 5 o'clock.",
+  "passages": [
+   "lightning_talk:a61",
+   "lightning_talk:a54",
+   "lightning_talk:a65",
+   "lightning_talk:a52",
+   "lightning_talk:a67",
+   "lightning_talk:a66",
+   "lightning_talk:a64",
+   "lightning_talk:a60"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "HTLC forwarding HTLC: Bob && R || Alice && 17:00 Alice DOGE Bob H Alice VTC HTLC: Alice && R || Bob && 16:00 H, R H 41",
+  "unit_id": "lightning_slides:p41:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "lightning_talk:a61",
+   "lightning_talk:a54",
+   "lightning_talk:a52",
+   "lightning_talk:a65",
+   "lightning_talk:a60",
+   "lightning_talk:a64",
+   "lightning_talk:a66",
+   "lightning_talk:a67"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "HTLC clearing Alice Bob Alice DOGE VTC H, R H HTLC: Bob && R || Alice && 17:00 H, R reveal R, clear HTLC 42",
+  "unit_id": "lightning_slides:p42:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "I'm clearing out this HTLC, because here's r.",
+  "passages": [
+   "lightning_talk:a65",
+   "lightning_talk:a61",
+   "lightning_talk:a66",
+   "lightning_talk:a64",
+   "lightning_talk:a54",
+   "lightning_talk:a67",
+   "lightning_talk:a52",
+   "lightning_talk:a60"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "HTLC clearing Alice Bob Alice DOGE VTC H, R H HTLC: Bob && R || Alice && 17:00 H, R 43",
+  "unit_id": "lightning_slides:p43:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "no",
+   "yes"
+  ],
+  "span": "I'm clearing out this HTLC, because here's r.",
+  "passages": [
+   "lightning_talk:a61",
+   "lightning_talk:a65",
+   "lightning_talk:a54",
+   "lightning_talk:a66",
+   "lightning_talk:a67",
+   "lightning_talk:a50",
+   "lightning_talk:a64",
+   "lightning_talk:a60"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "HTLC clearing Alice Bob Alice DOGE VTC H, R H, R H, R reveal R, clear HTLC 44",
+  "unit_id": "lightning_slides:p44:t0",
+  "entailed": true,
+  "votes": [
+   "no",
+   "yes",
+   "yes"
+  ],
+  "span": "Alice can just reveal r directly to Bob. Say, OK, I'm clearing out this HTLC, because here's r.",
+  "passages": [
+   "lightning_talk:a65",
+   "lightning_talk:a61",
+   "lightning_talk:a64",
+   "lightning_talk:a66",
+   "lightning_talk:a60",
+   "lightning_talk:a50",
+   "lightning_talk:a52",
+   "lightning_talk:a54"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "HTLC clearing Alice Bob Alice DOGE VTC H, R H, R H, R reveal R, clear HTLC 45",
+  "unit_id": "lightning_slides:p45:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "Alice can just reveal r directly to Bob. Say, OK, I'm clearing out this HTLC, because here's r.",
+  "passages": [
+   "lightning_talk:a65",
+   "lightning_talk:a66",
+   "lightning_talk:a61",
+   "lightning_talk:a60",
+   "lightning_talk:a64",
+   "lightning_talk:a50",
+   "lightning_talk:a54",
+   "lightning_talk:a52"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "cross chain swaps H can be revealed on either chain, so both parties need to watch both blockchains They have channels on each chain so that makes sense Receiver doesn't need to be initiator, but probably will be 46",
+  "unit_id": "lightning_slides:p46:t0",
+  "entailed": false,
+  "votes": [
+   "yes",
+   "no",
+   "no"
+  ],
+  "span": "R is then revealed on either chain, so that both parties need to watch both blockchains.",
+  "passages": [
+   "lightning_talk:a72",
+   "lightning_talk:a75",
+   "lightning_talk:a1",
+   "lightning_talk:a81",
+   "lightning_talk:a120",
+   "lightning_talk:a47",
+   "lightning_talk:a87",
+   "lightning_talk:a54"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "how to trade good for trade execution, but what about discovery? post orders on blockchain? non-binding, frontrunning, non-scalable 47",
+  "unit_id": "lightning_slides:p47:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "This is really good for trade execution, but what about discovery?",
+  "passages": [
+   "lightning_talk:a81",
+   "lightning_talk:a83",
+   "lightning_talk:a117",
+   "lightning_talk:a82",
+   "lightning_talk:a85",
+   "lightning_talk:a118",
+   "lightning_talk:a120",
+   "lightning_talk:a131"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "how to trade multiple models: central orderbook & counterparty exchange is one side of every trade and keeps the spread similar centralization to current custodial model, but less risk 48",
+  "unit_id": "lightning_slides:p48:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "But it has similar centralization to the current model. But there is less counterparty risk.",
+  "passages": [
+   "lightning_talk:a91",
+   "lightning_talk:a88",
+   "lightning_talk:a100",
+   "lightning_talk:a99",
+   "lightning_talk:a90",
+   "lightning_talk:a96",
+   "lightning_talk:a102",
+   "lightning_talk:a89"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "how to trade multiple models: central orderbook, multiple counterparties connecting to many counterparties is costly how to enforce trade execution?",
+  "unit_id": "lightning_slides:p49:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "But there's questions in that if you're connecting to many counterparties, it's costly.",
+  "passages": [
+   "lightning_talk:a93",
+   "lightning_talk:a96",
+   "lightning_talk:a105",
+   "lightning_talk:a100",
+   "lightning_talk:a104",
+   "lightning_talk:a92",
+   "lightning_talk:a88",
+   "lightning_talk:a102"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "how to trade multiple models: distributed orderbook how to ensure fairness? how to enforce trade execution? scalability of orders?",
+  "unit_id": "lightning_slides:p50:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "how do you ensure fairness in terms of timing? How do you enforce trade execution?",
+  "passages": [
+   "lightning_talk:a118",
+   "lightning_talk:a117",
+   "lightning_talk:a115",
+   "lightning_talk:a105",
+   "lightning_talk:a116",
+   "lightning_talk:a93",
+   "lightning_talk:a83",
+   "lightning_talk:a81"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "cross-chain swaps basic idea works, but still many unsolved questions further research required people working on this here!",
+  "unit_id": "lightning_slides:p51:t0",
+  "entailed": true,
+  "votes": [
+   "yes",
+   "yes",
+   "yes"
+  ],
+  "span": "the basic idea works. There's still a lot of unsolved questions, further research required",
+  "passages": [
+   "lightning_talk:a120",
+   "lightning_talk:a122",
+   "lightning_talk:a1",
+   "lightning_talk:a38",
+   "lightning_talk:a87",
+   "lightning_talk:a96",
+   "lightning_talk:a75",
+   "lightning_talk:a81"
+  ],
+  "population": 52
+ },
+ {
+  "source": "deck",
+  "target": "transcript",
+  "sentence": "MIT OpenCourseWare https://ocw.mit.edu/ MAS.S62 Cryptocurrency Engineering and Design Spring 2018 For information about citing these materials or our Terms of Use, visit: https://ocw.mit.edu/terms.",
+  "unit_id": "lightning_slides:p52:t0",
+  "entailed": false,
+  "votes": [
+   "no",
+   "no",
+   "no"
+  ],
+  "span": "",
+  "passages": [
+   "lightning_talk:a0",
+   "lightning_talk:a38",
+   "lightning_talk:a121",
+   "lightning_talk:a39",
+   "lightning_talk:a120",
+   "lightning_talk:a87",
+   "lightning_talk:a122",
+   "lightning_talk:a44"
+  ],
+  "population": 52
+ }
+]
