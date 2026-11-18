@@ -230,27 +230,53 @@ def document_pair_gate(figures: Sequence[EvidenceUnit], texts: Sequence[Evidence
     f_vec = np.asarray(encoder(fig_text), dtype="float32")
     f_vec /= np.maximum(np.linalg.norm(f_vec, axis=1, keepdims=True), 1e-9)
 
-    def stat(text_list: list[str]) -> float:
-        t_vec = np.asarray(encoder(text_list), dtype="float32")
-        t_vec /= np.maximum(np.linalg.norm(t_vec, axis=1, keepdims=True), 1e-9)
+    def stat(t_vec: np.ndarray) -> float:
         return float((f_vec @ t_vec.T).max(axis=1).mean())
 
-    true = stat(originals)
+    t_vecs = _text_side_vectors(originals, encoder=encoder, shuffles=shuffles, seed=seed)
+    true = stat(t_vecs[0])
+    nulls = [stat(v) for v in t_vecs[1:]]
+    if cache is not None:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps({"score": true, "nulls": nulls}))
+    return _gate_verdict(true, nulls, z)
+
+
+_TEXT_SIDE: dict[tuple, list[np.ndarray]] = {}
+
+
+def _text_side_vectors(originals: list[str], *, encoder: Encoder, shuffles: int, seed: int) -> list[np.ndarray]:
+    """[true, null_1 .. null_shuffles]: document B's normalised embeddings, then its word shuffles.
+
+    The shuffles depend only on B's text, the seed and the count, never on document A. So in a
+    corpus of many documents every (A, B) pair asks for the same B-side vectors. Embedding them
+    once per B instead of once per pair gives identical numbers (same encoder, same inputs, same
+    order) and skips (number of figure documents - 1) x (1 + shuffles) re-embeddings per B. On XFile
+    (12 figure docs x 14 text docs) that is the difference between ~2 days and a few hours.
+    """
+    import random
+    key = (id(encoder), getattr(encoder, "model", None), shuffles, seed, tuple(originals))
+    if key in _TEXT_SIDE:
+        return _TEXT_SIDE[key]
+
+    def embed(text_list: list[str]) -> np.ndarray:
+        t_vec = np.asarray(encoder(text_list), dtype="float32")
+        t_vec /= np.maximum(np.linalg.norm(t_vec, axis=1, keepdims=True), 1e-9)
+        return t_vec
+
+    vecs = [embed(originals)]
     words = [w for t in originals for w in t.split()]
     lengths = [len(t.split()) for t in originals]
     rng = random.Random(seed)
-    nulls = []
     for _ in range(shuffles):
         rng.shuffle(words)
         out, pos = [], 0
         for n in lengths:
             out.append(" ".join(words[pos:pos + n]) or "(empty)")
             pos += n
-        nulls.append(stat(out))
-    if cache is not None:
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        cache.write_text(json.dumps({"score": true, "nulls": nulls}))
-    return _gate_verdict(true, nulls, z)
+        vecs.append(embed(out))
+    _TEXT_SIDE[key] = vecs
+    return vecs
 
 
 def _gate_verdict(true: float, nulls: list[float], z: float) -> dict:

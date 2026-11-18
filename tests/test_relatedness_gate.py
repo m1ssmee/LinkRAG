@@ -173,3 +173,33 @@ def test_document_pair_gate_cache_replays_the_same_verdict(tmp_path, stub_encode
     calls.clear()
     warm = document_pair_gate(figs, texts, encoder=enc, z=2.0, cache_dir=tmp_path)
     assert calls == [] and warm == first == cold
+
+
+def test_document_pair_gate_embeds_each_text_document_once(stub_encoder) -> None:
+    """The B side (text + its word shuffles) does not depend on A, so it is embedded once per B and
+    reused for every figure document. The verdicts are the same as a fresh computation."""
+    import numpy as np
+    from linkrag.link import figure_text as ft
+
+    def unit(uid, mod, text, src):
+        return EvidenceUnit(id=uid, modality=mod, content=text, source_file=src, location=Location(page=1))
+
+    texts = [unit(f"t{i}", "text", w, "b.pdf") for i, w in
+             enumerate(["value iteration converges", "bellman backup operator", "policy evaluation sweep"])]
+    figs_a = [unit("fa", "figure", "bellman backup diagram", "a.pdf")]
+    figs_c = [unit("fc", "figure", "policy evaluation plot", "c.pdf")]
+    base = stub_encoder([u.content for u in texts + figs_a + figs_c])
+    calls = []
+
+    def enc(batch):
+        calls.append(tuple(batch))
+        return base(batch)
+
+    ft._TEXT_SIDE.clear()
+    a = ft.document_pair_gate(figs_a, texts, encoder=enc, z=1.0, shuffles=4)
+    c = ft.document_pair_gate(figs_c, texts, encoder=enc, z=1.0, shuffles=4)
+    text_side = [b for b in calls if len(b) == len(texts)]
+    assert len(text_side) == 1 + 4                      # true + 4 shuffles, once for both pairs
+    ft._TEXT_SIDE.clear()                               # fresh computation gives the same verdicts
+    assert ft.document_pair_gate(figs_a, texts, encoder=base, z=1.0, shuffles=4) == a
+    assert ft.document_pair_gate(figs_c, texts, encoder=base, z=1.0, shuffles=4) == c
