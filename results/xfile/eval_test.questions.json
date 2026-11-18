@@ -1,0 +1,4800 @@
+{
+ "corpus": "a086ca1c22dc1d93",
+ "label": "XFile test half (gp_scaling, mimic_data, rl_mdp), frozen default knobs, cache-only replay",
+ "k": 8,
+ "repeats": 3,
+ "questions": [
+  {
+   "qid": "RL02",
+   "topic": "rl_mdp",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "RL04",
+   "topic": "rl_mdp",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "RL05",
+   "topic": "rl_mdp",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "RL06",
+   "topic": "rl_mdp",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "RL07",
+   "topic": "rl_mdp",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "RL08",
+   "topic": "rl_mdp",
+   "type": "cross_modal_split",
+   "kind": "conjunction"
+  },
+  {
+   "qid": "RL10",
+   "topic": "rl_mdp",
+   "type": "slides_only",
+   "kind": "deictic"
+  },
+  {
+   "qid": "RL11",
+   "topic": "rl_mdp",
+   "type": "audio_only",
+   "kind": "control"
+  },
+  {
+   "qid": "RL12",
+   "topic": "rl_mdp",
+   "type": "audio_only",
+   "kind": "control"
+  },
+  {
+   "qid": "RL13",
+   "topic": "rl_mdp",
+   "type": "slides_only",
+   "kind": "control"
+  },
+  {
+   "qid": "RL14",
+   "topic": "rl_mdp",
+   "type": "paper_only",
+   "kind": "control"
+  },
+  {
+   "qid": "GP01",
+   "topic": "gp_scaling",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "GP02",
+   "topic": "gp_scaling",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "GP03",
+   "topic": "gp_scaling",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "GP05",
+   "topic": "gp_scaling",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "GP06",
+   "topic": "gp_scaling",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "GP07",
+   "topic": "gp_scaling",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "GP08",
+   "topic": "gp_scaling",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "GP09",
+   "topic": "gp_scaling",
+   "type": "audio_only",
+   "kind": "deictic"
+  },
+  {
+   "qid": "GP10",
+   "topic": "gp_scaling",
+   "type": "slides_only",
+   "kind": "deictic"
+  },
+  {
+   "qid": "GP11",
+   "topic": "gp_scaling",
+   "type": "audio_only",
+   "kind": "control"
+  },
+  {
+   "qid": "GP12",
+   "topic": "gp_scaling",
+   "type": "audio_only",
+   "kind": "control"
+  },
+  {
+   "qid": "GP13",
+   "topic": "gp_scaling",
+   "type": "slides_only",
+   "kind": "control"
+  },
+  {
+   "qid": "GP14",
+   "topic": "gp_scaling",
+   "type": "paper_only",
+   "kind": "control"
+  },
+  {
+   "qid": "MD01",
+   "topic": "mimic_data",
+   "type": "audio_only",
+   "kind": "bridge"
+  },
+  {
+   "qid": "MD02",
+   "topic": "mimic_data",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "MD03",
+   "topic": "mimic_data",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "MD04",
+   "topic": "mimic_data",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "MD05",
+   "topic": "mimic_data",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "MD06",
+   "topic": "mimic_data",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "MD07",
+   "topic": "mimic_data",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "MD08",
+   "topic": "mimic_data",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "MD09",
+   "topic": "mimic_data",
+   "type": "slides_only",
+   "kind": "deictic"
+  },
+  {
+   "qid": "MD10",
+   "topic": "mimic_data",
+   "type": "cross_modal_deictic",
+   "kind": "deictic"
+  },
+  {
+   "qid": "MD11",
+   "topic": "mimic_data",
+   "type": "audio_only",
+   "kind": "control"
+  },
+  {
+   "qid": "MD12",
+   "topic": "mimic_data",
+   "type": "audio_only",
+   "kind": "control"
+  },
+  {
+   "qid": "MD13",
+   "topic": "mimic_data",
+   "type": "slides_only",
+   "kind": "control"
+  },
+  {
+   "qid": "MD14",
+   "topic": "mimic_data",
+   "type": "paper_only",
+   "kind": "control"
+  }
+ ],
+ "correct": {
+  "RL02|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "RL02|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL02|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL04|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "RL04|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL04|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL05|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "RL05|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL05|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL06|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "RL06|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL06|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL07|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "RL07|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL07|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL08|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "RL08|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL08|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL10|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "RL10|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL10|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL11|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "RL11|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL11|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL12|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "RL12|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL12|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL13|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "RL13|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL13|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL14|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "RL14|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL14|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP01|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "GP01|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP01|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP02|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "GP02|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP02|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP03|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "GP03|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP03|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP05|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "GP05|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP05|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP06|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "GP06|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP06|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP07|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "GP07|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP07|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP08|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "GP08|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP08|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP09|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "GP09|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP09|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP10|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "GP10|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP10|baseline|complementarity": [
+   false,
+   true,
+   false
+  ],
+  "GP11|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "GP11|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP11|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP12|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "GP12|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP12|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP13|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "GP13|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP13|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP14|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "GP14|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP14|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD01|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "MD01|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD01|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD02|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "MD02|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD02|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD03|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "MD03|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD03|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD04|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "MD04|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD04|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD05|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "MD05|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD05|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD06|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "MD06|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD06|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD07|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "MD07|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD07|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD08|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "MD08|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD08|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD09|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "MD09|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD09|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD10|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "MD10|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD10|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD11|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "MD11|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD11|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD12|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "MD12|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD12|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD13|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "MD13|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD13|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD14|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "MD14|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD14|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL02|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "RL02|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL02|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL04|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "RL04|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL04|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL05|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "RL05|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL05|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL06|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "RL06|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL06|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL07|iterative|none": [
+   false,
+   true,
+   false
+  ],
+  "RL07|iterative|mmr": [
+   false,
+   true,
+   false
+  ],
+  "RL07|iterative|complementarity": [
+   false,
+   false,
+   true
+  ],
+  "RL08|iterative|none": [
+   false,
+   true,
+   false
+  ],
+  "RL08|iterative|mmr": [
+   false,
+   true,
+   false
+  ],
+  "RL08|iterative|complementarity": [
+   false,
+   true,
+   false
+  ],
+  "RL10|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "RL10|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL10|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL11|iterative|none": [
+   false,
+   false,
+   true
+  ],
+  "RL11|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL11|iterative|complementarity": [
+   true,
+   true,
+   false
+  ],
+  "RL12|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "RL12|iterative|mmr": [
+   true,
+   false,
+   true
+  ],
+  "RL12|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL13|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "RL13|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL13|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL14|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "RL14|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL14|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP01|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "GP01|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP01|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP02|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "GP02|iterative|mmr": [
+   false,
+   true,
+   true
+  ],
+  "GP02|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP03|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "GP03|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP03|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP05|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "GP05|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP05|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP06|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "GP06|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP06|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP07|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "GP07|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP07|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP08|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "GP08|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP08|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP09|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "GP09|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP09|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP10|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "GP10|iterative|mmr": [
+   true,
+   false,
+   true
+  ],
+  "GP10|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP11|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "GP11|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP11|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP12|iterative|none": [
+   true,
+   true,
+   false
+  ],
+  "GP12|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP12|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP13|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "GP13|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP13|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP14|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "GP14|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP14|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD01|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD01|iterative|mmr": [
+   true,
+   true,
+   false
+  ],
+  "MD01|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD02|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "MD02|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD02|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD03|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "MD03|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD03|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD04|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD04|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD04|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD05|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD05|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD05|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD06|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "MD06|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD06|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD07|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD07|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD07|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD08|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD08|iterative|mmr": [
+   true,
+   true,
+   false
+  ],
+  "MD08|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD09|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD09|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD09|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD10|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD10|iterative|mmr": [
+   true,
+   true,
+   false
+  ],
+  "MD10|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD11|iterative|none": [
+   false,
+   true,
+   false
+  ],
+  "MD11|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD11|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD12|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD12|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD12|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD13|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD13|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD13|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD14|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "MD14|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD14|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL02|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "RL02|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL02|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL04|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "RL04|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL04|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL05|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "RL05|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL05|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL06|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "RL06|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL06|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL07|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "RL07|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL07|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL08|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "RL08|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL08|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL10|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "RL10|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL10|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL11|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "RL11|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL11|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL12|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "RL12|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL12|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL13|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "RL13|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL13|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL14|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "RL14|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL14|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP01|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "GP01|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP01|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP02|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "GP02|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP02|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP03|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "GP03|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP03|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP05|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "GP05|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP05|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP06|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "GP06|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP06|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP07|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "GP07|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP07|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP08|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "GP08|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP08|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP09|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "GP09|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP09|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP10|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "GP10|linkrag|mmr": [
+   true,
+   false,
+   false
+  ],
+  "GP10|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP11|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "GP11|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP11|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP12|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "GP12|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP12|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP13|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "GP13|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP13|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP14|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "GP14|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP14|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD01|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "MD01|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD01|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD02|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "MD02|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD02|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD03|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "MD03|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD03|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD04|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "MD04|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD04|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD05|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "MD05|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD05|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD06|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "MD06|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD06|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD07|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "MD07|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD07|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD08|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "MD08|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD08|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD09|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "MD09|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD09|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD10|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "MD10|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD10|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD11|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "MD11|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD11|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD12|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "MD12|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD12|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD13|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "MD13|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD13|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD14|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "MD14|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD14|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL02|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "RL02|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL02|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL04|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "RL04|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL04|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL05|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "RL05|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL05|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL06|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "RL06|linkrag_iter|mmr": [
+   false,
+   true,
+   true
+  ],
+  "RL06|linkrag_iter|complementarity": [
+   false,
+   true,
+   true
+  ],
+  "RL07|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "RL07|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL07|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL08|linkrag_iter|none": [
+   true,
+   false,
+   false
+  ],
+  "RL08|linkrag_iter|mmr": [
+   true,
+   false,
+   false
+  ],
+  "RL08|linkrag_iter|complementarity": [
+   true,
+   false,
+   false
+  ],
+  "RL10|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "RL10|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "RL10|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "RL11|linkrag_iter|none": [
+   false,
+   true,
+   false
+  ],
+  "RL11|linkrag_iter|mmr": [
+   false,
+   true,
+   true
+  ],
+  "RL11|linkrag_iter|complementarity": [
+   false,
+   true,
+   true
+  ],
+  "RL12|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "RL12|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL12|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL13|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "RL13|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL13|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "RL14|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "RL14|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "RL14|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP01|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "GP01|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP01|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP02|linkrag_iter|none": [
+   false,
+   true,
+   true
+  ],
+  "GP02|linkrag_iter|mmr": [
+   false,
+   true,
+   true
+  ],
+  "GP02|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP03|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "GP03|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP03|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP05|linkrag_iter|none": [
+   false,
+   false,
+   true
+  ],
+  "GP05|linkrag_iter|mmr": [
+   false,
+   false,
+   true
+  ],
+  "GP05|linkrag_iter|complementarity": [
+   false,
+   false,
+   true
+  ],
+  "GP06|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "GP06|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP06|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP07|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "GP07|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP07|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP08|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "GP08|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP08|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP09|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "GP09|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP09|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP10|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "GP10|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP10|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP11|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "GP11|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "GP11|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "GP12|linkrag_iter|none": [
+   true,
+   false,
+   true
+  ],
+  "GP12|linkrag_iter|mmr": [
+   true,
+   false,
+   true
+  ],
+  "GP12|linkrag_iter|complementarity": [
+   false,
+   true,
+   true
+  ],
+  "GP13|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "GP13|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP13|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "GP14|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "GP14|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "GP14|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD01|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "MD01|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD01|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD02|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "MD02|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD02|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD03|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "MD03|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "MD03|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "MD04|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "MD04|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD04|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD05|linkrag_iter|none": [
+   true,
+   true,
+   false
+  ],
+  "MD05|linkrag_iter|mmr": [
+   true,
+   true,
+   false
+  ],
+  "MD05|linkrag_iter|complementarity": [
+   true,
+   true,
+   false
+  ],
+  "MD06|linkrag_iter|none": [
+   true,
+   false,
+   false
+  ],
+  "MD06|linkrag_iter|mmr": [
+   true,
+   false,
+   false
+  ],
+  "MD06|linkrag_iter|complementarity": [
+   true,
+   false,
+   false
+  ],
+  "MD07|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "MD07|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD07|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD08|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "MD08|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD08|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD09|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "MD09|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD09|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD10|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "MD10|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD10|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD11|linkrag_iter|none": [
+   false,
+   false,
+   true
+  ],
+  "MD11|linkrag_iter|mmr": [
+   false,
+   false,
+   true
+  ],
+  "MD11|linkrag_iter|complementarity": [
+   false,
+   false,
+   true
+  ],
+  "MD12|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "MD12|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD12|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD13|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "MD13|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD13|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "MD14|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "MD14|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "MD14|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ]
+ },
+ "recall": {
+  "RL02|baseline|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL02|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL02|baseline|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL04|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL04|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL04|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL05|baseline|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL05|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL05|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL06|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL06|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL06|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL07|baseline|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL07|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL07|baseline|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL08|baseline|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL08|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL08|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL10|baseline|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL10|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL10|baseline|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL11|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL11|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL11|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL12|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL12|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL12|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL14|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP01|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP02|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP02|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP02|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP03|baseline|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP03|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP03|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP05|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP05|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "GP05|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "GP06|baseline|none": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "GP06|baseline|mmr": [
+   0.4,
+   0.4,
+   0.4
+  ],
+  "GP06|baseline|complementarity": [
+   0.6,
+   0.6,
+   0.6
+  ],
+  "GP07|baseline|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP07|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "GP07|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "GP08|baseline|none": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "GP08|baseline|mmr": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "GP08|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP09|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP09|baseline|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP09|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP10|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP10|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "GP10|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP11|baseline|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP11|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP11|baseline|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP12|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP12|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP12|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP14|baseline|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP14|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP14|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD01|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD01|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD01|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD02|baseline|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD02|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD02|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD03|baseline|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD03|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD03|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD04|baseline|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD04|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD04|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD05|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD05|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD05|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD06|baseline|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD06|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD06|baseline|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "MD07|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD07|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD07|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD09|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD09|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD09|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD10|baseline|none": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "MD10|baseline|mmr": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "MD10|baseline|complementarity": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "MD11|baseline|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD11|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD11|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD12|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD12|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD12|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL02|iterative|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL02|iterative|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL02|iterative|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL04|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL04|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL04|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL05|iterative|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL05|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL05|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL06|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL06|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL06|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL07|iterative|none": [
+   0.3333333333333333,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "RL07|iterative|mmr": [
+   0.3333333333333333,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "RL07|iterative|complementarity": [
+   0.0,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "RL08|iterative|none": [
+   0.5,
+   1.0,
+   0.5
+  ],
+  "RL08|iterative|mmr": [
+   0.5,
+   1.0,
+   0.5
+  ],
+  "RL08|iterative|complementarity": [
+   0.5,
+   1.0,
+   0.5
+  ],
+  "RL10|iterative|none": [
+   0.3333333333333333,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "RL10|iterative|mmr": [
+   0.3333333333333333,
+   0.0,
+   0.0
+  ],
+  "RL10|iterative|complementarity": [
+   0.3333333333333333,
+   0.0,
+   0.0
+  ],
+  "RL11|iterative|none": [
+   0.5,
+   0.5,
+   1.0
+  ],
+  "RL11|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL11|iterative|complementarity": [
+   1.0,
+   1.0,
+   0.5
+  ],
+  "RL12|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL12|iterative|mmr": [
+   1.0,
+   0.0,
+   1.0
+  ],
+  "RL12|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL14|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP01|iterative|complementarity": [
+   0.5,
+   1.0,
+   1.0
+  ],
+  "GP02|iterative|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP02|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP02|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP03|iterative|none": [
+   0.0,
+   0.0,
+   0.5
+  ],
+  "GP03|iterative|mmr": [
+   0.0,
+   0.5,
+   0.5
+  ],
+  "GP03|iterative|complementarity": [
+   0.0,
+   0.5,
+   0.5
+  ],
+  "GP05|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP05|iterative|mmr": [
+   0.3333333333333333,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "GP05|iterative|complementarity": [
+   0.3333333333333333,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "GP06|iterative|none": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "GP06|iterative|mmr": [
+   0.4,
+   0.4,
+   0.4
+  ],
+  "GP06|iterative|complementarity": [
+   0.6,
+   0.6,
+   0.6
+  ],
+  "GP07|iterative|none": [
+   0.0,
+   0.0,
+   0.3333333333333333
+  ],
+  "GP07|iterative|mmr": [
+   0.0,
+   0.0,
+   0.3333333333333333
+  ],
+  "GP07|iterative|complementarity": [
+   0.0,
+   0.0,
+   0.3333333333333333
+  ],
+  "GP08|iterative|none": [
+   0.5,
+   0.75,
+   0.25
+  ],
+  "GP08|iterative|mmr": [
+   0.5,
+   0.5,
+   0.0
+  ],
+  "GP08|iterative|complementarity": [
+   0.25,
+   0.5,
+   0.25
+  ],
+  "GP09|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP09|iterative|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "GP09|iterative|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "GP10|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP10|iterative|mmr": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "GP10|iterative|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP11|iterative|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP11|iterative|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP11|iterative|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP12|iterative|none": [
+   1.0,
+   1.0,
+   0.0
+  ],
+  "GP12|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP12|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP14|iterative|none": [
+   1.0,
+   0.5,
+   0.5
+  ],
+  "GP14|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP14|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD01|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD01|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "MD01|iterative|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD02|iterative|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD02|iterative|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD02|iterative|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD03|iterative|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD03|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD03|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD04|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD04|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD04|iterative|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD05|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD05|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD05|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD06|iterative|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD06|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD06|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD07|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD07|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD07|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|iterative|mmr": [
+   1.0,
+   1.0,
+   0.5
+  ],
+  "MD08|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD09|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD09|iterative|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD09|iterative|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD10|iterative|none": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "MD10|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD10|iterative|complementarity": [
+   0.5,
+   0.75,
+   0.75
+  ],
+  "MD11|iterative|none": [
+   0.5,
+   1.0,
+   0.5
+  ],
+  "MD11|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD11|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD12|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD12|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD12|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL02|linkrag|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL02|linkrag|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL02|linkrag|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL04|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL04|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL04|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL05|linkrag|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL05|linkrag|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL05|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL06|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL06|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL06|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL07|linkrag|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL07|linkrag|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL07|linkrag|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL08|linkrag|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL08|linkrag|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL08|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL10|linkrag|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL10|linkrag|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL10|linkrag|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL11|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL11|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL11|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL12|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL12|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL12|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP02|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP02|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP02|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP03|linkrag|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP03|linkrag|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP03|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP05|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP05|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP05|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP06|linkrag|none": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "GP06|linkrag|mmr": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "GP06|linkrag|complementarity": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "GP07|linkrag|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP07|linkrag|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "GP07|linkrag|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP08|linkrag|none": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "GP08|linkrag|mmr": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "GP08|linkrag|complementarity": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "GP09|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP09|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP09|linkrag|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "GP10|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP10|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "GP10|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP11|linkrag|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP11|linkrag|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP11|linkrag|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP12|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP12|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP12|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP14|linkrag|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP14|linkrag|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP14|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD01|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD01|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD01|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD02|linkrag|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD02|linkrag|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD02|linkrag|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD03|linkrag|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD03|linkrag|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD03|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD04|linkrag|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD04|linkrag|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD04|linkrag|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD05|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD05|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD05|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD06|linkrag|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD06|linkrag|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD06|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD07|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD07|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD07|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD09|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD09|linkrag|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD09|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD10|linkrag|none": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "MD10|linkrag|mmr": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "MD10|linkrag|complementarity": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "MD11|linkrag|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD11|linkrag|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD11|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD12|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD12|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD12|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL02|linkrag_iter|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL02|linkrag_iter|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL02|linkrag_iter|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "RL04|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL04|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL04|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL05|linkrag_iter|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL05|linkrag_iter|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL05|linkrag_iter|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL06|linkrag_iter|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "RL06|linkrag_iter|mmr": [
+   0.5,
+   1.0,
+   1.0
+  ],
+  "RL06|linkrag_iter|complementarity": [
+   0.5,
+   1.0,
+   1.0
+  ],
+  "RL07|linkrag_iter|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL07|linkrag_iter|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL07|linkrag_iter|complementarity": [
+   0.3333333333333333,
+   0.0,
+   0.3333333333333333
+  ],
+  "RL08|linkrag_iter|none": [
+   1.0,
+   0.5,
+   0.5
+  ],
+  "RL08|linkrag_iter|mmr": [
+   1.0,
+   0.5,
+   0.5
+  ],
+  "RL08|linkrag_iter|complementarity": [
+   1.0,
+   0.5,
+   0.5
+  ],
+  "RL10|linkrag_iter|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL10|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL10|linkrag_iter|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "RL11|linkrag_iter|none": [
+   0.5,
+   1.0,
+   0.5
+  ],
+  "RL11|linkrag_iter|mmr": [
+   0.5,
+   1.0,
+   1.0
+  ],
+  "RL11|linkrag_iter|complementarity": [
+   0.5,
+   1.0,
+   1.0
+  ],
+  "RL12|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL12|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL12|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL13|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "RL14|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP01|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP02|linkrag_iter|none": [
+   0.5,
+   1.0,
+   1.0
+  ],
+  "GP02|linkrag_iter|mmr": [
+   0.5,
+   1.0,
+   1.0
+  ],
+  "GP02|linkrag_iter|complementarity": [
+   0.0,
+   0.5,
+   0.5
+  ],
+  "GP03|linkrag_iter|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP03|linkrag_iter|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP03|linkrag_iter|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "GP05|linkrag_iter|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   1.0
+  ],
+  "GP05|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   1.0
+  ],
+  "GP05|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   1.0
+  ],
+  "GP06|linkrag_iter|none": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "GP06|linkrag_iter|mmr": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "GP06|linkrag_iter|complementarity": [
+   1.0,
+   0.8,
+   1.0
+  ],
+  "GP07|linkrag_iter|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP07|linkrag_iter|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP07|linkrag_iter|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP08|linkrag_iter|none": [
+   0.5,
+   0.5,
+   0.25
+  ],
+  "GP08|linkrag_iter|mmr": [
+   0.5,
+   0.5,
+   0.25
+  ],
+  "GP08|linkrag_iter|complementarity": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "GP09|linkrag_iter|none": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "GP09|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "GP09|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "GP10|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP10|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP10|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP11|linkrag_iter|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP11|linkrag_iter|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP11|linkrag_iter|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "GP12|linkrag_iter|none": [
+   1.0,
+   0.0,
+   1.0
+  ],
+  "GP12|linkrag_iter|mmr": [
+   1.0,
+   0.0,
+   1.0
+  ],
+  "GP12|linkrag_iter|complementarity": [
+   0.0,
+   1.0,
+   1.0
+  ],
+  "GP13|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP13|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP14|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP14|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "GP14|linkrag_iter|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD01|linkrag_iter|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD01|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD01|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD02|linkrag_iter|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD02|linkrag_iter|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD02|linkrag_iter|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "MD03|linkrag_iter|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD03|linkrag_iter|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD03|linkrag_iter|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "MD04|linkrag_iter|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD04|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD04|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD05|linkrag_iter|none": [
+   1.0,
+   1.0,
+   0.6666666666666666
+  ],
+  "MD05|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   0.6666666666666666
+  ],
+  "MD05|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   0.6666666666666666
+  ],
+  "MD06|linkrag_iter|none": [
+   1.0,
+   0.5,
+   0.5
+  ],
+  "MD06|linkrag_iter|mmr": [
+   1.0,
+   0.5,
+   0.5
+  ],
+  "MD06|linkrag_iter|complementarity": [
+   1.0,
+   0.5,
+   0.5
+  ],
+  "MD07|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD07|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD07|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD08|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD09|linkrag_iter|none": [
+   1.0,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD09|linkrag_iter|mmr": [
+   1.0,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD09|linkrag_iter|complementarity": [
+   1.0,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "MD10|linkrag_iter|none": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "MD10|linkrag_iter|mmr": [
+   0.75,
+   0.75,
+   0.5
+  ],
+  "MD10|linkrag_iter|complementarity": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "MD11|linkrag_iter|none": [
+   0.5,
+   0.5,
+   1.0
+  ],
+  "MD11|linkrag_iter|mmr": [
+   0.5,
+   0.5,
+   1.0
+  ],
+  "MD11|linkrag_iter|complementarity": [
+   0.5,
+   0.5,
+   1.0
+  ],
+  "MD12|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD12|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD12|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD13|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "MD14|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ]
+ }
+}
