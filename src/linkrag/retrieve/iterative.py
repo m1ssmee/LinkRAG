@@ -19,6 +19,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable
 
+from linkrag.agent_queue import PENDING
 from linkrag.core import stage_timer
 from linkrag.index import Encoder, Index
 from linkrag.retrieve.baseline import RRF_K, retrieve_scored
@@ -86,11 +87,14 @@ def retrieve_iterative(
                 f"- ({r.unit.modality}) {' '.join(r.unit.content.split())[:160]}"
                 for r in sorted(chosen.values(), key=lambda r: -r.score)[:k_per_round]
             )
-            follow_up = _clean_query(complete(
+            raw = complete(
                 FOLLOWUP_SYSTEM,
                 f"Question: {question}\n\nEvidence so far:\n{evidence}\n\nFollow-up query:",
-            ))
+            )
             result.llm_calls += 1
+            if PENDING in raw:
+                break  # agent_queue placeholder: searching for it would queue answers on junk evidence
+            follow_up = _clean_query(raw)
             if not follow_up or follow_up.lower() == query.lower():
                 break  # nothing new to ask; another identical round is pure cost
             result.queries.append(follow_up)

@@ -65,6 +65,11 @@ def test_malformed_output_is_retried_once_then_flagged():
     ans = answer_json("q", units, complete=lambda s, u: next(good))
     assert not ans.malformed and ans.claims[0].unit_ids == ["hsieh:a42"]
 
+    from linkrag.agent_queue import PENDING      # a queued placeholder is not retried
+    calls.clear()
+    answer_json("q", units, complete=lambda s, u: calls.append(u) or PENDING)
+    assert len(calls) == 1
+
 
 def test_fabricated_unit_ids_are_dropped_before_verification():
     units = [_audio()]

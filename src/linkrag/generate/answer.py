@@ -23,6 +23,7 @@ from typing import Any, Callable
 import requests
 
 from linkrag.core import EvidenceUnit, Mode, stage_timer
+from linkrag.agent_queue import PENDING
 from linkrag.costs import empty_usage
 
 Completer = Callable[[str, str], str]
@@ -328,7 +329,8 @@ def answer_json(
         raw = complete(system, prompt)
         parsed = parse_answer_json(raw)
         t["retried"] = 0
-        if parsed is None:
+        # an agent_queue placeholder is not a malformed reply: retrying would queue a junk prompt
+        if parsed is None and PENDING not in raw:
             t["retried"] = 1
             raw = complete(system, prompt + "\n\nYour previous reply was not valid JSON. "
                                             "Reply with the JSON object only.")

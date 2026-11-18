@@ -316,3 +316,11 @@ def test_linkrag_iter_seeds_from_the_iterative_retriever(corpus, graph) -> None:
     assert it.llm_calls == 1 and len(calls) == 1
     assert any(r.origin == "expanded" for r in results), "expansion must still run"
     assert "t2" in {r.id for r in results}, "the follow-up query's hit must be seeded"
+
+
+def test_iterative_does_not_search_for_an_agent_queue_placeholder(corpus) -> None:
+    from linkrag.agent_queue import PENDING
+    index, encode, _ = corpus
+    result = retrieve_iterative(QUESTION, index, encoder=encode,
+                                complete=lambda s, u: PENDING, rounds=3, k_per_round=4)
+    assert result.llm_calls == 1 and len(result.queries) == 1
