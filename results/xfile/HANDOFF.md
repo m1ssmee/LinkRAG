@@ -45,7 +45,7 @@ Redo them before reporting any number.
 | 3. Questions | 98 drafted by Opus subagents (`tests/regression/xfile_drafts.jsonl`). `verify_gold` kept 97: **64 verified cross-file** (54 split + 10 deictic), 33 single-source controls, 1 dropped (LN12). **1 run.** See `gold_check_1run.md` / `.json`. |
 | 3b. Human review | Sheet ready: `reports/xfile_review.csv`. It holds a per-question `kind` (bridge / conjunction / deictic / control), Claude's recommendation (8 reject, 6 check) and the gold-check result. **Rakshit's half (RL, GP, NF, MD) is decided:** 50 accept, 1 edit (GP10), 5 reject. RL01–RL10 were looked at row by row first (RL09/RL10 against the slide images); the rest first took Claude's recommendation. m1ssmee's half (PS, VS, LN) is decided: 39 accept, 3 reject (PS07, VS01, LN02), first by applying Claude's recommendation (LN08 'check' resolved as accept). **Update 2026-11-18:** Rakshit then read all 98 rows individually against their evidence; no decision changed (`reviewer_note` records both steps). |
 | 4. Evaluation | Code ready: `compare_retrieval.py` goes through the reply cache, `--correctness` grades answers (by type and kind), `--topics` selects tune/test halves. Not run yet. |
-| 5. Report | Not started. |
+| 5. Report | Not started. **Paper:** `paper/paper.html` is restructured around LinkRAG + XFile; §4.1 waits for results. After the test-half run, `python paper/xfile_fill.py <test-half out>.questions.json && python paper/figures.py` fills Table 3 and Figure 5 (same topic bootstrap as `xfile.py paired`). The `[[XFILE]]` sentences are written by hand. |
 
 ## How the LLM calls are made (no API keys)
 
