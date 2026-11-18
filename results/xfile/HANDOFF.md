@@ -14,17 +14,13 @@
 > answer round before `import`.** Old shared-context answers: `data/processed/xfile/haiku_answers_shared_ctx_backup/`.
 > Next: shortcut 5 (human audit sheet), then Step 4.
 >
-> **Step 4 in progress (m1ssmee, 2026-11-18).** Tune half (nfa_closure, psych_methods, visual_system),
-> default knobs, `compare_retrieval.py --correctness --repeats 3 --topics ...`. Answers go **one prompt per
-> Haiku subagent** (`batches --max-items 1`: a batched subagent would see the same question with other
-> modes' evidence); Sonnet grades in 25-item batches. Rounds so far: `tune1_r1` (975, imported, audit
-> 975/975), `tune2_h` (635 Haiku, 634 imported; b472 failed the read audit), `tune2_s` (54 grading
-> batches; 28 imported; b000 truncated prompts and was set aside; b029-b053 hit the 5-hour usage limit).
-> To resume: re-run `tune2_h/b472`, `tune2_s/b000` and `b029`-`b053` (their replies folders are empty),
-> import both, then repeat the collection pass (`LINKRAG_AGENT_QUEUE=...tune3.jsonl`) until 0 pending, and
-> finish with `--answerer-cache-only --judge-cache-only`. Split the queue by model before batching
-> (Haiku `--max-items 1`, Sonnet default). Making `cut_pages` deterministic comes after the
-> report (its own commit, then a re-stamp as a separate correction).
+> **Step 4 (m1ssmee, 2026-11-18).** Tune half done with the frozen defaults (check only,
+> `results/xfile/eval_tune.md`, cache-only replay): the default complementarity weights break the no-links
+> control (baseline 63.9 % -> 33.3 % correct), so the headline must be read against plain top-8 too. No
+> setting changed. Test half next: `compare_retrieval.py --config configs/xfile.yaml --correctness
+> --repeats 3 --topics gp_scaling,mimic_data,rl_mdp --out results/xfile/eval_test.md`; split each queue by
+> model (Haiku `batches --max-items 1`, Sonnet default), `scripts/agent_read_audit.py` before every Haiku
+> import, collect until 0 pending, then a cache-only replay and `xfile.py paired`.
 
 
 From Rakshit's session to m1ssmee. The plan is [PLAN.md](PLAN.md), and the policy change is

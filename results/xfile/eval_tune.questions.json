@@ -1,0 +1,4548 @@
+{
+ "corpus": "a086ca1c22dc1d93",
+ "label": "XFile tune half (nfa_closure, psych_methods, visual_system), default knobs, cache-only replay",
+ "k": 8,
+ "repeats": 3,
+ "questions": [
+  {
+   "qid": "NF02",
+   "topic": "nfa_closure",
+   "type": "cross_modal_split",
+   "kind": "conjunction"
+  },
+  {
+   "qid": "NF03",
+   "topic": "nfa_closure",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "NF07",
+   "topic": "nfa_closure",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "NF08",
+   "topic": "nfa_closure",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "NF09",
+   "topic": "nfa_closure",
+   "type": "cross_modal_deictic",
+   "kind": "deictic"
+  },
+  {
+   "qid": "NF10",
+   "topic": "nfa_closure",
+   "type": "cross_modal_deictic",
+   "kind": "deictic"
+  },
+  {
+   "qid": "NF11",
+   "topic": "nfa_closure",
+   "type": "audio_only",
+   "kind": "control"
+  },
+  {
+   "qid": "NF12",
+   "topic": "nfa_closure",
+   "type": "slides_only",
+   "kind": "control"
+  },
+  {
+   "qid": "NF13",
+   "topic": "nfa_closure",
+   "type": "paper_only",
+   "kind": "control"
+  },
+  {
+   "qid": "NF14",
+   "topic": "nfa_closure",
+   "type": "paper_only",
+   "kind": "control"
+  },
+  {
+   "qid": "PS01",
+   "topic": "psych_methods",
+   "type": "slides_only",
+   "kind": "bridge"
+  },
+  {
+   "qid": "PS02",
+   "topic": "psych_methods",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "PS03",
+   "topic": "psych_methods",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "PS04",
+   "topic": "psych_methods",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "PS05",
+   "topic": "psych_methods",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "PS06",
+   "topic": "psych_methods",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "PS08",
+   "topic": "psych_methods",
+   "type": "cross_modal_split",
+   "kind": "conjunction"
+  },
+  {
+   "qid": "PS09",
+   "topic": "psych_methods",
+   "type": "cross_modal_deictic",
+   "kind": "deictic"
+  },
+  {
+   "qid": "PS10",
+   "topic": "psych_methods",
+   "type": "cross_modal_deictic",
+   "kind": "deictic"
+  },
+  {
+   "qid": "PS11",
+   "topic": "psych_methods",
+   "type": "audio_only",
+   "kind": "control"
+  },
+  {
+   "qid": "PS12",
+   "topic": "psych_methods",
+   "type": "slides_only",
+   "kind": "control"
+  },
+  {
+   "qid": "PS13",
+   "topic": "psych_methods",
+   "type": "paper_only",
+   "kind": "control"
+  },
+  {
+   "qid": "PS14",
+   "topic": "psych_methods",
+   "type": "paper_only",
+   "kind": "control"
+  },
+  {
+   "qid": "VS02",
+   "topic": "visual_system",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "VS03",
+   "topic": "visual_system",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "VS04",
+   "topic": "visual_system",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "VS05",
+   "topic": "visual_system",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "VS06",
+   "topic": "visual_system",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "VS07",
+   "topic": "visual_system",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "VS08",
+   "topic": "visual_system",
+   "type": "cross_modal_split",
+   "kind": "bridge"
+  },
+  {
+   "qid": "VS09",
+   "topic": "visual_system",
+   "type": "cross_modal_deictic",
+   "kind": "deictic"
+  },
+  {
+   "qid": "VS10",
+   "topic": "visual_system",
+   "type": "cross_modal_deictic",
+   "kind": "deictic"
+  },
+  {
+   "qid": "VS11",
+   "topic": "visual_system",
+   "type": "audio_only",
+   "kind": "control"
+  },
+  {
+   "qid": "VS12",
+   "topic": "visual_system",
+   "type": "slides_only",
+   "kind": "control"
+  },
+  {
+   "qid": "VS13",
+   "topic": "visual_system",
+   "type": "paper_only",
+   "kind": "control"
+  },
+  {
+   "qid": "VS14",
+   "topic": "visual_system",
+   "type": "paper_only",
+   "kind": "control"
+  }
+ ],
+ "correct": {
+  "NF02|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "NF02|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF02|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF03|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "NF03|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF03|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF07|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "NF07|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF07|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF08|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "NF08|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF08|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF09|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "NF09|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF09|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF10|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "NF10|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF10|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF11|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "NF11|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF11|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF12|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "NF12|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF12|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF13|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "NF13|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF13|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF14|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "NF14|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF14|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS01|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "PS01|baseline|mmr": [
+   false,
+   false,
+   true
+  ],
+  "PS01|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS02|baseline|none": [
+   false,
+   true,
+   false
+  ],
+  "PS02|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS02|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS03|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "PS03|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS03|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS04|baseline|none": [
+   true,
+   false,
+   true
+  ],
+  "PS04|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS04|baseline|complementarity": [
+   false,
+   false,
+   true
+  ],
+  "PS05|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "PS05|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS05|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS06|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "PS06|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS06|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS08|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "PS08|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS08|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS09|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "PS09|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS09|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS10|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "PS10|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS10|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS11|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "PS11|baseline|mmr": [
+   true,
+   true,
+   false
+  ],
+  "PS11|baseline|complementarity": [
+   false,
+   true,
+   true
+  ],
+  "PS12|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "PS12|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS12|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS13|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "PS13|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS13|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS14|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "PS14|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS14|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS02|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "VS02|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS02|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS03|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "VS03|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS03|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS04|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "VS04|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS04|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS05|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "VS05|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS05|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS06|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "VS06|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS06|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS07|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "VS07|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS07|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS08|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "VS08|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS08|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS09|baseline|none": [
+   false,
+   false,
+   false
+  ],
+  "VS09|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS09|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS10|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "VS10|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS10|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS11|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "VS11|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS11|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS12|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "VS12|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS12|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS13|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "VS13|baseline|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS13|baseline|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS14|baseline|none": [
+   true,
+   true,
+   true
+  ],
+  "VS14|baseline|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS14|baseline|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF02|iterative|none": [
+   true,
+   true,
+   false
+  ],
+  "NF02|iterative|mmr": [
+   true,
+   true,
+   false
+  ],
+  "NF02|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF03|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "NF03|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF03|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF07|iterative|none": [
+   true,
+   true,
+   false
+  ],
+  "NF07|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF07|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF08|iterative|none": [
+   false,
+   true,
+   true
+  ],
+  "NF08|iterative|mmr": [
+   false,
+   false,
+   true
+  ],
+  "NF08|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF09|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "NF09|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF09|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF10|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "NF10|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF10|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF11|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "NF11|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF11|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF12|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "NF12|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF12|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF13|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "NF13|iterative|mmr": [
+   true,
+   true,
+   false
+  ],
+  "NF13|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF14|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "NF14|iterative|mmr": [
+   true,
+   false,
+   false
+  ],
+  "NF14|iterative|complementarity": [
+   true,
+   true,
+   false
+  ],
+  "PS01|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "PS01|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS01|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS02|iterative|none": [
+   false,
+   false,
+   true
+  ],
+  "PS02|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS02|iterative|complementarity": [
+   false,
+   false,
+   true
+  ],
+  "PS03|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "PS03|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS03|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS04|iterative|none": [
+   true,
+   true,
+   false
+  ],
+  "PS04|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS04|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS05|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "PS05|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS05|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS06|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "PS06|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS06|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS08|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "PS08|iterative|mmr": [
+   true,
+   false,
+   false
+  ],
+  "PS08|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS09|iterative|none": [
+   false,
+   true,
+   true
+  ],
+  "PS09|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS09|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS10|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "PS10|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS10|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS11|iterative|none": [
+   false,
+   true,
+   true
+  ],
+  "PS11|iterative|mmr": [
+   false,
+   false,
+   true
+  ],
+  "PS11|iterative|complementarity": [
+   false,
+   true,
+   true
+  ],
+  "PS12|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "PS12|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS12|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS13|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "PS13|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS13|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS14|iterative|none": [
+   false,
+   true,
+   false
+  ],
+  "PS14|iterative|mmr": [
+   false,
+   true,
+   false
+  ],
+  "PS14|iterative|complementarity": [
+   false,
+   true,
+   true
+  ],
+  "VS02|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "VS02|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS02|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS03|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "VS03|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS03|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS04|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "VS04|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS04|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS05|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "VS05|iterative|mmr": [
+   true,
+   false,
+   true
+  ],
+  "VS05|iterative|complementarity": [
+   true,
+   false,
+   true
+  ],
+  "VS06|iterative|none": [
+   false,
+   false,
+   true
+  ],
+  "VS06|iterative|mmr": [
+   false,
+   false,
+   true
+  ],
+  "VS06|iterative|complementarity": [
+   false,
+   false,
+   true
+  ],
+  "VS07|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "VS07|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS07|iterative|complementarity": [
+   false,
+   true,
+   true
+  ],
+  "VS08|iterative|none": [
+   false,
+   false,
+   false
+  ],
+  "VS08|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS08|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS09|iterative|none": [
+   true,
+   false,
+   true
+  ],
+  "VS09|iterative|mmr": [
+   true,
+   true,
+   false
+  ],
+  "VS09|iterative|complementarity": [
+   false,
+   true,
+   false
+  ],
+  "VS10|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "VS10|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS10|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS11|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "VS11|iterative|mmr": [
+   true,
+   false,
+   true
+  ],
+  "VS11|iterative|complementarity": [
+   false,
+   false,
+   true
+  ],
+  "VS12|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "VS12|iterative|mmr": [
+   true,
+   true,
+   false
+  ],
+  "VS12|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS13|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "VS13|iterative|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS13|iterative|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS14|iterative|none": [
+   true,
+   true,
+   true
+  ],
+  "VS14|iterative|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS14|iterative|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF02|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "NF02|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF02|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF03|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "NF03|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF03|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF07|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "NF07|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF07|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF08|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "NF08|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF08|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF09|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "NF09|linkrag|mmr": [
+   false,
+   true,
+   true
+  ],
+  "NF09|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF10|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "NF10|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF10|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF11|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "NF11|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF11|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF12|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "NF12|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF12|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF13|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "NF13|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF13|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF14|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "NF14|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF14|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS01|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "PS01|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS01|linkrag|complementarity": [
+   true,
+   true,
+   false
+  ],
+  "PS02|linkrag|none": [
+   false,
+   true,
+   false
+  ],
+  "PS02|linkrag|mmr": [
+   false,
+   true,
+   false
+  ],
+  "PS02|linkrag|complementarity": [
+   true,
+   false,
+   true
+  ],
+  "PS03|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "PS03|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS03|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS04|linkrag|none": [
+   true,
+   false,
+   true
+  ],
+  "PS04|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS04|linkrag|complementarity": [
+   true,
+   false,
+   false
+  ],
+  "PS05|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "PS05|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS05|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS06|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "PS06|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS06|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS08|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "PS08|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS08|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS09|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "PS09|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS09|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS10|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "PS10|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS10|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS11|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "PS11|linkrag|mmr": [
+   true,
+   true,
+   false
+  ],
+  "PS11|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS12|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "PS12|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS12|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS13|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "PS13|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS13|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS14|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "PS14|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS14|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS02|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "VS02|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS02|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS03|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "VS03|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS03|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS04|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "VS04|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS04|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS05|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "VS05|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS05|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS06|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "VS06|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS06|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS07|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "VS07|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS07|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS08|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "VS08|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS08|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS09|linkrag|none": [
+   false,
+   false,
+   false
+  ],
+  "VS09|linkrag|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS09|linkrag|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS10|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "VS10|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS10|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS11|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "VS11|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS11|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS12|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "VS12|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS12|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS13|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "VS13|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS13|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS14|linkrag|none": [
+   true,
+   true,
+   true
+  ],
+  "VS14|linkrag|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS14|linkrag|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF02|linkrag_iter|none": [
+   false,
+   false,
+   true
+  ],
+  "NF02|linkrag_iter|mmr": [
+   false,
+   false,
+   true
+  ],
+  "NF02|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF03|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "NF03|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF03|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF07|linkrag_iter|none": [
+   true,
+   false,
+   true
+  ],
+  "NF07|linkrag_iter|mmr": [
+   true,
+   false,
+   true
+  ],
+  "NF07|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF08|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "NF08|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF08|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF09|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "NF09|linkrag_iter|mmr": [
+   true,
+   true,
+   false
+  ],
+  "NF09|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF10|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "NF10|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "NF10|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "NF11|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "NF11|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF11|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF12|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "NF12|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF12|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF13|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "NF13|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF13|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "NF14|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "NF14|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "NF14|linkrag_iter|complementarity": [
+   true,
+   true,
+   false
+  ],
+  "PS01|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "PS01|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS01|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS02|linkrag_iter|none": [
+   false,
+   true,
+   true
+  ],
+  "PS02|linkrag_iter|mmr": [
+   true,
+   false,
+   false
+  ],
+  "PS02|linkrag_iter|complementarity": [
+   true,
+   true,
+   false
+  ],
+  "PS03|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "PS03|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS03|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS04|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "PS04|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS04|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS05|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "PS05|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS05|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS06|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "PS06|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "PS06|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS08|linkrag_iter|none": [
+   true,
+   false,
+   true
+  ],
+  "PS08|linkrag_iter|mmr": [
+   true,
+   false,
+   true
+  ],
+  "PS08|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "PS09|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "PS09|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS09|linkrag_iter|complementarity": [
+   true,
+   false,
+   true
+  ],
+  "PS10|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "PS10|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS10|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS11|linkrag_iter|none": [
+   true,
+   false,
+   true
+  ],
+  "PS11|linkrag_iter|mmr": [
+   false,
+   true,
+   true
+  ],
+  "PS11|linkrag_iter|complementarity": [
+   false,
+   false,
+   true
+  ],
+  "PS12|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "PS12|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS12|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS13|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "PS13|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "PS13|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "PS14|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "PS14|linkrag_iter|mmr": [
+   true,
+   false,
+   true
+  ],
+  "PS14|linkrag_iter|complementarity": [
+   false,
+   true,
+   false
+  ],
+  "VS02|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "VS02|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS02|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS03|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "VS03|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS03|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS04|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "VS04|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS04|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS05|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "VS05|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS05|linkrag_iter|complementarity": [
+   false,
+   true,
+   true
+  ],
+  "VS06|linkrag_iter|none": [
+   false,
+   true,
+   true
+  ],
+  "VS06|linkrag_iter|mmr": [
+   false,
+   true,
+   true
+  ],
+  "VS06|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS07|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "VS07|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS07|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS08|linkrag_iter|none": [
+   false,
+   false,
+   false
+  ],
+  "VS08|linkrag_iter|mmr": [
+   false,
+   false,
+   false
+  ],
+  "VS08|linkrag_iter|complementarity": [
+   false,
+   false,
+   false
+  ],
+  "VS09|linkrag_iter|none": [
+   true,
+   true,
+   false
+  ],
+  "VS09|linkrag_iter|mmr": [
+   true,
+   true,
+   false
+  ],
+  "VS09|linkrag_iter|complementarity": [
+   true,
+   true,
+   false
+  ],
+  "VS10|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "VS10|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS10|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS11|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "VS11|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS11|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS12|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "VS12|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS12|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS13|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "VS13|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS13|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ],
+  "VS14|linkrag_iter|none": [
+   true,
+   true,
+   true
+  ],
+  "VS14|linkrag_iter|mmr": [
+   true,
+   true,
+   true
+  ],
+  "VS14|linkrag_iter|complementarity": [
+   true,
+   true,
+   true
+  ]
+ },
+ "recall": {
+  "NF02|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF02|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF02|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF03|baseline|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF03|baseline|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF03|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF07|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF07|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF07|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF08|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF08|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "NF08|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF09|baseline|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF09|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF09|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF10|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF10|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF10|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF11|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF11|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF11|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF13|baseline|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF14|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF14|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF14|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS01|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS01|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS01|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS02|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS02|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS02|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS03|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS03|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS03|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS04|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS05|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS06|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS06|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "PS06|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS08|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS08|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS08|baseline|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS09|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS09|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS09|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS10|baseline|none": [
+   0.6,
+   0.6,
+   0.6
+  ],
+  "PS10|baseline|mmr": [
+   0.2,
+   0.2,
+   0.2
+  ],
+  "PS10|baseline|complementarity": [
+   0.4,
+   0.4,
+   0.4
+  ],
+  "PS11|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS11|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS11|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS12|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS13|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS14|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS14|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS14|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS02|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS03|baseline|none": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "VS03|baseline|mmr": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "VS03|baseline|complementarity": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "VS04|baseline|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS05|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS05|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS05|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS06|baseline|none": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "VS06|baseline|mmr": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "VS06|baseline|complementarity": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "VS07|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS07|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "VS07|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS08|baseline|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS08|baseline|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "VS08|baseline|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS09|baseline|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "VS09|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "VS09|baseline|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "VS10|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS10|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS10|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS12|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS12|baseline|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "VS12|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|baseline|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|baseline|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|baseline|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|baseline|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS14|baseline|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "NF02|iterative|none": [
+   1.0,
+   1.0,
+   0.6666666666666666
+  ],
+  "NF02|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "NF02|iterative|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF03|iterative|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF03|iterative|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF03|iterative|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF07|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "NF07|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF07|iterative|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF08|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF08|iterative|mmr": [
+   0.5,
+   0.5,
+   1.0
+  ],
+  "NF08|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF09|iterative|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF09|iterative|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF09|iterative|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF10|iterative|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF10|iterative|mmr": [
+   0.3333333333333333,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF10|iterative|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF11|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF11|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF11|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|iterative|mmr": [
+   1.0,
+   1.0,
+   0.0
+  ],
+  "NF13|iterative|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF14|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF14|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "NF14|iterative|complementarity": [
+   0.6666666666666666,
+   1.0,
+   0.6666666666666666
+  ],
+  "PS01|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS01|iterative|mmr": [
+   0.3333333333333333,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS01|iterative|complementarity": [
+   0.3333333333333333,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "PS02|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS02|iterative|mmr": [
+   0.3333333333333333,
+   1.0,
+   0.6666666666666666
+  ],
+  "PS02|iterative|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS03|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS03|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS03|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS04|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS05|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS06|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS06|iterative|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS06|iterative|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS08|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS08|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS08|iterative|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS09|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS09|iterative|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS09|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS10|iterative|none": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "PS10|iterative|mmr": [
+   0.8,
+   0.6,
+   0.8
+  ],
+  "PS10|iterative|complementarity": [
+   0.8,
+   1.0,
+   0.8
+  ],
+  "PS11|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS11|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS11|iterative|complementarity": [
+   1.0,
+   1.0,
+   0.5
+  ],
+  "PS12|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "PS14|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS14|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS14|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS02|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS03|iterative|none": [
+   0.5,
+   0.25,
+   0.5
+  ],
+  "VS03|iterative|mmr": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "VS03|iterative|complementarity": [
+   0.5,
+   0.25,
+   0.5
+  ],
+  "VS04|iterative|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS05|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS05|iterative|mmr": [
+   1.0,
+   0.5,
+   1.0
+  ],
+  "VS05|iterative|complementarity": [
+   1.0,
+   0.5,
+   1.0
+  ],
+  "VS06|iterative|none": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "VS06|iterative|mmr": [
+   0.75,
+   0.75,
+   1.0
+  ],
+  "VS06|iterative|complementarity": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "VS07|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS07|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS07|iterative|complementarity": [
+   0.6666666666666666,
+   1.0,
+   1.0
+  ],
+  "VS08|iterative|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS08|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS08|iterative|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS09|iterative|none": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "VS09|iterative|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "VS09|iterative|complementarity": [
+   0.3333333333333333,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "VS10|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS10|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS10|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|iterative|mmr": [
+   1.0,
+   0.5,
+   1.0
+  ],
+  "VS11|iterative|complementarity": [
+   0.5,
+   0.5,
+   1.0
+  ],
+  "VS12|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS12|iterative|mmr": [
+   1.0,
+   1.0,
+   0.0
+  ],
+  "VS12|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|iterative|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|iterative|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|iterative|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|iterative|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS14|iterative|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "NF02|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF02|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF02|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF03|linkrag|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF03|linkrag|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF03|linkrag|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "NF07|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF07|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF07|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF08|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF08|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF08|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF09|linkrag|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF09|linkrag|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF09|linkrag|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF10|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF10|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF10|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF11|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF11|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF11|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF14|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF14|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF14|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS01|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS01|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS01|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS02|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS02|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS02|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS03|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS03|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS03|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS06|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS06|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS06|linkrag|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS08|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS08|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS08|linkrag|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS09|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS09|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS09|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS10|linkrag|none": [
+   0.6,
+   0.6,
+   0.6
+  ],
+  "PS10|linkrag|mmr": [
+   0.6,
+   0.6,
+   0.6
+  ],
+  "PS10|linkrag|complementarity": [
+   0.4,
+   0.4,
+   0.4
+  ],
+  "PS11|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS11|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS11|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS14|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS14|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS14|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS03|linkrag|none": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "VS03|linkrag|mmr": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "VS03|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|linkrag|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|linkrag|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS05|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS05|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS05|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS06|linkrag|none": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "VS06|linkrag|mmr": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "VS06|linkrag|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS07|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS07|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS07|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS08|linkrag|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS08|linkrag|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS08|linkrag|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS09|linkrag|none": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "VS09|linkrag|mmr": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "VS09|linkrag|complementarity": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "VS10|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS10|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS10|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS12|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS12|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS12|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|linkrag|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|linkrag|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|linkrag|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF02|linkrag_iter|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   1.0
+  ],
+  "NF02|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   1.0
+  ],
+  "NF02|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF03|linkrag_iter|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.0
+  ],
+  "NF03|linkrag_iter|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.0
+  ],
+  "NF03|linkrag_iter|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.0
+  ],
+  "NF07|linkrag_iter|none": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "NF07|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "NF07|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "NF08|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF08|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF08|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF09|linkrag_iter|none": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "NF09|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.6666666666666666
+  ],
+  "NF09|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF10|linkrag_iter|none": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF10|linkrag_iter|mmr": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF10|linkrag_iter|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "NF11|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF11|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF11|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF12|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF13|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF14|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF14|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "NF14|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   0.6666666666666666
+  ],
+  "PS01|linkrag_iter|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS01|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS01|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS02|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS02|linkrag_iter|mmr": [
+   0.6666666666666666,
+   1.0,
+   1.0
+  ],
+  "PS02|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   1.0,
+   1.0
+  ],
+  "PS03|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS03|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS03|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS04|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS05|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS06|linkrag_iter|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS06|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "PS06|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS08|linkrag_iter|none": [
+   1.0,
+   0.6666666666666666,
+   1.0
+  ],
+  "PS08|linkrag_iter|mmr": [
+   1.0,
+   0.6666666666666666,
+   1.0
+  ],
+  "PS08|linkrag_iter|complementarity": [
+   0.3333333333333333,
+   0.3333333333333333,
+   0.3333333333333333
+  ],
+  "PS09|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS09|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS09|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS10|linkrag_iter|none": [
+   0.6,
+   0.6,
+   0.8
+  ],
+  "PS10|linkrag_iter|mmr": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "PS10|linkrag_iter|complementarity": [
+   0.8,
+   0.8,
+   0.8
+  ],
+  "PS11|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS11|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS11|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS12|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS13|linkrag_iter|complementarity": [
+   1.0,
+   0.5,
+   1.0
+  ],
+  "PS14|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS14|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "PS14|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS02|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS03|linkrag_iter|none": [
+   0.5,
+   0.5,
+   0.25
+  ],
+  "VS03|linkrag_iter|mmr": [
+   0.5,
+   0.5,
+   0.25
+  ],
+  "VS03|linkrag_iter|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|linkrag_iter|none": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|linkrag_iter|mmr": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS04|linkrag_iter|complementarity": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "VS05|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS05|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS05|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS06|linkrag_iter|none": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "VS06|linkrag_iter|mmr": [
+   0.75,
+   0.75,
+   0.75
+  ],
+  "VS06|linkrag_iter|complementarity": [
+   0.25,
+   0.5,
+   0.5
+  ],
+  "VS07|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS07|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS07|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS08|linkrag_iter|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS08|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS08|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.6666666666666666
+  ],
+  "VS09|linkrag_iter|none": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "VS09|linkrag_iter|mmr": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "VS09|linkrag_iter|complementarity": [
+   0.6666666666666666,
+   0.6666666666666666,
+   0.3333333333333333
+  ],
+  "VS10|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS10|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS10|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS11|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS12|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS12|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS12|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS13|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|linkrag_iter|none": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|linkrag_iter|mmr": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "VS14|linkrag_iter|complementarity": [
+   1.0,
+   1.0,
+   1.0
+  ]
+ }
+}
