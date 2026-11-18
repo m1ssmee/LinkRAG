@@ -159,3 +159,14 @@ The rule is applied as written: `lightning` leaves the reported XFile tables. It
 in the gold file and are reported as a separate, labelled row. The test half is therefore
 **gp_scaling, mimic_data, rl_mdp**; tune is unchanged. The gate is a fixed rule and was not
 chosen by looking at any evaluation number. Reports: `reports/redundancy_xfile_*.md`.
+
+## Knobs frozen at defaults (2026-11-18, before any tune answer-correctness number)
+
+Deadline decision (Rakshit and m1ssmee): no knob is tuned. The `configs/xfile.yaml` defaults are
+final for both halves, and no gate change from issue (n) is made. The tune half is still run and
+reported as a check, and the test half may start before the tune half finishes, because nothing
+from tune can change it. At the time of writing, no tune answer-correctness number had been
+computed: the tune run stopped at the usage limit with grading incomplete. The only numbers seen
+before this point are the exploratory retrieval-only ones (`retrieval_exploratory.md`, all topics,
+default knobs), which the frozen defaults do not depend on. The report states that no tuning was
+done.
