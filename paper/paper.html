@@ -76,14 +76,14 @@ evidence linking; cross-file benchmark; speech-to-slide alignment</p>
 <h3>1.1 Problem statement</h3>
 <p>A university course leaves its knowledge in several files: the recording of each lecture, the slide deck shown
 during it, and the textbook chapter or paper that the lecture follows. A student's question rarely respects these
-boundaries. In a lecture on clinical data, the speaker points at a table of the most common prescriptions and asks
-"why is there this D5W and that D5W?" The drug codes and counts of the two rows appear only on the slide, and the
-explanation, a probable data-entry error, is given only in speech. Other questions also need the paper that describes
-the dataset. A correct answer then needs a sentence of speech, a region of a slide and often a paragraph of a
+boundaries. In a psychology lecture on research methods, the speaker shows a graph and says "you can see" how the
+risk of schizophrenia rises with the father's age, giving the odds aloud: 1 in 141 for fathers under 25, 1 in 50 for
+fathers in their 50s. The study the graph comes from, and the age by which onset is counted, are printed only on the
+slide's figure. Other questions also need the textbook chapter that the lecture follows. A correct answer then needs a sentence of speech, a region of a slide and often a paragraph of a
 document, and it needs them together.</p>
 <p>Retrieval-augmented generation (RAG) [1] answers questions from retrieved evidence, but standard retrievers score
-every unit independently against the question. A spoken sentence that says "this D5W and that D5W" shares few words
-with a question about drug codes, and the slide it refers to shares few words with the speech, so the pieces that belong together are
+every unit independently against the question. A spoken sentence that says "you can see" names neither the study nor the
+graph, and the figure it points at shares few words with the speech, so the pieces that belong together are
 retrieved separately or not at all. The top-ranked set is often several paraphrases from one source. Published
 lecture systems work within one stream: Temporal-Aware RAG [2] retrieves from a single video, and MaViLS [3] aligns
 one recording with one deck. The benchmarks that accompany them contain no question whose evidence spans several
@@ -446,6 +446,13 @@ and an evidence set covers 2.95 modalities on average against 2.03 for plain top
 turn into more correct answers. The highest answer correctness of any configuration, 61.4 %, came from one
 iterative re-query without links, with complementarity reranking; no interval was computed for it, so it is a point estimate only. The rejected
 Lightning topic was not evaluated.</p>
+
+<p><b>The mechanism on one question.</b> The question of §1.1 (a tune question) shows what the layer is designed to
+do. Plain retrieval finds the spoken odds and the slide's text block, but not the figure on the same slide, which
+carries the study's name, so the answer is incomplete in all three runs, with or without the reranker. The same-slide
+link from the slide text brings the figure into LinkRAG's candidate pool, the reranker keeps it, and LinkRAG answers
+correctly in all three runs. No test question showed this pattern: on the test topics, LinkRAG and plain top-k gave
+the same result on every question.</p>
 
 <h3>4.2 Lecture video question answering on LectQA-Vid</h3>
 
