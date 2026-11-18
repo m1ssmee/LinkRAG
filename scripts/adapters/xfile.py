@@ -250,7 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "paired":
         cross = {"cross_modal_split", "cross_modal_deictic"}
         single = {"slides_only", "audio_only", "paper_only"}
-        print(f"| questions | n | topics | {args.a} | {args.b} | difference [95 % CI, topics resampled] | |")
+        print(f"| questions | n | topics | {args.a.replace('|', ' + ')} | {args.b.replace('|', ' + ')} | difference [95 % CI, topics resampled] | |")
         print("|---|---:|---:|---:|---:|---|---|")
         for name, types in (("cross-file", cross), ("single-source", single), ("all", None)):
             r = paired(args.results, args.a, args.b, types=types, metric=args.metric)

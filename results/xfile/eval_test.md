@@ -225,7 +225,7 @@ Answer correctness unless marked; per question averaged over 3 runs; `scripts/ad
 
 ### Headline (pre-registered): linkrag + complementarity vs baseline + complementarity
 
-| questions | n | topics | linkrag|complementarity | baseline|complementarity | difference [95 % CI, topics resampled] | |
+| questions | n | topics | linkrag + complementarity | baseline + complementarity | difference [95 % CI, topics resampled] | |
 |---|---:|---:|---:|---:|---|---|
 | cross-file | 21 | 3 | 38.1% | 47.6% | -9.5% [-16.7%, +0.0%] | no measurable difference |
 | single-source | 17 | 3 | 76.5% | 72.5% | +3.9% [+0.0%, +11.1%] | no measurable difference |
@@ -233,7 +233,7 @@ Answer correctness unless marked; per question averaged over 3 runs; `scripts/ad
 
 ### linkrag + complementarity vs plain top-8 (baseline + none)
 
-| questions | n | topics | linkrag|complementarity | baseline|none | difference [95 % CI, topics resampled] | |
+| questions | n | topics | linkrag + complementarity | baseline + none | difference [95 % CI, topics resampled] | |
 |---|---:|---:|---:|---:|---|---|
 | cross-file | 21 | 3 | 38.1% | 38.1% | +0.0% [+0.0%, +0.0%] | no measurable difference |
 | single-source | 17 | 3 | 76.5% | 76.5% | +0.0% [+0.0%, +0.0%] | no measurable difference |
@@ -241,7 +241,7 @@ Answer correctness unless marked; per question averaged over 3 runs; `scripts/ad
 
 ### linkrag + none vs baseline + none (link expansion alone)
 
-| questions | n | topics | linkrag|none | baseline|none | difference [95 % CI, topics resampled] | |
+| questions | n | topics | linkrag + none | baseline + none | difference [95 % CI, topics resampled] | |
 |---|---:|---:|---:|---:|---|---|
 | cross-file | 21 | 3 | 38.1% | 38.1% | +0.0% [+0.0%, +0.0%] | no measurable difference |
 | single-source | 17 | 3 | 76.5% | 76.5% | +0.0% [+0.0%, +0.0%] | no measurable difference |
@@ -249,7 +249,7 @@ Answer correctness unless marked; per question averaged over 3 runs; `scripts/ad
 
 ### linkrag_iter + complementarity vs iterative + complementarity
 
-| questions | n | topics | linkrag_iter|complementarity | iterative|complementarity | difference [95 % CI, topics resampled] | |
+| questions | n | topics | linkrag_iter + complementarity | iterative + complementarity | difference [95 % CI, topics resampled] | |
 |---|---:|---:|---:|---:|---|---|
 | cross-file | 21 | 3 | 44.4% | 50.8% | -6.3% [-11.1%, -0.0%] | no measurable difference |
 | single-source | 17 | 3 | 74.5% | 74.5% | -0.0% [-5.6%, +5.6%] | no measurable difference |
@@ -257,7 +257,7 @@ Answer correctness unless marked; per question averaged over 3 runs; `scripts/ad
 
 ### Headline pair, recall@8 (retrieval only)
 
-| questions | n | topics | linkrag|complementarity | baseline|complementarity | difference [95 % CI, topics resampled] | |
+| questions | n | topics | linkrag + complementarity | baseline + complementarity | difference [95 % CI, topics resampled] | |
 |---|---:|---:|---:|---:|---|---|
 | cross-file | 21 | 3 | 60.2% | 54.0% | +6.1% [-2.8%, +13.6%] | no measurable difference |
 | single-source | 17 | 3 | 76.5% | 74.5% | +2.0% [+0.0%, +6.7%] | no measurable difference |
