@@ -21,11 +21,11 @@
 > --repeats 3 --topics gp_scaling,mimic_data,rl_mdp --out results/xfile/eval_test.md`; split each queue by
 > model (Haiku `batches --max-items 1`, Sonnet default), `scripts/agent_read_audit.py` before every Haiku
 > import, collect until 0 pending, then a cache-only replay and `xfile.py paired`.
-> Test half progress: round 1 `test1_h` (1,032 Haiku, audited 1032/1032, imported). Round 2 running:
-> `test2_h` (674 Haiku, one per folder) and `test2_s` (57 Sonnet batches). If it stops: re-run every folder
-> whose `replies/` is short of its manifest, run `agent_read_audit.py` on `test2_h`, import both
-> (`LINKRAG_AGENT_QUEUE=data/processed/agent_queue/test2_h.jsonl` / `test2_s.jsonl`), then collect again
-> (`test3.jsonl`) until 0 pending, then the cache-only replay into `results/xfile/eval_test.md`.
+> Test half progress: rounds 1 (`test1_h`, 1,032) and 2 (`test2_h` 674 Haiku, `test2_s` 57 Sonnet
+> batches) answered, audited and imported. Round 3 running: `test3_s` (1,467 grades, 60 Sonnet batches).
+> If it stops: re-run every `test3_s` folder whose `replies/` is short of its manifest, import
+> (`LINKRAG_AGENT_QUEUE=data/processed/agent_queue/test3.jsonl`), collect again (`test4.jsonl`) until 0
+> pending, then the cache-only replay into `results/xfile/eval_test.md`.
 
 
 From Rakshit's session to m1ssmee. The plan is [PLAN.md](PLAN.md), and the policy change is
