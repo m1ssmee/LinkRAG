@@ -1,5 +1,19 @@
 # XFile: handoff (2026-11-17, updated 2026-11-18)
 
+> **m1ssmee, 2026-11-18 (latest).** Rebuilt on m1ssmee's machine. `prepare` is not byte-reproducible
+> (PyMuPDF writes a fresh document ID and timestamp into each cut notes PDF), so a fresh `prepare` gives
+> manifest `26ddfe58a5a8f021`. With Rakshit's four cut notes PDFs (checked against `SHA256SUMS.txt`) and
+> **no** re-run of `prepare`, ingest gives `a086ca1c22dc1d93`. A cache-only replay of the 1-run gold
+> check reproduced every verdict with 0 misses; `make test` 404 passed. `apply-review` ran: 89 accept,
+> 1 edit, 8 reject -> 90 questions in `tests/regression/xfile_proposed.jsonl`.
+> In progress: shortcut 6 before 4. The 392 whole-source answers from shared-context batches were moved
+> to `data/processed/xfile/haiku_answers_shared_ctx_backup/` and are being re-answered one question per
+> subagent (`--share-max-items 1`; the 37 short-context items were also split to one per folder), so the
+> 3-run gold check grades the new answers only. Queue `data/processed/agent_queue/gold3_answers.jsonl`,
+> batches `gold3_r1/`. Making `cut_pages` deterministic is planned after the report (its own commit,
+> then a re-stamp as a separate correction).
+
+
 From Rakshit's session to m1ssmee. The plan is [PLAN.md](PLAN.md), and the policy change is
 recorded in `DESIGN.md` (*Dataset policy*, amended 2026-11-17, and priority (vi)).
 
