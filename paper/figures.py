@@ -80,13 +80,13 @@ def fig1():
         y = top + i * rh
         stroke, fill = STAGE[st]
         b += badge(10, y + 12, n, stroke) + text(24, y + 16, name, 9.6, weight="700")
-        b += f'<rect x="{L}" y="{y + 2}" width="{sx(v) - L:.1f}" height="20" rx="3" fill="{fill}" stroke="{stroke}" stroke-width="1.1"/>'
+        b += f'<rect x="{L}" y="{y + 2}" width="{sx(v) - L:.1f}" height="20" rx="3" fill="{stroke}" fill-opacity="0.35" stroke="{stroke}" stroke-width="1.1"/>'
         b += text(sx(v) + 6, y + 16, str(v), 10, weight="700")
         b += text(sx(v) + 30, y + 16, note, 8.4, fill=MUTED)
         if i:
             b += line(L + 10, y - 10, L + 10, y + 1, GREY, marker="ag", width=1)
     y0 = top + 4 * rh + 26
-    b += text(0, y0, "(b) The 86 verified questions by split and type", 10, weight="700")
+    b += text(0, y0, "(b) The 86 verified questions by split: cross-file vs single-source", 10, weight="700")
     rows = [("Tune: nfa_closure, psych_methods, visual_system", 23, 13), ("Test: gp_scaling, mimic_data, rl_mdp", 21, 17),
             ("Separate row: lightning (intake gate REJECT)", 9, 3)]
     L2, unit = 260, 9.0
@@ -105,7 +105,7 @@ def fig1():
 
 # ---------------------------------------------------------------- figure 2: the proposed pipeline
 def fig2():
-    b = text(0, 12, "INDEXING TIME, once per corpus", 8.8, fill=MUTED, weight="700")
+    b = text(0, 12, "INDEXING TIME", 8.8, fill=MUTED, weight="700")
     y1, h = 22, 70
     top = [(0, 142, "1", "Sources", ["lecture recording,", "slide deck,", "notes / paper PDF"], "src", False),
            (162, 142, "2", "Evidence units", ["speech segment, text", "block or figure, each", "with page or time span"], "src", False),
@@ -117,7 +117,7 @@ def fig2():
             px, pw = top[i - 1][0], top[i - 1][1]
             b += line(px + pw + 1, y1 + h / 2, x - 2, y1 + h / 2)
     y2 = 168
-    b += text(0, y2 - 10, "QUESTION TIME, per question", 8.8, fill=MUTED, weight="700")
+    b += text(0, y2 - 10, "QUESTION TIME", 8.8, fill=MUTED, weight="700")
     b += f'<rect x="0" y="{y2 + 22}" width="62" height="26" rx="13" fill="#fff" stroke="{INK}" stroke-width="1.1"/>' + text(31, y2 + 39, "Question", 9.2, "middle", weight="700")
     bot = [(82, "5", "Hybrid retrieval", ["dense + BM25,", "rank fusion"], "qry", False),
            (204, "6", "Link expansion", ["add 1-hop linked", "neighbours of seeds"], "link", True),
@@ -159,7 +159,7 @@ def fig3():
     b += card(C3, 140, w, 64, "Ch. 3 paragraph", ["recycling-robot example:", "transition probabilities α, β"], "qry", size=8.4)
     b += line(C1 + w + 2, 63, C2 - 2, 63, BLUE, marker="ab", width=1.8) + badge(g1, 47, "1", BLUE)
     b += text(g1, 80, "audio–slide", 8.4, "middle", BLUE, "700") + text(g1, 91, "0.81", 8.4, "middle", BLUE)
-    b += line(C2 + w / 2, 106, C2 + w / 2, 138, BLUE, marker="ab", width=1.8) + badge(C2 + w / 2 - 16, 122, "2", BLUE)
+    b += line(C2 + w / 2, 138, C2 + w / 2, 106, BLUE, marker="ab", width=1.8) + badge(C2 + w / 2 - 16, 122, "2", BLUE)
     b += text(C2 + w / 2 + 8, 125, "same-slide 1.00", 8.4, fill=BLUE, weight="700")
     b += line(C2 + w + 2, 172, C3 - 2, 172, BLUE, marker="ab", width=1.8) + badge(g2, 156, "3", BLUE)
     b += text(g2, 189, "figure–text", 8.4, "middle", BLUE, "700") + text(g2, 200, "0.60", 8.4, "middle", BLUE)
@@ -299,7 +299,7 @@ CAPTIONS = {
     "fig3": "<b>Figure 3.</b> Links built by the Evidence Linking Layer on XFile, with their scores. ①–③: a chain from a sentence of the reinforcement-learning lecture to its slide, the figure on that slide and a textbook paragraph. ④: a deictic link from the cryptocurrency lecture. All units, links and scores are taken unchanged from the built link graph.",
     "fig4": "<b>Figure 4.</b> The relatedness gate on the pooled XFile corpus, all 49 recording × deck pairs. Pairs to the right of the threshold receive audio–slide links. Five recordings are linked to their own deck; two own-deck pairs are rejected and four pairs of different lectures are admitted (§5.4).",
     "fig5": "<b>Figure 5.</b> <span class=\"todo\">[[XFILE: caption pending results]]</span>",
-    "fig6": "<b>Figure 6.</b> Overall token F1 on LectQA-Vid open-ended questions. Grey rows are references that need no retrieval system; the shaded band is the usable range between the question-echo floor and the full-transcript ceiling.",
+    "fig6": "<b>Figure 6.</b> Overall token F1 on LectQA-Vid open-ended questions. Light grey: references that need no retrieval system; dark grey: the re-implementation of [2]; blue: LinkRAG; amber: the whole transcript, no retrieval. The shaded band is the usable range between the question-echo floor and the full-transcript ceiling.",
     "fig7": "<b>Figure 7.</b> MaViLS, the nine held-out lectures with video, ordered by difference. Gains are on lectures where the published system scores low; losses are on camera-heavy lectures. The mean difference is +0.055 with 95 % CI [−0.050, +0.161].",
 }
 BUILD = {"fig1": fig1, "fig2": fig2, "fig3": fig3, "fig4": fig4, "fig5": fig5, "fig6": fig6, "fig7": fig7}
