@@ -23,7 +23,7 @@ from xfile import paired  # noqa: E402
 MANIFEST = "a086ca1c22dc1d93"
 TEST_TOPICS = {"gp_scaling", "mimic_data", "rl_mdp"}
 LINKED, CONTROL, TOPK = "linkrag|complementarity", "baseline|complementarity", "baseline|none"
-ROWS = [("Hybrid retrieval, top-k", "baseline|none"),
+ROWS = [("Plain top-k (no links, no reranker)", "baseline|none"),
         ("Hybrid + link expansion, top-k", "linkrag|none"),
         ("No-links control + complementarity", CONTROL),
         ("LinkRAG (links + complementarity)", LINKED)]

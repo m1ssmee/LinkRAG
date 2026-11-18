@@ -292,7 +292,7 @@ def fig5():
 def fig6():
     rows = [("Question echoed as the answer", 22.87, "ref"), ("Temporal-Aware RAG, published [2]", 23.52, "ref"),
             ("[2] re-implemented, filter on", 31.23, "base"), ("[2] re-implemented, filter off", 34.69, "base"),
-            ("LinkRAG, hybrid retrieval", 34.96, "prop"), ("LinkRAG, hybrid + one re-query", 36.70, "prop"),
+            ("LinkRAG hybrid, no links", 34.96, "prop"), ("LinkRAG hybrid + re-query, no links", 36.70, "prop"),
             ("Full transcript, no retrieval", 38.74, "ceil")]
     col = {"ref": GREY, "base": "#7c8794", "prop": BLUE, "ceil": STAGE["ans"][0]}
     L, R, top, rh = 210, 640, 10, 24
@@ -344,10 +344,10 @@ def fig7():
 CAPTIONS = {
     "fig1": "<b>Figure 1.</b> Construction of XFile. (a) Each stage removes or relabels questions: ① drafting, ② human review, ③ the three-run gold check, which keeps a cross-file label only when every single-source answer fails and the all-source answer passes, ④ the verified cross-file subset. (b) The verified questions by tune/test split, fixed before any evaluation run.",
     "fig2": "<b>Figure 2.</b> The proposed LinkRAG pipeline. Steps ①–④ run once per corpus; steps ⑤–⑨ run for every question. Dashed blue boxes are the proposed components; the blue dashed arrows show the links built in ④ being used in ⑥ and ⑦.",
-    "fig3": "<b>Figure 3.</b> Links built by the Evidence Linking Layer on XFile, with their scores. ①–③: a chain from a sentence of the reinforcement-learning lecture to its slide, the figure on that slide and a textbook paragraph. ④: a deictic link from the cryptocurrency lecture. All units, links and scores are taken unchanged from the built link graph.",
+    "fig3": "<b>Figure 3.</b> Links built by the Evidence Linking Layer on XFile, with their scores. ①–③: a chain from a sentence of the reinforcement-learning lecture to its slide, the figure on that slide and a textbook paragraph. ④: a deictic link from the cryptocurrency lecture, the rejected Lightning topic, which holds every deictic link on a correct recording–deck pair (§5.4). All units, links and scores are taken unchanged from the built link graph.",
     "fig4": "<b>Figure 4.</b> The relatedness gate on the pooled XFile corpus, all 49 recording × deck pairs. Pairs to the right of the threshold receive audio–slide links. Five recordings are linked to their own deck; two own-deck pairs are rejected and four pairs of different lectures are admitted (§5.4).",
     "fig5": "<b>Figure 5.</b> Paired differences in answer correctness on the XFile test half (three topics, 38 questions): LinkRAG against the pre-registered no-links control (squares) and against plain top-k retrieval (circles), with 95 % intervals from resampling topics. With three topics each interval is the range of the per-topic differences, so it cannot establish a difference; against plain top-k the two systems answer identically.",
-    "fig6": "<b>Figure 6.</b> Overall token F1 on LectQA-Vid open-ended questions. Light grey: references that need no retrieval system; dark grey: the re-implementation of [2]; blue: LinkRAG; amber: the whole transcript, no retrieval. The shaded band is the usable range between the question-echo floor and the full-transcript ceiling.",
+    "fig6": "<b>Figure 6.</b> Overall token F1 on LectQA-Vid open-ended questions. Light grey: references that need no retrieval system; dark grey: the re-implementation of [2]; blue: LinkRAG hybrid retrieval, without links; amber: the whole transcript, no retrieval. The shaded band is the usable range between the question-echo floor and the full-transcript ceiling.",
     "fig7": "<b>Figure 7.</b> MaViLS, the nine held-out lectures with video, ordered by difference. Gains are on lectures where the published system scores low; losses are on camera-heavy lectures. The mean difference is +0.055 with 95 % CI [−0.050, +0.161].",
 }
 BUILD = {"fig1": fig1, "fig2": fig2, "fig3": fig3, "fig4": fig4, "fig5": fig5, "fig6": fig6, "fig7": fig7}
