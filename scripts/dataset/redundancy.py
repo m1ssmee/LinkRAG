@@ -18,7 +18,8 @@ from pathlib import Path
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
 from linkrag.costs import cached_completer, record_run
 from linkrag.eval.redundancy import DEFAULT_PAIRS, files_by_role, redundancy, write_report
-from linkrag.eval.verify_gold import dump_json, entailment_opts, refuse_nli_decisions, verifier_label
+from linkrag.eval.verify_gold import (dump_json, entailment_opts, refuse_nli_decisions, topic_units,
+                                      verifier_label)
 from linkrag.generate.answer import judge_completer
 from linkrag.index import Index, default_encoder
 from linkrag.manifest import MANIFEST_NAME, load_manifest
@@ -44,6 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--cache", default="data/processed/verify_cache")
     ap.add_argument("--entailment", choices=["nli", "llm"], default=None,
                     help="override eval.entailment.backend (nli = local, free, deterministic)")
+    ap.add_argument("--topic", default=None,
+                    help="pooled corpus (XFile): use only this topic's files (`<topic>_*` basenames)")
     ap.add_argument("--reports-dir", default="reports",
                     help="where the .md/.json go (scratch dir for a cost backfill replay)")
     args = ap.parse_args(argv)
@@ -57,6 +60,10 @@ def main(argv: list[str] | None = None) -> int:
     manifest = load_manifest(index_dir.parent / MANIFEST_NAME) or {}
     mhash = manifest.get("hash", "unstamped")
     units = list(index.units)
+    if args.topic:
+        units = topic_units(units, args.topic)
+        if not units:
+            raise SystemExit(f"no units for topic {args.topic!r}")
     for u in units:                          # explicit role overrides
         name = Path(u.source_file).name
         if name in args.deck:
@@ -69,7 +76,8 @@ def main(argv: list[str] | None = None) -> int:
     jcfg = cfg.get("eval", {}).get("judge") or cfg["models"]["llm"]
     ent = entailment_opts(cfg, args.entailment)
     seed = str(args.seed or cfg.get("dataset", {}).get("intake", {}).get("sample_seed", 0))
-    judge = cached_completer(judge_completer(cfg, ent["backend"]), Path(args.cache) / mhash / str(jcfg.get("model")))
+    judge_inner = judge_completer(cfg, ent["backend"])
+    judge = cached_completer(judge_inner, Path(args.cache) / mhash / str(jcfg.get("model")))
     pairs = [tuple(p.split("->")) for p in args.pairs.split(",")]
 
     files = files_by_role(units)
@@ -83,6 +91,9 @@ def main(argv: list[str] | None = None) -> int:
     verdicts = redundancy(units, encoder, judge, pairs=pairs, k=args.k, runs=args.runs,
                           workers=1 if ent["backend"] == "nli" else args.workers, limit=args.limit,
                           sample=args.sample, seed=seed, **ent, progress=print)
+    if getattr(judge_inner, "pending", 0):
+        print(f"{judge_inner.pending} judge calls deferred to the agent queue: collection pass, no report written.")
+        return 3
     out_md = Path(args.reports_dir) / f"redundancy_{args.corpus}.md"
     write_report(verdicts, out_md, corpus=args.corpus, manifest_hash=mhash,
                  judge_model=verifier, k=args.k, runs=vruns, files=dict(files),

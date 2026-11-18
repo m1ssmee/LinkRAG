@@ -21,10 +21,10 @@ import time
 from pathlib import Path
 
 from linkrag.core import load_config, refuse_strong_in_batch, set_max_cost, setup_logging
-from linkrag.costs import record_run
+from linkrag.costs import cached_completer, record_run
 from linkrag.eval.metrics import matches_locator
 from linkrag.generate.answer import answer_json, http_completer, judge_completer
-from linkrag.eval.verify_gold import entailment_opts
+from linkrag.eval.verify_gold import entailment_opts, grade
 from linkrag.generate.verify import citation_correctness, hallucination_rate, verify_answer
 from linkrag.index import Index, default_encoder, memoised
 from linkrag.link.align import load_links
@@ -85,6 +85,37 @@ def grounding_table(grounding: dict, units: list) -> list[str]:
     return md + [""]
 
 
+def correctness_tables(rows, modes, methods, correct, fmt) -> list[str]:
+    """Answer correctness (judge PASS vs expected_answer), mean over runs, by verified type and,
+    when rows carry it, by question kind (bridge / conjunction / deictic / control)."""
+    def cell(qids, mode, method):
+        runs = max((len(correct.get((q, mode, method), [])) for q in qids), default=0)
+        per_run = []
+        for i in range(runs):
+            vals = [correct[(q, mode, method)][i] for q in qids if len(correct.get((q, mode, method), [])) > i]
+            if vals:
+                per_run.append(sum(vals) / len(vals))
+        return per_run
+
+    groups = [("type", b, [r["qid"] for r in rows if b in buckets_of(r.get("type", ""))]) for b in BUCKETS]
+    kinds = sorted({r["kind"] for r in rows if r.get("kind")})
+    groups += [("kind", k, [r["qid"] for r in rows if r.get("kind") == k]) for k in kinds]
+    groups.append(("all", "all", [r["qid"] for r in rows]))
+    out = ["", "### Answer correctness (judge PASS vs expected answer)", "",
+           "| group | n | mode | rerank | correct | runs |", "|---|---:|---|---|---:|---:|"]
+    for gtype, name, qids in groups:
+        if not qids:
+            continue
+        for mode in modes:
+            for method in methods:
+                per_run = cell(qids, mode, method)
+                if not per_run:
+                    continue
+                label = name if gtype != "kind" else f"kind: {name}"
+                out.append(f"| {label} | {len(qids)} | {mode} | {method} | {fmt(per_run)} | {len(per_run)} |")
+    return out
+
+
 def prf(retrieved_ids, gold):
     if not gold:
         return float("nan"), float("nan")
@@ -113,6 +144,16 @@ def main(argv: list[str] | None = None) -> int:
                     help="comma-separated subset of rerank methods (default: all)")
     ap.add_argument("--label", default="", help="heading written above the appended table")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--cache", default="data/processed/verify_cache",
+                    help="reply cache root (<cache>/<corpus hash>/<model>); needed by the agent_queue backend")
+    ap.add_argument("--correctness", action="store_true",
+                    help="answer from each picked set and grade it against expected_answer with the judge")
+    ap.add_argument("--grade-runs", type=int, default=3, help="judge calls per graded answer (majority)")
+    ap.add_argument("--answer-prompt", choices=["baseline", "per-mode"], default="baseline",
+                    help="baseline: one answer prompt for every mode, so a correctness difference is "
+                         "retrieval alone; per-mode: linkrag modes add the 'combine the files' suffix")
+    ap.add_argument("--topics", default=None,
+                    help="comma-separated topics: keep only questions whose `topic` is listed (tune/test halves)")
     args = ap.parse_args(argv)
 
     setup_logging()
@@ -136,7 +177,14 @@ def main(argv: list[str] | None = None) -> int:
 
     rows = [json.loads(l) for l in Path(args.questions).read_text().splitlines()
             if l.strip() and "_meta" not in l]
-    complete = None if args.no_llm else http_completer(llm)
+    if args.topics:
+        keep_topics = set(args.topics.split(","))
+        rows = [r for r in rows if r.get("topic") in keep_topics]
+        if not rows:
+            raise SystemExit(f"no questions for topics {sorted(keep_topics)}")
+    mhash = manifest.get("hash", "unstamped")
+    inner = None if args.no_llm else http_completer(llm)
+    complete = None if inner is None else cached_completer(inner, Path(args.cache) / mhash / str(llm.get("model")))
     modes = [m for m in MODES if not (args.no_llm and m in LLM_MODES)]
     methods = [m for m in METHODS if m in set(args.rerank.split(","))]
     if not methods:
@@ -149,9 +197,14 @@ def main(argv: list[str] | None = None) -> int:
     # cell -> list of per-run dicts; a run is the mean over all questions
     cells: dict[tuple[str, str], list[dict]] = {}
     grounding: dict[tuple[str, str], list[dict]] = {}
-    judge = None
-    if args.grounding and not args.no_llm:
-        judge = judge_completer(cfg, entailment_opts(cfg, args.entailment)["backend"])
+    judge = judge_inner = None
+    if (args.grounding or args.correctness) and not args.no_llm:
+        jcfg = (cfg.get("eval") or {}).get("judge") or llm
+        if jcfg.get("model") == llm.get("model"):
+            print("WARNING: eval.judge is the same model as models.llm -- self-grading is lenient")
+        judge_inner = judge_completer(cfg, entailment_opts(cfg, args.entailment)["backend"])
+        judge = cached_completer(judge_inner, Path(args.cache) / mhash / str(jcfg.get("model")))
+    correct: dict[tuple[str, str, str], list[bool]] = {}     # (qid, mode, method) -> pass per run
     id_sets: dict[str, list[tuple]] = {}
     per_q: dict[tuple[str, str, str], list[float]] = {}   # (qid, mode, method) -> recall per run
     per_q_full: dict[tuple[str, str, str], list[dict]] = {}   # -> per-run {recall, prec, mods}
@@ -187,9 +240,20 @@ def main(argv: list[str] | None = None) -> int:
                     d = set_diagnostics(picked, index)
                     per_method[method]["recall"].append(r_)
                     per_q.setdefault((row["qid"], mode, method), []).append(r_)
-                    if args.grounding and complete is not None:
+                    a_ = None
+                    if (args.grounding or args.correctness) and complete is not None:
+                        prompt_mode = ("linkrag" if "linkrag" in mode else "baseline") \
+                            if (args.grounding and not args.correctness) or args.answer_prompt == "per-mode" else "baseline"
+                        a_ = answer_json(row["question"], [r.unit for r in picked], cfg, mode=prompt_mode,
+                                         complete=complete)
+                    if args.correctness and a_ is not None:
+                        ok = False
+                        if not a_.malformed:
+                            ok, *_ = grade(row["question"], row["expected_answer"], a_.answer, judge,
+                                           args.grade_runs)
+                        correct.setdefault((row["qid"], mode, method), []).append(bool(ok))
+                    if args.grounding and a_ is not None:
                         gcfg = cfg.get("generation", {})
-                        a_ = answer_json(row["question"], [r.unit for r in picked], cfg, mode="linkrag" if "linkrag" in mode else "baseline", complete=complete)
                         if not a_.malformed:
                             v_ = verify_answer(a_, [r.unit for r in picked], judge,
                                                runs=int(gcfg.get("verify_runs", 3)), strict=gcfg.get("strict", False),
@@ -209,6 +273,12 @@ def main(argv: list[str] | None = None) -> int:
                 cells.setdefault((mode, method), []).append(
                     {kk: mean(vv) for kk, vv in per_method[method].items()}
                     | {"latency": mean(latencies)})
+
+    pending = sum(getattr(c, "pending", 0) for c in (inner, judge_inner) if c is not None)
+    if pending:
+        print(f"\n{pending} LLM calls deferred to the agent queue: this run is a collection pass, "
+              f"not a result. Answer them (scripts/agent_queue.py) and run again. No report written.")
+        return 3
 
     def fmt(values):
         if len(values) == 1:
@@ -303,6 +373,11 @@ def main(argv: list[str] | None = None) -> int:
     md += ["", "Bucket sizes: " + ", ".join(
         f"{b} {sum(1 for r in rows if b in buckets_of(r.get('type', '')))}" for b in BUCKETS)
         + f" (deictic ⊂ cross_modal; single + cross = {len(rows)} questions)."]
+
+    if correct:
+        table = correctness_tables(rows, modes, methods, correct, fmt)
+        md += table
+        print("\n".join(table))
 
     # per-question recall, mean over runs, for every (mode, rerank) cell
     cols = [(m, r) for m in modes for r in methods]
