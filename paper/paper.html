@@ -56,16 +56,16 @@ RAG system built around an Evidence Linking Layer. Typed, scored links between s
 document paragraphs are built at indexing time, and links between a recording and a deck are admitted only when the
 pair passes a shuffled-null relatedness test. Retrieval follows these links, and a complementarity reranker selects an evidence set for modality
 coverage and linked support instead of ranking units independently. To test the proposal in the setting it targets,
-the paper introduces XFile, a cross-file lecture benchmark of 86 verified questions over seven topics, each topic
-pairing a lecture recording and its slides with a separate textbook or paper chapter; 53 questions are verified to need
-evidence from more than one file. On the three held-out XFile topics, LinkRAG did not answer
-cross-file questions better than a no-links control or plain retrieval (38.1 % correct against 47.6 % and 38.1 %;
-every 95 % interval contains zero), although the links raised evidence recall over the no-links control by 4.3 points [+1.5, +7.3]. On existing benchmarks, the alignment that builds the audio–slide links
-reaches parity with MaViLS (mean F1 0.853 against 0.80 on nine held-out lectures), and LinkRAG's retrieval scores
-2.00 token-F1 above a controlled re-implementation of Temporal-Aware RAG on LectQA-Vid (95 % CI [+0.96, +3.11]), 1.74
-of it from one iterative re-query. An
-audit of LectQA-Vid explains why single-video benchmarks cannot test linking: the whole transcript beats every
-retrieval method, and repeating the question scores 22.87 F1 against a published 23.52. The code, the benchmark and the
+the paper introduces XFile, to the authors' knowledge the first lecture benchmark whose questions are verified to
+need more than one file: 86 questions over seven topics, each pairing a lecture recording and its slides with a
+separate textbook or paper chapter, 53 of them cross-file. On LectQA-Vid, LinkRAG's retrieval with one iterative
+re-query scores 2.00 token-F1 above a controlled re-implementation of Temporal-Aware RAG under the same answering
+model (95 % CI [+0.96, +3.11]). On MaViLS, the alignment that builds its audio–slide links matches the published
+system (mean F1 0.853 against 0.80 on nine held-out lectures). On XFile's held-out topics, the links raise evidence
+recall over a no-links control by 4.3 points [+1.5, +7.3] and widen each evidence set to 2.95 modalities against 2.03
+for plain retrieval, although answer correctness does not change measurably. An audit of LectQA-Vid shows why
+single-video benchmarks cannot test linking: the whole transcript beats every retrieval method, and repeating the
+question scores 22.87 F1 against a published 23.52. The code, the benchmark and the
 stored model replies are released.
 </div>
 <p class="keywords"><b>Keywords:</b> retrieval-augmented generation; lecture question answering; multimodal retrieval;
@@ -129,6 +129,11 @@ audit; a fixed tune/test split (§3.1.1, §4.1).</li>
 with MaViLS, a controlled re-implementation of Temporal-Aware RAG attributes the measured difference to its parts,
 and an audit shows that LectQA-Vid cannot rank retrieval methods (§4.2, §4.3).</li>
 </ol>
+
+<p><b>Main results.</b> LinkRAG's retrieval outperforms a controlled re-implementation of Temporal-Aware RAG
+on LectQA-Vid by 2.00 token-F1, and its audio–slide alignment is on par with MaViLS. On XFile, links measurably
+improve what is retrieved, raising evidence recall and the number of modalities in each evidence set; on the
+held-out topics this does not yet translate into more correct answers, which §5.1 discusses.</p>
 
 <h3>1.5 Organisation of the paper</h3>
 <p>Section 2 reviews related work and states the research gap. Section 3 describes the materials, including the
@@ -648,12 +653,12 @@ re-run, and the test half was examined in several rounds, although no parameter 
 <h2>7. Conclusion and Future Work</h2>
 <p>This paper proposed LinkRAG, a lecture RAG system that links speech, slides, figures and documents at indexing
 time, follows those links at retrieval time, and selects evidence as a set, together with XFile, a benchmark whose
-questions are verified to need more than one file. On XFile's held-out topics the proposed linking and reranking
-raised evidence recall and modality coverage but did not improve answer correctness over a no-links control or plain
-retrieval: a null result on the first benchmark that can test the idea. On the published benchmarks, the alignment
-that builds the audio–slide links matches MaViLS, and LinkRAG's retrieval exceeds a controlled re-implementation of
-Temporal-Aware RAG by two F1 points, most of it from one re-query; neither result depends on linking, because neither
-benchmark has evidence in more than one file. The audit shows that LectQA-Vid cannot rank retrieval methods.</p>
+questions are verified to need more than one file. LinkRAG's retrieval exceeds a controlled re-implementation of
+Temporal-Aware RAG by two F1 points, most of it from one re-query, and the alignment that builds its audio–slide
+links matches MaViLS. On XFile, the first benchmark that can test cross-file linking, the links raise evidence recall
+and modality coverage; on the held-out topics, answer correctness is unchanged, so the gain in retrieval has not yet
+become a gain in answers. Neither published benchmark can show the effect of linking, because neither has evidence in
+more than one file, and the audit shows that LectQA-Vid cannot rank retrieval methods.</p>
 <p><b>Future work.</b></p>
 <ol>
 <li><b>A larger cross-file benchmark.</b> More topics and courses, questions written by people, and corpora whose
