@@ -209,6 +209,24 @@ def apply_review(proposed: Path, review: Path, out: Path) -> dict[str, int]:
     return counts
 
 
+def paired(results: Path, a: str, b: str, *, types: set[str] | None = None, metric: str = "correct") -> dict:
+    """Cell a minus cell b ("mode|rerank"), per question averaged over runs, with a 95 % interval
+    from resampling whole topics (the sampled unit, DESIGN.md reporting convention)."""
+    sys.path.insert(0, str(Path(__file__).parent))
+    from lectqa.recheck import by_video      # cluster bootstrap: resample groups, pool their questions
+
+    d = json.loads(results.read_text())
+    qs = [q for q in d["questions"] if types is None or q["type"] in types]
+    m = lambda q, cell: sum(map(float, d[metric][f"{q['qid']}|{cell}"])) / len(d[metric][f"{q['qid']}|{cell}"])
+    diffs = [m(q, a) - m(q, b) for q in qs]
+    topics = [q["topic"] for q in qs]
+    lo, hi = by_video(diffs, topics, seed=20261118)
+    mean = sum(diffs) / len(diffs)
+    return {"n": len(qs), "topics": len(set(topics)), "a": sum(m(q, a) for q in qs) / len(qs),
+            "b": sum(m(q, b) for q in qs) / len(qs), "diff": mean, "lo": lo, "hi": hi,
+            "verdict": "no measurable difference" if lo <= 0 <= hi else ("a higher" if lo > 0 else "b higher")}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -218,11 +236,26 @@ def main(argv: list[str] | None = None) -> int:
     ar.add_argument("--proposed", type=Path, default=Path("tests/regression/xfile_drafts.jsonl"))
     ar.add_argument("--review", type=Path, default=Path("reports/xfile_review.csv"))
     ar.add_argument("--out", type=Path, default=Path("tests/regression/xfile_proposed.jsonl"))
+    bp = sub.add_parser("paired", help="paired difference of two compare_retrieval cells, bootstrap over topics")
+    bp.add_argument("results", type=Path, help="<out>.questions.json written by compare_retrieval.py")
+    bp.add_argument("--a", default="linkrag|complementarity")
+    bp.add_argument("--b", default="baseline|complementarity")
+    bp.add_argument("--metric", choices=["correct", "recall"], default="correct")
     parser.add_argument("--topics", type=Path, default=TOPICS_FILE)
     args = parser.parse_args(argv)
     if args.cmd == "apply-review":
         counts = apply_review(args.proposed, args.review, args.out)
         print(f"{counts} -> {args.out}")
+        return 0
+    if args.cmd == "paired":
+        cross = {"cross_modal_split", "cross_modal_deictic"}
+        single = {"slides_only", "audio_only", "paper_only"}
+        print(f"| questions | n | topics | {args.a} | {args.b} | difference [95 % CI, topics resampled] | |")
+        print("|---|---:|---:|---:|---:|---|---|")
+        for name, types in (("cross-file", cross), ("single-source", single), ("all", None)):
+            r = paired(args.results, args.a, args.b, types=types, metric=args.metric)
+            print(f"| {name} | {r['n']} | {r['topics']} | {r['a']:.1%} | {r['b']:.1%} | "
+                  f"{r['diff']:+.1%} [{r['lo']:+.1%}, {r['hi']:+.1%}] | {r['verdict']} |")
         return 0
     topics = load_topics(args.topics)
     if args.cmd == "prepare":

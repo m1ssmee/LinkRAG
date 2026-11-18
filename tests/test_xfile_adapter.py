@@ -113,3 +113,18 @@ def test_apply_review_needs_every_decision_and_applies_edits(tmp_path):
     assert rows[0]["_meta"]["status"] == "human-reviewed"
     assert [(r["qid"], r["question"], r["expected_answer"], r["kind"]) for r in rows[1:]] == [
         ("A1", "q1", "a1", "bridge"), ("A2", "q2", "better a2", "bridge")]
+
+
+def test_paired_bootstrap_resamples_topics_and_pairs_by_question(tmp_path):
+    qs = [{"qid": f"{t}{i}", "topic": t, "type": "cross_modal_split"} for t in "ABC" for i in range(4)]
+    a, b = "linkrag|complementarity", "baseline|complementarity"
+    correct = {}
+    for q in qs:            # a wins every question on topic A only, by one run in three
+        correct[f"{q['qid']}|{a}"] = [True, True, q["topic"] == "A"]
+        correct[f"{q['qid']}|{b}"] = [True, True, False]
+    p = tmp_path / "r.questions.json"
+    p.write_text(json.dumps({"questions": qs, "correct": correct}))
+    r = x.paired(p, a, b, types={"cross_modal_split"})
+    assert r["n"] == 12 and r["topics"] == 3
+    assert abs(r["diff"] - (4 / 3) / 12) < 1e-9           # 4 questions x 1/3 run, over 12
+    assert r["lo"] == 0 and r["verdict"] == "no measurable difference"   # resamples without A give 0

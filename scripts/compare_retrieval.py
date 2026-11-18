@@ -205,6 +205,7 @@ def main(argv: list[str] | None = None) -> int:
         judge_inner = judge_completer(cfg, entailment_opts(cfg, args.entailment)["backend"])
         judge = cached_completer(judge_inner, Path(args.cache) / mhash / str(jcfg.get("model")))
     correct: dict[tuple[str, str, str], list[bool]] = {}     # (qid, mode, method) -> pass per run
+    graded: dict[tuple[str, str, str], bool] = {}
     id_sets: dict[str, list[tuple]] = {}
     per_q: dict[tuple[str, str, str], list[float]] = {}   # (qid, mode, method) -> recall per run
     per_q_full: dict[tuple[str, str, str], list[dict]] = {}   # -> per-run {recall, prec, mods}
@@ -212,7 +213,9 @@ def main(argv: list[str] | None = None) -> int:
     calls_total = 0
 
     for mode in modes:
-        repeats = args.repeats if mode in LLM_MODES else 1
+        # with --correctness every mode repeats: retrieval is deterministic for baseline/linkrag, the
+        # answer is not, so the answer is drawn once per run (cache key = run index)
+        repeats = args.repeats if mode in LLM_MODES or args.correctness else 1
         for run in range(repeats):
             per_method = {m: {"recall": [], "prec": [], "mods": [], "red": []}
                           for m in methods}
@@ -245,12 +248,14 @@ def main(argv: list[str] | None = None) -> int:
                         prompt_mode = ("linkrag" if "linkrag" in mode else "baseline") \
                             if (args.grounding and not args.correctness) or args.answer_prompt == "per-mode" else "baseline"
                         a_ = answer_json(row["question"], [r.unit for r in picked], cfg, mode=prompt_mode,
-                                         complete=complete)
+                                         complete=lambda s_, u_, _r=run: complete(s_, u_, key=("answer", _r)))
                     if args.correctness and a_ is not None:
                         ok = False
                         if not a_.malformed:
-                            ok, *_ = grade(row["question"], row["expected_answer"], a_.answer, judge,
-                                           args.grade_runs)
+                            gkey = (row["question"], row["expected_answer"], a_.answer)
+                            if gkey not in graded:     # same answer, same verdict: no fresh votes per mode
+                                graded[gkey] = grade(*gkey, judge, args.grade_runs)[0]
+                            ok = graded[gkey]
                         correct.setdefault((row["qid"], mode, method), []).append(bool(ok))
                     if args.grounding and a_ is not None:
                         gcfg = cfg.get("generation", {})
@@ -404,6 +409,13 @@ def main(argv: list[str] | None = None) -> int:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         with open(args.out, "a") as fh:
             fh.write("\n".join(md) + "\n")
+        # per-question results, for a paired bootstrap over the sampled unit (topic, video, ...)
+        Path(args.out).with_suffix(".questions.json").write_text(json.dumps({
+            "corpus": manifest.get("hash"), "label": args.label, "k": k, "repeats": args.repeats,
+            "questions": [{"qid": r["qid"], "topic": r.get("topic"), "type": r.get("type"), "kind": r.get("kind")}
+                          for r in rows],
+            "correct": {f"{q}|{m}|{me}": v for (q, m, me), v in correct.items()},
+            "recall": {f"{q}|{m}|{me}": v for (q, m, me), v in per_q.items()}}, indent=1))
         print(f"\nappended to {args.out}")
     return 0
 
