@@ -34,7 +34,7 @@ if __name__ == "__main__":
                 if failed(c, err): continue
                 o = i.get("offset") or 1
                 cov.setdefault(i["file_path"], set()).update(range(o, o + (i.get("limit") or 2000)))
-            for fp in {i["file_path"] for i in calls.values()}:
+            for fp in {i["file_path"] for i in calls.values() if Path(i["file_path"]).exists()}:
                 n = len(Path(fp).read_text().splitlines())
                 final[fp[len(batch):].split("/")[0]] = all(k in cov.get(fp, set()) for k in range(1, n + 1))
     items = [d.name for d in Path(batch).iterdir() if (d / "manifest.json").exists()
