@@ -53,16 +53,17 @@ The answer to a question about a lecture is often split across the recording, th
 notes, yet retrieval-augmented generation (RAG) scores each piece of evidence on its own, and existing lecture
 question-answering benchmarks contain no question that needs more than one file. This paper proposes LinkRAG, a lecture
 RAG system built around an Evidence Linking Layer. Typed, scored links between speech segments, slides, figures and
-document paragraphs are built at indexing time and admitted only when a recording and a deck pass a shuffled-null
-relatedness test. Retrieval follows these links, and a complementarity reranker selects an evidence set for modality
+document paragraphs are built at indexing time, and links between a recording and a deck are admitted only when the
+pair passes a shuffled-null relatedness test. Retrieval follows these links, and a complementarity reranker selects an evidence set for modality
 coverage and linked support instead of ranking units independently. To test the proposal in the setting it targets,
 the paper introduces XFile, a cross-file lecture benchmark of 86 verified questions over seven topics, each topic
 pairing a lecture recording and its slides with a separate textbook or paper chapter; 53 questions are verified to need
 evidence from more than one file. On the three held-out XFile topics, LinkRAG did not answer
 cross-file questions better than a no-links control or plain retrieval (38.1 % correct against 47.6 % and 38.1 %;
-every 95 % interval contains zero), although the links raised evidence recall by 4.3 points [+1.5, +7.3]. On existing benchmarks, the alignment that builds the audio–slide links
+every 95 % interval contains zero), although the links raised evidence recall over the no-links control by 4.3 points [+1.5, +7.3]. On existing benchmarks, the alignment that builds the audio–slide links
 reaches parity with MaViLS (mean F1 0.853 against 0.80 on nine held-out lectures), and LinkRAG's retrieval scores
-2.00 token-F1 above a controlled re-implementation of Temporal-Aware RAG on LectQA-Vid (95 % CI [+0.96, +3.11]). An
+2.00 token-F1 above a controlled re-implementation of Temporal-Aware RAG on LectQA-Vid (95 % CI [+0.96, +3.11]), 1.74
+of it from one iterative re-query. An
 audit of LectQA-Vid explains why single-video benchmarks cannot test linking: the whole transcript beats every
 retrieval method, and repeating the question scores 22.87 F1 against a published 23.52. The code, the benchmark and the
 stored model replies are released.
@@ -76,7 +77,7 @@ evidence linking; cross-file benchmark; speech-to-slide alignment</p>
 <p>A university course leaves its knowledge in several files: the recording of each lecture, the slide deck shown
 during it, and the textbook chapter or paper that the lecture follows. A student's question rarely respects these
 boundaries. In a lecture on clinical data, the speaker points at a table of the most common prescriptions and asks
-"why is there this D5W and that D5W?". The drug codes and counts of the two rows appear only on the slide, and the
+"why is there this D5W and that D5W?" The drug codes and counts of the two rows appear only on the slide, and the
 explanation, a probable data-entry error, is given only in speech. Other questions also need the paper that describes
 the dataset. A correct answer then needs a sentence of speech, a region of a slide and often a paragraph of a
 document, and it needs them together.</p>
@@ -333,14 +334,15 @@ keeps at most eight links. On XFile the layer built 2,222 links: 1,540 audio–s
 and 15 deictic.</p>
 
 <h4>3.2.3 Hybrid retrieval and link expansion (steps ⑤–⑥)</h4>
-<p>The baseline retriever fuses the dense and BM25 rankings by reciprocal rank fusion with k = 60 [13] and returns
-the top eight units. Link expansion takes these seeds and adds every unit linked to a seed by one hop. A neighbour
+<p>The baseline retriever fuses the dense and BM25 rankings by reciprocal rank fusion with k = 60 [13] and retrieves a
+pool of 20 candidates; without reranking, the eight best are passed to the answerer, and a reranker instead selects
+its eight from the whole pool. Link expansion adds to the pool every unit linked to a seed by one hop. A neighbour
 reached from seed s by a link of score w is scored as</p>
 <div class="eq"><span class="m">score(v) = rel(s) · w · δ,</span><span class="no">(4)</span></div>
 <p>with decay δ = 0.5. Seed relevance is rank-normalised to (0, 1] first, because raw fusion scores are about 0.03
 while link scores are 0.5–1.0. Expansion is additive: it never removes a seed, so with no reranking the linked
-retriever returns exactly the baseline's units, and any difference comes from what the reranker does with the
-added candidates.</p>
+retriever passes on the baseline's eight units unless a linked unit outscores one of them, and any difference comes
+mainly from what the reranker does with the added candidates.</p>
 
 <h4>3.2.4 Complementarity set reranking (step ⑦)</h4>
 <p>Top-k ranking scores each unit alone, so a set of eight near-identical speech segments scores as well as a set that
@@ -349,7 +351,7 @@ modality m(u), link edges E and embeddings e<sub>u</sub>, it selects R ⊆ C wit
 <div class="eq"><span class="m">F(R) = Σ<sub>u∈R</sub> rel(u) + α · |{m(u) : u ∈ R}| + β · |{(u, v) ∈ R² : u→v ∈ E}| − γ · Σ<sub>u≠v∈R, m(u)=m(v)</sub> cos(e<sub>u</sub>, e<sub>v</sub>).</span><span class="no">(5)</span></div>
 <p>The three structural terms reward covering more modalities, prefer evidence linked to what is already selected,
 and charge for restating something already in the set. Redundancy is charged only within a modality, because a speech
-segment and the slide it describes are meant to be similar. Exact maximisation is a facility-location problem and is
+segment and the slide it describes are meant to be similar. Exact maximisation is a facility-location-style problem and is
 NP-hard, so selection is greedy: it starts from the most relevant unit and repeatedly adds the unit with the largest
 marginal gain</p>
 <div class="eq"><span class="m">Δ(u | R) = rel(u) + α · [m(u) ∉ m(R)] + β · |{v ∈ R : u↔v ∈ E}| − γ · Σ<sub>v∈R, m(v)=m(u)</sub> cos(e<sub>u</sub>, e<sub>v</sub>),</span><span class="no">(6)</span></div>
@@ -373,8 +375,9 @@ call goes to a cost ledger, which records US$23.21 for the whole project. On XFi
 Claude Sonnet 5.5 judges, run as agent sessions whose replies are cached; before use, the Sonnet judge was compared with
 the stored gpt-4.1-mini verdicts of an earlier pilot and agreed with Cohen's κ = 0.81 over three runs (0.93 against
 gpt-5.4). On both benchmarks every reply is cached by its full request, so a re-run replays the stored answers
-exactly. An automatic check confirms from the session transcripts that each answering session read its whole context
-before replying; 133 of 360 gold-check answers failed that check and were redone. BLEU-4 and METEOR use NLTK, and the
+exactly. An automatic check reads the session transcripts to verify that each answering session read its whole context
+before replying; 133 of the first 360 gold-check answers failed it and were redone, and the check was run on every
+later answering round before its replies were used. BLEU-4 and METEOR use NLTK, and the
 MaViLS F1 uses the authors' scorer.</p>
 
 <h3>3.4 Experimental protocol</h3>
@@ -396,8 +399,8 @@ tables, but differences between the rows reported here can. Reference rows need 
 to the same answerer, the question returned as its own answer, and for multiple choice the share of correct options
 that are first or longest. On MaViLS, the baselines are the per-lecture results published in [3].</p>
 <p><b>Metrics.</b> On XFile, an answer is correct when the judge, in a majority of three grading runs, finds that it
-states every fact of the reference answer; evidence recall@k is the share of a question's gold units among the k
-units passed to the answerer. LectQA-Vid uses the metric suite of [2]: token F1, BLEU-4 [18], METEOR [19], ROUGE-1
+states every fact of the reference answer; evidence recall@k is the share of a question's gold units that are among the
+k units passed to the answerer. LectQA-Vid uses the metric suite of [2]: token F1, BLEU-4 [18], METEOR [19], ROUGE-1
 [20] and MiniLM cosine similarity for open-ended answers, and accuracy for multiple choice. MaViLS uses the authors' F1
 per lecture over labelled sentences, averaged over lectures. Faithfulness is the share of claims the judge finds
 supported by the units they cite.</p>
@@ -441,7 +444,7 @@ horizontal bar is the 95 % interval. All six intervals contain zero, and the thr
 recall@8 rises by 4.3 points over all questions [+1.5, +7.3] and by 6.1 points on cross-file questions [−2.8, +13.6],
 and an evidence set covers 2.95 modalities on average against 2.03 for plain top-k. These retrieval gains do not
 turn into more correct answers. The highest answer correctness of any configuration, 61.4 %, came from one
-iterative re-query without links; no interval was computed for it, so it is a point estimate only. The rejected
+iterative re-query without links, with complementarity reranking; no interval was computed for it, so it is a point estimate only. The rejected
 Lightning topic was not evaluated.</p>
 
 <h3>4.2 Lecture video question answering on LectQA-Vid</h3>
@@ -570,8 +573,7 @@ correct one.</p>
 <h2>5. Discussion</h2>
 
 <h3>5.1 When does linking help?</h3>
-<p>On LectQA-Vid, neither link-following nor set reranking improved retrieval, and this is what the proposed design
-predicts. A LectQA-Vid question concerns one short video with no separate deck or document, so there are no files to
+<p>On LectQA-Vid, neither link-following nor set reranking improved retrieval. This is expected there: a LectQA-Vid question concerns one short video with no separate deck or document, so there are no files to
 link, and the temporal links that remain add nothing that hybrid retrieval does not already find. MaViLS evaluates
 alignment, not question answering; there the alignment that builds the links matches the published aligner. XFile is
 the first test of the setting the layer was designed for, and at its scale the result is null: links neither helped
@@ -657,6 +659,13 @@ speaker, where only the speech channel and the decoder decide.</li>
 <li><b>A reproduction with the original code of [2],</b> if its code or evaluation subset is released.</li>
 <li><b>Human faithfulness judgements</b> on a sample of claims, to bound the judge's errors.</li>
 </ol>
+
+<h2>Code and Data Availability</h2>
+<p>The code, the XFile questions with their verified evidence, the link graph, the per-question results and the
+stored model replies are available at <code>github.com/m1ssmee/LinkRAG</code>. Lecture transcripts and slides come from
+the MaViLS release [3] at a pinned commit; the notes chapters are third-party documents and are not redistributed, but
+each is identified by its source address, page range and SHA-256 hash, so the corpus can be rebuilt with the same
+evidence units.</p>
 
 <h2>References</h2>
 <ol class="refs">
