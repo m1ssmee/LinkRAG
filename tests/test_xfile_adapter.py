@@ -128,3 +128,15 @@ def test_paired_bootstrap_resamples_topics_and_pairs_by_question(tmp_path):
     assert r["n"] == 12 and r["topics"] == 3
     assert abs(r["diff"] - (4 / 3) / 12) < 1e-9           # 4 questions x 1/3 run, over 12
     assert r["lo"] == 0 and r["verdict"] == "no measurable difference"   # resamples without A give 0
+
+
+def test_paired_interval_touching_zero_is_not_a_difference(tmp_path):
+    # thirds summed in floating point give -1e-17, not 0; that must not read as "b higher"
+    qs = [{"qid": f"{t}{i}", "topic": t, "type": "cross_modal_split"} for t in "AB" for i in range(3)]
+    a, b = "linkrag|complementarity", "baseline|complementarity"
+    correct = {f"{q['qid']}|{a}": [False, False, q["topic"] == "B" or q["qid"] == "A0"] for q in qs}
+    correct |= {f"{q['qid']}|{b}": [False, False, True] for q in qs}
+    p = tmp_path / "r.questions.json"
+    p.write_text(json.dumps({"questions": qs, "correct": correct}))
+    r = x.paired(p, a, b, types={"cross_modal_split"})
+    assert r["hi"] == 0 and r["verdict"] == "no measurable difference"

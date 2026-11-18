@@ -220,7 +220,7 @@ def paired(results: Path, a: str, b: str, *, types: set[str] | None = None, metr
     m = lambda q, cell: sum(map(float, d[metric][f"{q['qid']}|{cell}"])) / len(d[metric][f"{q['qid']}|{cell}"])
     diffs = [m(q, a) - m(q, b) for q in qs]
     topics = [q["topic"] for q in qs]
-    lo, hi = by_video(diffs, topics, seed=20261118)
+    lo, hi = (round(v, 9) for v in by_video(diffs, topics, seed=20261118))   # -1e-17 is a float sum, not a sign
     mean = sum(diffs) / len(diffs)
     return {"n": len(qs), "topics": len(set(topics)), "a": sum(m(q, a) for q in qs) / len(qs),
             "b": sum(m(q, b) for q in qs) / len(qs), "diff": mean, "lo": lo, "hi": hi,
