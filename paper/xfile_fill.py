@@ -22,7 +22,7 @@ from xfile import paired  # noqa: E402
 
 MANIFEST = "a086ca1c22dc1d93"
 TEST_TOPICS = {"gp_scaling", "mimic_data", "rl_mdp"}
-LINKED, CONTROL = "linkrag|complementarity", "baseline|complementarity"
+LINKED, CONTROL, TOPK = "linkrag|complementarity", "baseline|complementarity", "baseline|none"
 ROWS = [("Hybrid retrieval, top-k", "baseline|none"),
         ("Hybrid + link expansion, top-k", "linkrag|none"),
         ("No-links control + complementarity", CONTROL),
@@ -69,8 +69,9 @@ def table(path: Path, d: dict) -> tuple[str, dict]:
     out = ['<table id="tab-xfile">',
            f'<caption><b>Table 3.</b> Answer correctness (%) on the XFile test half ({", ".join(sorted(TEST_TOPICS))}), '
            f'mean over three repeats; n = {n["Overall"]} questions ({n["Cross-file"]} cross-file, of which {n_deictic} deictic; '
-           f'{n["Single-source"]} single-source). The last row is the paired '
-           'difference between LinkRAG and the no-links control, with a 95 % interval from resampling topics.</caption>',
+           f'{n["Single-source"]} single-source). '
+           'The last two rows are paired differences of LinkRAG against the pre-registered no-links control and against plain '
+           'top-k retrieval, with 95 % intervals from resampling the three topics.</caption>',
            f'<tr class="h"><th>Method</th>{head}</tr>']
     stats = {}
     for name, cell in ROWS:
@@ -80,12 +81,13 @@ def table(path: Path, d: dict) -> tuple[str, dict]:
             tds += f'<td class="n">{pct(r["a"])}</td>' if r["n"] else '<td class="n">—</td>'
         cls = ' class="key"' if cell == LINKED else ""
         out.append(f"<tr{cls}><td>{name}</td>{tds}</tr>")
-    tds = ""
-    for g, types in GROUPS:
-        r = paired(path, LINKED, CONTROL, types=types)
-        stats[g] = r
-        tds += f'<td class="n">{interval(r)}</td>'
-    out.append(f'<tr class="rule last"><td>LinkRAG − no-links control</td>{tds}</tr>')
+    for label, other, cls in (("LinkRAG − no-links control", CONTROL, "rule"), ("LinkRAG − plain top-k", TOPK, "last")):
+        tds = ""
+        for g, types in GROUPS:
+            r = paired(path, LINKED, other, types=types)
+            stats.setdefault(other, {})[g] = r
+            tds += f'<td class="n">{interval(r)}</td>'
+        out.append(f'<tr class="{cls}"><td>{label}</td>{tds}</tr>')
     out.append("</table>")
     return "\n".join(out), stats
 
@@ -105,14 +107,17 @@ def main(argv=None) -> int:
     if len(pat.findall(t)) != 1:
         sys.exit("expected exactly one Table 3 in the paper")
     args.paper.write_text(pat.sub(lambda _m: html, t))
+    keys = ("n", "topics", "a", "b", "diff", "lo", "hi", "verdict")
     args.json.write_text(json.dumps({
-        "source": str(args.results), "corpus": d["corpus"], "a": LINKED, "b": CONTROL,
-        "groups": [{"name": g, **{k: stats[g][k] for k in ("n", "topics", "a", "b", "diff", "lo", "hi", "verdict")}}
-                   for g, _ in GROUPS]}, indent=1))
-    for g, _ in GROUPS:
-        r = stats[g]
-        print(f"{g:<22} n={r['n']:<3} LinkRAG {pct(r['a']):>5}  control {pct(r['b']):>5}  "
-              f"diff {interval(r)}  {r['verdict'] if r['topics'] >= 2 else 'no interval'}")
+        "source": str(args.results), "corpus": d["corpus"], "a": LINKED,
+        "comparisons": [{"b": other, "label": label,
+                         "groups": [{"name": g, **{k: stats[other][g][k] for k in keys}} for g, _ in GROUPS]}
+                        for other, label in ((CONTROL, "vs no-links control"), (TOPK, "vs plain top-k"))]}, indent=1))
+    for other in (CONTROL, TOPK):
+        for g, _ in GROUPS:
+            r = stats[other][g]
+            print(f"{other:<26}{g:<15} n={r['n']:<3} LinkRAG {pct(r['a']):>5}  other {pct(r['b']):>5}  "
+                  f"diff {interval(r)}  {r['verdict'] if r['topics'] >= 2 else 'no interval'}")
     print(f"Table 3 written to {args.paper}; figure data to {args.json}. Now run: python paper/figures.py")
     return 0
 

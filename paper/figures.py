@@ -242,33 +242,50 @@ def fig5():
         b += text(340, 52, "[[XFILE: run paper/xfile_fill.py on the test-half results]]", 10, "middle", "#8a1c1c", "700")
         b += text(340, 72, "paired difference in answer correctness, LinkRAG vs no-links control, by question type, 95 % CI over topics", 8.8, "middle", MUTED)
         return svg(680, 120, b)
-    groups = json.load(open(src))["groups"]
-    lo_ax = min(-0.3, min(g["lo"] for g in groups) - 0.05)
-    hi_ax = max(0.3, max(g["hi"] for g in groups) + 0.05)
-    L, R, top, rh = 190, 560, 30, 30
+    comps = json.load(open(src))["comparisons"]
+    allg = [g for c in comps for g in c["groups"]]
+    lo_ax = min(-0.3, min(g["lo"] for g in allg) - 0.05)
+    hi_ax = max(0.3, max(g["hi"] for g in allg) + 0.05)
+    L, R, top, rh = 190, 560, 34, 22
     sx = lambda v: L + (R - L) * (v - lo_ax) / (hi_ax - lo_ax)
-    b = text(R + 110, top - 12, "difference [95 % CI]", 8.4, "end", MUTED)
+    names = [g["name"] for g in comps[0]["groups"]]
+    n_rows = len(names) * len(comps) + len(names) - 1
+    bottom = top + rh * n_rows
+    b = text(R + 115, top - 16, "difference [95 % CI]", 8.4, "end", MUTED)
     ticks = [x / 10 for x in range(int(lo_ax * 10), int(hi_ax * 10) + 1)]
-    n = len(groups)
     for v in ticks:
-        b += f'<line x1="{sx(v):.1f}" y1="{top - 6}" x2="{sx(v):.1f}" y2="{top + rh * n}" stroke="{RULE}" stroke-width="0.5"/>'
-        b += text(sx(v), top + rh * n + 13, f"{100 * v:+.0f}".replace("-", "−").replace("+0", "0"), 8.4, "middle", MUTED)
-    b += f'<line x1="{sx(0):.1f}" y1="{top - 6}" x2="{sx(0):.1f}" y2="{top + rh * n}" stroke="{INK}" stroke-width="1"/>'
-    for i, g in enumerate(groups):
-        y = top + i * rh + rh / 2
-        overall = g["name"] == "Overall"
-        if overall:
-            b += f'<line x1="0" y1="{y - rh / 2}" x2="680" y2="{y - rh / 2}" stroke="{RULE}" stroke-width="0.6"/>'
-        b += text(L - 10, y - 1, g["name"], 9, "end", weight="700" if overall else "normal")
-        b += text(L - 10, y + 10, f"n = {g['n']}, {g['topics']} topic{'s' if g['topics'] != 1 else ''}", 8, "end", MUTED)
-        c = BLUE if g["lo"] > 0 else (ORANGE if g["hi"] < 0 else GREY)
-        b += f'<line x1="{sx(g["lo"]):.1f}" y1="{y}" x2="{sx(g["hi"]):.1f}" y2="{y}" stroke="{c}" stroke-width="2.4"/>'
-        b += f'<rect x="{sx(g["diff"]) - 5:.1f}" y="{y - 5}" width="10" height="10" fill="{c}"/>'
-        lab = f"{100 * g['diff']:+.1f} [{100 * g['lo']:+.1f}, {100 * g['hi']:+.1f}]".replace("-", "−")
-        b += text(R + 110, y + 3, lab, 9, "end", weight="700" if overall else "normal")
-    b += text((L + R) / 2, top + rh * n + 28, "LinkRAG minus no-links control, answer correctness (percentage points)", 8.6, "middle", MUTED)
-    b += text(sx(0) - 6, top - 12, "← control better", 8.2, "end", MUTED) + text(sx(0) + 6, top - 12, "LinkRAG better →", 8.2, "start", MUTED)
-    return svg(680, top + rh * n + 34, b)
+        b += f'<line x1="{sx(v):.1f}" y1="{top - 8}" x2="{sx(v):.1f}" y2="{bottom}" stroke="{RULE}" stroke-width="0.5"/>'
+        b += text(sx(v), bottom + 13, f"{100 * v:+.0f}".replace("-", "−").replace("+0", "0"), 8.4, "middle", MUTED)
+    b += f'<line x1="{sx(0):.1f}" y1="{top - 8}" x2="{sx(0):.1f}" y2="{bottom}" stroke="{INK}" stroke-width="1"/>'
+    shapes = [("rect", BLUE), ("circle", STAGE["src"][0])]
+    row = 0
+    for gi, name in enumerate(names):
+        for ci, c in enumerate(comps):
+            g = c["groups"][gi]
+            y = top + row * rh + rh / 2
+            if ci == 0:
+                b += text(L - 10, y + 5, name, 9.4, "end", weight="700")
+                b += text(L - 10, y + 16, f"n = {g['n']}", 8, "end", MUTED)
+            shape, col = shapes[ci]
+            b += f'<line x1="{sx(g["lo"]):.1f}" y1="{y}" x2="{sx(g["hi"]):.1f}" y2="{y}" stroke="{col}" stroke-width="2.4"/>'
+            if shape == "rect":
+                b += f'<rect x="{sx(g["diff"]) - 4.5:.1f}" y="{y - 4.5}" width="9" height="9" fill="{col}"/>'
+            else:
+                b += f'<circle cx="{sx(g["diff"]):.1f}" cy="{y}" r="4.8" fill="{col}"/>'
+            lab = f"{100 * g['diff']:+.1f} [{100 * g['lo']:+.1f}, {100 * g['hi']:+.1f}]".replace("-", "−").replace("+0.0", "0.0").replace("−0.0", "0.0")
+            b += text(R + 115, y + 3, lab, 8.8, "end", fill=col)
+            row += 1
+        row += 1
+    ly = bottom + 30
+    b += text((L + R) / 2, ly, "LinkRAG minus comparison, answer correctness (percentage points)", 8.6, "middle", MUTED)
+    lx = L
+    for (shape, col), c in zip(shapes, comps):
+        b += (f'<rect x="{lx}" y="{ly + 10}" width="9" height="9" fill="{col}"/>' if shape == "rect"
+              else f'<circle cx="{lx + 4.5}" cy="{ly + 14.5}" r="4.8" fill="{col}"/>')
+        b += text(lx + 15, ly + 18, "LinkRAG " + c["label"], 8.8)
+        lx += 200
+    b += text(sx(0) - 6, top - 16, "← comparison better", 8.2, "end", MUTED) + text(sx(0) + 6, top - 16, "LinkRAG better →", 8.2, "start", MUTED)
+    return svg(680, ly + 24, b)
 
 
 # ---------------------------------------------------------------- figure 6: the F1 range on LectQA-Vid
@@ -329,7 +346,7 @@ CAPTIONS = {
     "fig2": "<b>Figure 2.</b> The proposed LinkRAG pipeline. Steps ①–④ run once per corpus; steps ⑤–⑨ run for every question. Dashed blue boxes are the proposed components; the blue dashed arrows show the links built in ④ being used in ⑥ and ⑦.",
     "fig3": "<b>Figure 3.</b> Links built by the Evidence Linking Layer on XFile, with their scores. ①–③: a chain from a sentence of the reinforcement-learning lecture to its slide, the figure on that slide and a textbook paragraph. ④: a deictic link from the cryptocurrency lecture. All units, links and scores are taken unchanged from the built link graph.",
     "fig4": "<b>Figure 4.</b> The relatedness gate on the pooled XFile corpus, all 49 recording × deck pairs. Pairs to the right of the threshold receive audio–slide links. Five recordings are linked to their own deck; two own-deck pairs are rejected and four pairs of different lectures are admitted (§5.4).",
-    "fig5": "<b>Figure 5.</b> Paired difference in answer correctness between LinkRAG and the no-links control on the XFile test half, by question type, with 95 % intervals from resampling topics. A bar crossing zero is no measurable difference; blue marks a measurable gain, orange a measurable loss.",
+    "fig5": "<b>Figure 5.</b> Paired differences in answer correctness on the XFile test half (three topics, 38 questions): LinkRAG against the pre-registered no-links control (squares) and against plain top-k retrieval (circles), with 95 % intervals from resampling topics. Every interval contains zero; against plain top-k the two systems answer identically.",
     "fig6": "<b>Figure 6.</b> Overall token F1 on LectQA-Vid open-ended questions. Light grey: references that need no retrieval system; dark grey: the re-implementation of [2]; blue: LinkRAG; amber: the whole transcript, no retrieval. The shaded band is the usable range between the question-echo floor and the full-transcript ceiling.",
     "fig7": "<b>Figure 7.</b> MaViLS, the nine held-out lectures with video, ordered by difference. Gains are on lectures where the published system scores low; losses are on camera-heavy lectures. The mean difference is +0.055 with 95 % CI [−0.050, +0.161].",
 }

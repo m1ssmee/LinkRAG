@@ -58,8 +58,9 @@ relatedness test. Retrieval follows these links, and a complementarity reranker 
 coverage and linked support instead of ranking units independently. To test the proposal in the setting it targets,
 the paper introduces XFile, a cross-file lecture benchmark of 86 verified questions over seven topics, each topic
 pairing a lecture recording and its slides with a separate textbook or paper chapter; 53 questions are verified to need
-evidence from more than one file. <span class="todo">[[XFILE: one sentence with the test-half result, LinkRAG vs the
-no-links control, with its 95 % CI.]]</span> On existing benchmarks, the alignment that builds the audio–slide links
+evidence from more than one file. On the three held-out XFile topics, LinkRAG did not answer
+cross-file questions better than a no-links control or plain retrieval (38.1 % correct against 47.6 % and 38.1 %;
+every 95 % interval contains zero), although the links raised evidence recall by 4.3 points [+1.5, +7.3]. On existing benchmarks, the alignment that builds the audio–slide links
 reaches parity with MaViLS (mean F1 0.853 against 0.80 on nine held-out lectures), and LinkRAG's retrieval scores
 2.00 token-F1 above a controlled re-implementation of Temporal-Aware RAG on LectQA-Vid (95 % CI [+0.96, +3.11]). An
 audit of LectQA-Vid explains why single-video benchmarks cannot test linking: the whole transcript beats every
@@ -233,8 +234,9 @@ evidence unit by requiring the judge to quote a supporting span. Four questions 
 leaving 86. ④ <i>Verified cross-file subset.</i> 53 questions need more than one file: 44 combine facts across files
 and 9 are deictic. The other 33 are single-source controls (12 transcript, 11 deck, 10 notes), which test that
 linking does no harm when one file suffices. A human audit samples 10 % of the per-unit verdicts, at least five per
-question type and five from each of six topics, and each reviewer audits the other's topics. <span class="todo">[[AUDIT: agreement
-rate, n = 50.]]</span></p>
+question type and five from each of six topics, and each reviewer audits the other's topics. Of the 24 sampled verdicts audited so far, all 24 agree with the judge; one note records that
+figure OCR missed small axis labels that the slide image shows. <span class="todo">[[AUDIT: update with the remaining
+26 rows.]]</span></p>
 <p><b>Split.</b> Before any evaluation run, the seven topics were split at random (fixed seed) into a tune half and a
 test half (Fig. 1b). Any parameter may be set only on tune topics and is applied once to test topics. For this
 evaluation all parameters were frozen at their defaults before any tune result existed, so no tuning took place. The
@@ -377,9 +379,12 @@ before replying; 133 of 360 gold-check answers failed that check and were redone
 MaViLS F1 uses the authors' scorer.</p>
 
 <h3>3.4 Experimental protocol</h3>
-<p><b>Compared systems.</b> On XFile, the headline comparison is LinkRAG with link expansion and complementarity
-reranking against a <i>no-links control</i>: the same retriever and the same reranker with the link graph removed.
-Plain top-k with and without links is also reported. On LectQA-Vid, the baseline is a re-implementation of [2], whose
+<p><b>Compared systems.</b> On XFile, the pre-registered headline comparison is LinkRAG with link expansion and
+complementarity reranking against a <i>no-links control</i>: the same retriever and the same reranker with the link
+graph removed. The tune check (§4.1) showed that this control is unstable, because the plain retriever passes raw
+fusion scores to the reranker (§5.3). LinkRAG is therefore also compared with <i>plain top-k</i> retrieval, which
+uses neither links nor the reranker; this second comparison was added after the tune check and before any test
+result existed. On LectQA-Vid, the baseline is a re-implementation of [2], whose
 code is not public, built with the values its Table 3 gives: semantic chunking, BGE-base embeddings, top-10
 candidates above cosine 0.6, the temporal filter with a 3 s tolerance, merging of adjacent results, cross-encoder
 re-ranking and a temporally ordered context. Where [2] is silent, the choices are this work's: the re-rank pool and
@@ -405,22 +410,40 @@ XFile results are means over three answering repeats.</p>
 <h2>4. Results</h2>
 
 <h3>4.1 Cross-file question answering on XFile</h3>
-<p class="todo">[[XFILE: this section is written from results/xfile/xfile_benchmark.md once the test-half run is
-complete. Planned content: Table 3 (answer correctness on the test half: cross-file split, deictic, single-source
-controls, overall; rows plain top-k, top-k with links, no-links control + complementarity, LinkRAG + complementarity;
-with paired differences and topic-bootstrap CIs); Figure 5 (forest plot of the paired differences by question kind);
-one paragraph on the single-source no-harm check; one paragraph on evidence recall and modality coverage; the tune half
-and the lightning topic as separate, labelled rows. A null result is reported as a null result.]]</p>
-<table>
-<caption><b>Table 3.</b> <span class="todo">[[XFILE: answer correctness (%) on the XFile test half, three repeats,
-95 % CI over topics.]]</span></caption>
-<tr class="h"><th>Method</th><th class="n">Cross-file (split)</th><th class="n">Cross-file (deictic)</th><th class="n">Single-source</th><th class="n">Overall</th></tr>
-<tr><td>Hybrid retrieval, top-k</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
-<tr><td>Hybrid + link expansion, top-k</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
-<tr><td>No-links control + complementarity</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
-<tr class="key last"><td>LinkRAG (links + complementarity)</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<p><b>Tune check.</b> The three tune topics (36 questions) were run with the frozen defaults as a check, and no
+setting was changed afterwards. The check exposed one problem: the default reranker roughly halved the no-links
+control, from 63.9 % correct with plain top-k to 33.3 % with complementarity reranking, while LinkRAG reached 65.7 %.
+The cause is the score-scale issue of §5.3. Because a comparison against a weakened control would overstate any gain,
+the test half is also reported against plain top-k.</p>
+<p><b>Test result.</b> Table 3 gives answer correctness on the three test topics (38 questions, three repeats).</p>
+<table id="tab-xfile">
+<caption><b>Table 3.</b> Answer correctness (%) on the XFile test half (gp_scaling, mimic_data, rl_mdp), mean over three repeats; n = 38 questions (21 cross-file, of which 1 deictic; 17 single-source). The last two rows are paired differences of LinkRAG against the pre-registered no-links control and against plain top-k retrieval, with 95 % intervals from resampling the three topics.</caption>
+<tr class="h"><th>Method</th><th class="n">Cross-file</th><th class="n">Single-source</th><th class="n">Overall</th></tr>
+<tr><td>Hybrid retrieval, top-k</td><td class="n">38.1</td><td class="n">76.5</td><td class="n">55.3</td></tr>
+<tr><td>Hybrid + link expansion, top-k</td><td class="n">38.1</td><td class="n">76.5</td><td class="n">55.3</td></tr>
+<tr><td>No-links control + complementarity</td><td class="n">47.6</td><td class="n">72.5</td><td class="n">58.8</td></tr>
+<tr class="key"><td>LinkRAG (links + complementarity)</td><td class="n">38.1</td><td class="n">76.5</td><td class="n">55.3</td></tr>
+<tr class="rule"><td>LinkRAG − no-links control</td><td class="n">−9.5 [−16.7, +0.0]</td><td class="n">+3.9 [+0.0, +11.1]</td><td class="n">−3.5 [−9.1, +5.1]</td></tr>
+<tr class="last"><td>LinkRAG − plain top-k</td><td class="n">+0.0 [+0.0, +0.0]</td><td class="n">+0.0 [+0.0, +0.0]</td><td class="n">+0.0 [+0.0, +0.0]</td></tr>
 </table>
-<figure id="fig5"><svg viewBox="0 0 680 120" width="100%" xmlns="http://www.w3.org/2000/svg" role="img"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1d232b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1d5fbf"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa1ab"/></marker></defs><rect x="1" y="1" width="678" height="118" rx="6" fill="#fbf4f4" stroke="#8a1c1c" stroke-width="1" stroke-dasharray="6 4"/><text x="340.0" y="52.0" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#8a1c1c" font-weight="700" font-style="normal">[[XFILE: run paper/xfile_fill.py on the test-half results]]</text><text x="340.0" y="72.0" font-family="Helvetica, Arial, sans-serif" font-size="8.8" text-anchor="middle" fill="#5b6270" font-weight="normal" font-style="normal">paired difference in answer correctness, LinkRAG vs no-links control, by question type, 95 % CI over topics</text></svg><figcaption><b>Figure 5.</b> <span class="todo">[[XFILE: caption pending results]]</span></figcaption></figure>
+<p>On cross-file questions, LinkRAG answered 38.1 % correctly against 47.6 % for the no-links control, a
+difference of −9.5 points [−16.7, +0.0]. The interval touches zero, so this is no measurable difference, with the
+point estimate against links. On single-source questions, the no-harm check, the difference is +3.9 [+0.0, +11.1],
+and over all 38 questions −3.5 [−9.1, +5.1]. Against plain top-k the two systems answer identically: every one of
+the 38 questions receives the same graded result in all three repeats. Link expansion without the reranker changes
+nothing at all, because expansion is additive and no linked unit outscores the eight seeds. Figure 5 shows both
+comparisons.</p>
+<figure id="fig5"><svg viewBox="0 0 680 264" width="100%" xmlns="http://www.w3.org/2000/svg" role="img"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1d232b"/></marker><marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1d5fbf"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa1ab"/></marker></defs><text x="675.0" y="18.0" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="end" fill="#5b6270" font-weight="normal" font-style="normal">difference [95 % CI]</text><line x1="190.0" y1="26" x2="190.0" y2="210" stroke="#c9ced6" stroke-width="0.5"/><text x="190.0" y="223.0" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="middle" fill="#5b6270" font-weight="normal" font-style="normal">−30</text><line x1="251.7" y1="26" x2="251.7" y2="210" stroke="#c9ced6" stroke-width="0.5"/><text x="251.7" y="223.0" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="middle" fill="#5b6270" font-weight="normal" font-style="normal">−20</text><line x1="313.3" y1="26" x2="313.3" y2="210" stroke="#c9ced6" stroke-width="0.5"/><text x="313.3" y="223.0" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="middle" fill="#5b6270" font-weight="normal" font-style="normal">−10</text><line x1="375.0" y1="26" x2="375.0" y2="210" stroke="#c9ced6" stroke-width="0.5"/><text x="375.0" y="223.0" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="middle" fill="#5b6270" font-weight="normal" font-style="normal">0</text><line x1="436.7" y1="26" x2="436.7" y2="210" stroke="#c9ced6" stroke-width="0.5"/><text x="436.7" y="223.0" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="middle" fill="#5b6270" font-weight="normal" font-style="normal">+10</text><line x1="498.3" y1="26" x2="498.3" y2="210" stroke="#c9ced6" stroke-width="0.5"/><text x="498.3" y="223.0" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="middle" fill="#5b6270" font-weight="normal" font-style="normal">+20</text><line x1="560.0" y1="26" x2="560.0" y2="210" stroke="#c9ced6" stroke-width="0.5"/><text x="560.0" y="223.0" font-family="Helvetica, Arial, sans-serif" font-size="8.4" text-anchor="middle" fill="#5b6270" font-weight="normal" font-style="normal">+30</text><line x1="375.0" y1="26" x2="375.0" y2="210" stroke="#1d232b" stroke-width="1"/><text x="180.0" y="50.0" font-family="Helvetica, Arial, sans-serif" font-size="9.4" text-anchor="end" fill="#1d232b" font-weight="700" font-style="normal">Cross-file</text><text x="180.0" y="61.0" font-family="Helvetica, Arial, sans-serif" font-size="8" text-anchor="end" fill="#5b6270" font-weight="normal" font-style="normal">n = 21</text><line x1="272.2" y1="45.0" x2="375.0" y2="45.0" stroke="#1d5fbf" stroke-width="2.4"/><rect x="311.8" y="40.5" width="9" height="9" fill="#1d5fbf"/><text x="675.0" y="48.0" font-family="Helvetica, Arial, sans-serif" font-size="8.8" text-anchor="end" fill="#1d5fbf" font-weight="normal" font-style="normal">−9.5 [−16.7, 0.0]</text><line x1="375.0" y1="67.0" x2="375.0" y2="67.0" stroke="#0f766e" stroke-width="2.4"/><circle cx="375.0" cy="67.0" r="4.8" fill="#0f766e"/><text x="675.0" y="70.0" font-family="Helvetica, Arial, sans-serif" font-size="8.8" text-anchor="end" fill="#0f766e" font-weight="normal" font-style="normal">0.0 [0.0, 0.0]</text><text x="180.0" y="116.0" font-family="Helvetica, Arial, sans-serif" font-size="9.4" text-anchor="end" fill="#1d232b" font-weight="700" font-style="normal">Single-source</text><text x="180.0" y="127.0" font-family="Helvetica, Arial, sans-serif" font-size="8" text-anchor="end" fill="#5b6270" font-weight="normal" font-style="normal">n = 17</text><line x1="375.0" y1="111.0" x2="443.5" y2="111.0" stroke="#1d5fbf" stroke-width="2.4"/><rect x="394.7" y="106.5" width="9" height="9" fill="#1d5fbf"/><text x="675.0" y="114.0" font-family="Helvetica, Arial, sans-serif" font-size="8.8" text-anchor="end" fill="#1d5fbf" font-weight="normal" font-style="normal">+3.9 [0.0, +11.1]</text><line x1="375.0" y1="133.0" x2="375.0" y2="133.0" stroke="#0f766e" stroke-width="2.4"/><circle cx="375.0" cy="133.0" r="4.8" fill="#0f766e"/><text x="675.0" y="136.0" font-family="Helvetica, Arial, sans-serif" font-size="8.8" text-anchor="end" fill="#0f766e" font-weight="normal" font-style="normal">0.0 [0.0, 0.0]</text><text x="180.0" y="182.0" font-family="Helvetica, Arial, sans-serif" font-size="9.4" text-anchor="end" fill="#1d232b" font-weight="700" font-style="normal">Overall</text><text x="180.0" y="193.0" font-family="Helvetica, Arial, sans-serif" font-size="8" text-anchor="end" fill="#5b6270" font-weight="normal" font-style="normal">n = 38</text><line x1="318.9" y1="177.0" x2="406.6" y2="177.0" stroke="#1d5fbf" stroke-width="2.4"/><rect x="348.9" y="172.5" width="9" height="9" fill="#1d5fbf"/><text x="675.0" y="180.0" font-family="Helvetica, Arial, sans-serif" font-size="8.8" text-anchor="end" fill="#1d5fbf" font-weight="normal" font-style="normal">−3.5 [−9.1, +5.1]</text><line x1="375.0" y1="199.0" x2="375.0" y2="199.0" stroke="#0f766e" stroke-width="2.4"/><circle cx="375.0" cy="199.0" r="4.8" fill="#0f766e"/><text x="675.0" y="202.0" font-family="Helvetica, Arial, sans-serif" font-size="8.8" text-anchor="end" fill="#0f766e" font-weight="normal" font-style="normal">0.0 [0.0, 0.0]</text><text x="375.0" y="240.0" font-family="Helvetica, Arial, sans-serif" font-size="8.6" text-anchor="middle" fill="#5b6270" font-weight="normal" font-style="normal">LinkRAG minus comparison, answer correctness (percentage points)</text><rect x="190" y="250" width="9" height="9" fill="#1d5fbf"/><text x="205.0" y="258.0" font-family="Helvetica, Arial, sans-serif" font-size="8.8" text-anchor="start" fill="#1d232b" font-weight="normal" font-style="normal">LinkRAG vs no-links control</text><circle cx="394.5" cy="254.5" r="4.8" fill="#0f766e"/><text x="405.0" y="258.0" font-family="Helvetica, Arial, sans-serif" font-size="8.8" text-anchor="start" fill="#1d232b" font-weight="normal" font-style="normal">LinkRAG vs plain top-k</text><text x="369.0" y="18.0" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="end" fill="#5b6270" font-weight="normal" font-style="normal">← comparison better</text><text x="381.0" y="18.0" font-family="Helvetica, Arial, sans-serif" font-size="8.2" text-anchor="start" fill="#5b6270" font-weight="normal" font-style="normal">LinkRAG better →</text></svg><figcaption><b>Figure 5.</b> Paired differences in answer correctness on the XFile test half (three topics, 38 questions): LinkRAG against the pre-registered no-links control (squares) and against plain top-k retrieval (circles), with 95 % intervals from resampling topics. Every interval contains zero; against plain top-k the two systems answer identically.</figcaption></figure>
+
+<p>Each row of Figure 5 is one question group, with two marks: the square is LinkRAG minus the no-links control,
+the circle LinkRAG minus plain top-k. A mark left of the vertical zero line favours the comparison system, and the
+horizontal bar is the 95 % interval. All six intervals contain zero, and the three circles sit exactly on it.</p>
+<p><b>Retrieval and coverage.</b> The links do change what is retrieved. Against the no-links control, evidence
+recall@8 rises by 4.3 points over all questions [+1.5, +7.3] and by 6.1 points on cross-file questions [−2.8, +13.6],
+and an evidence set covers 2.95 modalities on average against 2.03 for plain top-k. These retrieval gains do not
+turn into more correct answers. The highest answer correctness of any configuration, 61.4 %, came from one
+iterative re-query without links; no interval was computed for it, so it is a point estimate only. The rejected
+Lightning topic was not evaluated.</p>
 
 <h3>4.2 Lecture video question answering on LectQA-Vid</h3>
 
@@ -552,9 +575,15 @@ correct one.</p>
 predicts. A LectQA-Vid question concerns one short video with no separate deck or document, so there are no files to
 link, and the temporal links that remain add nothing that hybrid retrieval does not already find. MaViLS evaluates
 alignment, not question answering; there the alignment that builds the links matches the published aligner. XFile is
-the first test of the setting the layer was designed for. <span class="todo">[[XFILE: interpret the test-half result
-here: whether links help on cross-file questions, whether they harm single-source controls, and which question kinds
-(split vs deictic) drive the result.]]</span></p>
+the first test of the setting the layer was designed for, and at its scale the result is null: links neither helped
+nor measurably harmed answers, on cross-file or single-source questions. Three readings fit the data. First, the test
+is small. With 21 cross-file questions on three topics, the bootstrap has only ten distinct resamples, so a modest
+effect could be hidden. Second, the links did reach retrieval, raising recall and modality coverage, but the extra
+gold units were not the ones the answers depended on, or the answerer used them no better than what it already had.
+Third, the layer was measured with its gate errors present (§5.4), which put links between unrelated lectures into a
+pooled index. On LectQA-Vid the one measurable gain came from re-querying, and on XFile the highest point estimate also came from re-querying without links. The result
+does not show that evidence linking cannot help. It shows that, as configured here, it did not improve answers on the
+first benchmark built to test it.</p>
 
 <h3>5.2 What the existing benchmarks can measure</h3>
 <p>The audit of §4.2.3 shows that LectQA-Vid cannot rank retrieval methods: its transcripts fit in one context
@@ -568,8 +597,12 @@ removes questions answerable from a single file.</p>
 redundancy) to relevance scores. Reciprocal rank fusion yields scores near 0.03, so on raw scores the bonuses decide
 the selection almost alone. An early measurement made this way showed a 13-point loss of hit@3 on LectQA-Vid; with
 rank-normalised relevance the loss is about 5 points. Set-level objectives that mix relevance with structural terms
-should normalise relevance first, and ablations should check that all compared conditions see scores on one scale. All
-results in this paper use rank-normalised relevance.</p>
+should normalise relevance first, and ablations should check that all compared conditions see scores on one scale. In
+the proposed system the linked retriever passes rank-normalised relevance to the reranker, but the plain retriever
+passes raw fusion scores, so every "plain retriever + complementarity" row, including the no-links control on XFile, is
+affected. The effect is not even stable in sign: on the XFile tune topics it lowered the control from 63.9 % to
+33.3 % correct, and on the test topics it raised it from 55.3 % to 58.8 %. Plain top-k, which involves no reranker,
+is the cleaner comparison.</p>
 
 <h3>5.4 Linking errors in a pooled corpus</h3>
 <p>The relatedness gate was calibrated on pairs of single lectures. In the pooled XFile corpus it admitted four
@@ -580,12 +613,16 @@ The XFile results therefore measure the layer with these errors present.</p>
 
 <h2>6. Limitations</h2>
 <ul>
-<li><b>Size of XFile.</b> The test half has three topics with 21 cross-file and 17 single-source questions, so
-intervals over topics are wide, and a small effect may be reported as no measurable difference.</li>
+<li><b>Size of XFile.</b> The test half has three topics with 21 cross-file and 17 single-source questions. A
+bootstrap over three topics has only ten distinct resamples, so intervals are coarse, and a small effect may be
+reported as no measurable difference. The rejected Lightning topic was not evaluated.</li>
 <li><b>How the XFile questions were made.</b> Questions were drafted by a language model and reviewed by people, not
 written by them, and the answerer belongs to the same model family as the drafter.</li>
-<li><b>XFile models.</b> Answers and judgements on XFile come from agent sessions, not API calls; they are cached and
-can be re-scored, but not re-generated identically.</li>
+<li><b>XFile models.</b> Answers and judgements on XFile come from one model family (Claude Haiku answers, Claude Sonnet
+grades), run as agent sessions rather than API calls; they are cached and can be re-scored, but not re-generated
+identically, and the results are best read as direction only.</li>
+<li><b>Figure OCR.</b> Figures are represented by their OCR text, which can miss small labels such as axis values
+that are visible on the slide image (§3.1.1).</li>
 <li><b>Linking errors.</b> The relatedness gate makes six errors on the pooled XFile corpus (§5.4).</li>
 <li><b>Re-implementation of [2].</b> Several parameters and the source of the filter interval are this work's
 choices; with the authors' code or evaluation subset the comparison could differ. Open-ended results cover 300 of the
@@ -601,15 +638,19 @@ re-run, and the test half was examined in several rounds, although no parameter 
 <h2>7. Conclusion and Future Work</h2>
 <p>This paper proposed LinkRAG, a lecture RAG system that links speech, slides, figures and documents at indexing
 time, follows those links at retrieval time, and selects evidence as a set, together with XFile, a benchmark whose
-questions are verified to need more than one file. <span class="todo">[[XFILE: one or two sentences with the
-headline XFile result and what it means for the linking layer.]]</span> On the published benchmarks, the alignment
+questions are verified to need more than one file. On XFile's held-out topics the proposed linking and reranking
+raised evidence recall and modality coverage but did not improve answer correctness over a no-links control or plain
+retrieval: a null result on the first benchmark that can test the idea. On the published benchmarks, the alignment
 that builds the audio–slide links matches MaViLS, and LinkRAG's retrieval exceeds a controlled re-implementation of
 Temporal-Aware RAG by two F1 points, most of it from one re-query; neither result depends on linking, because neither
 benchmark has evidence in more than one file. The audit shows that LectQA-Vid cannot rank retrieval methods.</p>
 <p><b>Future work.</b></p>
 <ol>
 <li><b>A larger cross-file benchmark.</b> More topics and courses, questions written by people, and corpora whose
-total size exceeds one context window, so that retrieval cannot be bypassed.</li>
+total size exceeds one context window, so that retrieval cannot be bypassed. A null result on three test topics leaves
+room for an effect too small to detect here.</li>
+<li><b>One score scale for every reranked row.</b> Rank-normalising relevance in the plain retriever as well would
+make the no-links control stable (§5.3).</li>
 <li><b>One deck per recording.</b> Restricting each recording to its best-matching deck would remove the false
 pairs of §5.4; it should be fixed on tune topics and tested once on held-out topics.</li>
 <li><b>Speaker shots in slide alignment.</b> On the weakest MaViLS lectures most errors fall on frames that show the
